@@ -17,3 +17,14 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(SRxgboost)
 ```
+
+
+### TODOs
+
+- Enforcing Monotonic Constraints:
+  - https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html
+  - params_constrained = params.copy()
+  - params_constrained['monotone_constraints'] = "(1,-1)"
+  - (1,-1,0): increasing/decreasing constraint, no constraint on the third
+  - model_with_constraints = xgb.train(params_constrained, d_train, 
+                                       num_boost_round = 1000, evals = evallist)
