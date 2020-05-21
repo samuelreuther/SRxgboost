@@ -6,3 +6,4 @@
 * Added 'SRxgboost_load_everything()'
 * Added 'SRxgboost_run()'
 * Added 'SRxgboost_create_folds()'
+* Added 'SRxgboost_cleanup()'
