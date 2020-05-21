@@ -2,9 +2,7 @@
 #'
 #' Removes all standard SRxgboost-objects from global environment.
 #'
-#' @return
-#'
-#' @examples
+#' @return NULL
 #'
 #' @export
 SRxgboost_cleanup <- function() {

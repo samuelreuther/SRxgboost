@@ -32,9 +32,7 @@
 #' @param Feat_Sel_Vars list
 #' @param Selected_Features boolean
 #'
-#' @return
-#'
-#' @examples
+#' @return several files in folder
 #'
 #' @export
 SRxgboost_run <- function(nround, eta, obj, metric, runs,

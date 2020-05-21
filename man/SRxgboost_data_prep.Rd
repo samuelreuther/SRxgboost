@@ -44,6 +44,3 @@ Creates data for xgboost modeling function SRxgboost_run (y, partitions,
 train, test).
 Creates a sparse matrix and dmatrix.
 }
-\examples{
-
-}

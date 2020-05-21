@@ -9,8 +9,6 @@
 #'
 #' @return list
 #'
-#' @examples
-#'
 #' @export
 SRxgboost_create_folds <- function(df,
                                    foldcolumn,

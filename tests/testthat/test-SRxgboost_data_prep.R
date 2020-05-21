@@ -5,12 +5,12 @@ assign('path_output', path_output, envir = .GlobalEnv)
 
 ## read data
 # regression
-house <- rio::import(paste0("D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/",
-                            "Regression/Kaggle - house prices/data/train.csv"))
+house <- utils::read.csv(paste0("D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/",
+                                "Regression/Kaggle - house prices/data/train.csv"))
 house_train <- house %>% dplyr::select(-Id)
 id_unique_train <- house$Id
 # classification
-churn <- rio::import(paste0("D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/",
+churn <- utils::read.csv(paste0("D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/",
                             "Classification/Telco Customer Churn/Telco-Customer-Churn.csv"))
 
 

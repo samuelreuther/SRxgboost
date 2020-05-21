@@ -6,8 +6,6 @@
 #'
 #' @return saves rds files in lauf-path
 #'
-#' @examples
-#'
 #' @export
 SRxgboost_save_everything <- function(lauf) {
   ### checks

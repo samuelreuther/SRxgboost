@@ -17,8 +17,6 @@
 #'
 #' @return assigns output into global workspace
 #'
-#' @examples
-#'
 #' @export
 SRxgboost_data_prep <- function(yname,
                                 data_train,

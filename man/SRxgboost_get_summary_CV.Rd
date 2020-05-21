@@ -12,11 +12,8 @@ SRxgboost_get_summary_CV(lauf, ensemble = FALSE)
 \item{ensemble}{boolean}
 }
 \value{
-
+data.frame
 }
 \description{
 Import the summary of 'SRxgboost_run()'.
-}
-\examples{
-
 }

@@ -5,9 +5,7 @@
 #' @param lauf character
 #' @param ensemble boolean
 #'
-#' @return
-#'
-#' @examples
+#' @return data.frame
 #'
 #' @export
 SRxgboost_get_summary_CV <- function(lauf,

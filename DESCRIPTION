@@ -32,5 +32,7 @@ Imports:
     reshape2,
     Metrics,
     grDevices,
-    plotmo
+    plotmo,
+    stats,
+    utils
 VignetteBuilder: knitr

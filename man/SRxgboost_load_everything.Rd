@@ -16,6 +16,3 @@ loads rds-files into global environment
 Loads all previously prepared objects for SRxgboost modeling into global
 environment.
 }
-\examples{
-
-}

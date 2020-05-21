@@ -20,6 +20,3 @@ list
 Creates custom folds for 'SRxgboost_run(folds = ...)', for example time based,
 groups, ...
 }
-\examples{
-
-}

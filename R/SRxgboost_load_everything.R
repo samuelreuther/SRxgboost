@@ -7,8 +7,6 @@
 #'
 #' @return loads rds-files into global environment
 #'
-#' @examples
-#'
 #' @export
 SRxgboost_load_everything <- function(lauf) {
   ### checks

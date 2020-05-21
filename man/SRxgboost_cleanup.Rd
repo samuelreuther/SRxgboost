@@ -6,12 +6,6 @@
 \usage{
 SRxgboost_cleanup()
 }
-\value{
-
-}
 \description{
 Removes all standard SRxgboost-objects from global environment.
-}
-\examples{
-
 }

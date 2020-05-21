@@ -15,6 +15,3 @@ saves rds files in lauf-path
 \description{
 Saves all objects for SRxgboost modeling as rds-files.
 }
-\examples{
-
-}

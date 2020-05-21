@@ -70,7 +70,7 @@ SRxgboost_run(
 \item{Selected_Features}{boolean}
 }
 \value{
-
+several files in folder
 }
 \description{
 Main function to run XGBOOST models (regression, binary classification,
@@ -83,7 +83,4 @@ Implemented metrics:
 "multi:softprob"    "merror", "logloss"
 "multi:softmax"     "merror", "auc"
 "rank:pairwise"     "ndcg"
-}
-\examples{
-
 }
