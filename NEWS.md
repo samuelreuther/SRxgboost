@@ -7,3 +7,4 @@
 * Added 'SRxgboost_run()'
 * Added 'SRxgboost_create_folds()'
 * Added 'SRxgboost_cleanup()'
+* Added 'SRxgboost_get_summary_CV()'
