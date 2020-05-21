@@ -29,26 +29,48 @@ SRxgboost_run(
 )
 }
 \arguments{
-\item{folds}{list, output from xxx}
+\item{nround}{integer}
 
-\item{yname}{character}
+\item{eta}{numeric}
 
-\item{data_train}{data.frame}
+\item{obj}{character}
 
-\item{data_test}{data.frame}
+\item{metric}{character}
 
-\item{no_folds}{integer}
+\item{runs}{integer}
 
-\item{eval_index}{vector}
+\item{nfold}{integer}
 
-\item{objective}{character}
+\item{folds}{list, output of SRxgboost_create_folds()}
 
-\item{label_encoding}{boolean}
+\item{dart}{numeric}
 
-\item{check_covariate_drift}{boolean}
+\item{tree_method}{character}
+
+\item{verbose}{integer 0 to 3}
+
+\item{test_param}{boolean}
+
+\item{shap}{boolean}
+
+\item{continue_threshold}{numeric}
+
+\item{run_final_model}{boolean}
+
+\item{best_params}{character}
+
+\item{max_overfit}{numeric between for example -1 (no restriction) or -0.5}
+
+\item{feat_sel}{boolean}
+
+\item{Feat_Sel}{data.frame}
+
+\item{Feat_Sel_Vars}{list}
+
+\item{Selected_Features}{boolean}
 }
 \value{
-assigns output into global workspace
+
 }
 \description{
 Main function to run XGBOOST models (regression, binary classification,
