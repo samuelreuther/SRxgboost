@@ -45,7 +45,8 @@ SRxgboost_data_prep <- function(yname,
     # create output dir
     dir.create(path_output_, showWarnings = FALSE, recursive = TRUE)
     # calculate_drift
-    drift_covariate <- calculate_drift(data_train, data_test, name = path_output_)
+    drift_covariate <- SRxgboost_calculate_drift(data_train, data_test,
+                                                 name = path_output_)
   }
   rm(path_output_)
   #
@@ -212,7 +213,7 @@ SRxgboost_data_prep <- function(yname,
     }
     # check if y = 1 exists in test set (problem at unbalanced data)
     if (sum(y_test_eval == 1) == 0 | sum(y_test_eval == 1) == 0 ) {
-      stop("30_Model_XGBOOST: y == 1 does not exist in y_train_eval or y_test_eval !")
+      stop("Error: y == 1 does not exist in y_train_eval or y_test_eval !")
     }
   } else {
     # "multiclass"

@@ -43,6 +43,8 @@ SRxgboost_run(
 
 \item{folds}{list, output of SRxgboost_create_folds()}
 
+\item{trees}{integer}
+
 \item{dart}{numeric}
 
 \item{tree_method}{character}

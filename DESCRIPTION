@@ -34,5 +34,8 @@ Imports:
     grDevices,
     plotmo,
     stats,
-    utils
+    utils,
+    caret,
+    groupdata2,
+    gridExtra
 VignetteBuilder: knitr

@@ -18,6 +18,7 @@
 #' @param runs integer
 #' @param nfold integer
 #' @param folds list, output of SRxgboost_create_folds()
+#' @param trees integer
 #' @param dart numeric
 #' @param tree_method character
 #' @param verbose integer 0 to 3
@@ -182,20 +183,21 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
     } else {
       # Random Search for Modell-Parameter
       set.seed(Sys.time())
-      depth <- round(runif(1, 2, 15), 0)
-      min_child_weight <- round(rexp(1, rate = 0.1), 0)  # 0.1 => 20  0.2 => 12  0.3 => 10  0.7 => 4
-      gamma <- round(rexp(1, rate = 0.5), 1)             # 0.3 => 7   0.5 => 5   0.7 => 3   1.0 => 2.5
+      depth <- round(stats::runif(1, 2, 15), 0)
+      min_child_weight <- round(stats::rexp(1, rate = 0.1), 0)  # 0.1 => 20  0.2 => 12  0.3 => 10  0.7 => 4
+      gamma <- round(stats::rexp(1, rate = 0.5), 1)             # 0.3 => 7   0.5 => 5   0.7 => 3   1.0 => 2.5
       subsample <- sample(c(seq(0.2, 0.45, 0.05),
                             seq(0.5, 0.68, 0.02),
                             seq(0.7, 0.99, 0.01),
                             rep(1, 3)), 1)
-      colsample_bytree <- round(runif(1, 0.1, 1), 2)
+      colsample_bytree <- round(stats::runif(1, 0.1, 1), 2)
       booster <- sample(c("gbtree", "dart"), 1, prob = c(1 - dart, dart))
       rate_drop <- ifelse(booster == "dart", sample(c(0.02, 0.05, 0.1, 0.2), 1), 0)
       skip_drop <- ifelse(booster == "dart", sample(c(0.5), 1), 0)   # 0.7, 0.5, 0.3
     }
     # Exponential distribution:
-    # rate = 0.01; n = 1000; hist(rexp(n, rate = rate), 20); summary(rexp(n, rate = rate)); rm(rate, n)
+    # rate = 0.01; n = 1000; hist(stats::rexp(n, rate = rate), 20)
+    # summary(stats::rexp(n, rate = rate)); rm(rate, n)
     #
     # Initialize temp
     if (exists("temp")) rm(temp)
@@ -673,8 +675,8 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
                                    "Data/TESTforecast.rds"))
       #
       # Save model
-      xboost::xgb.save(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                                   gsub(":", ".", as.character(start)), ".model"))
+      xgboost::xgb.save(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                                    gsub(":", ".", as.character(start)), ".model"))
       saveRDS(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
                           gsub(":", ".", as.character(start)), ".model.rds"))
       assign("bst", bst, envir = .GlobalEnv)
