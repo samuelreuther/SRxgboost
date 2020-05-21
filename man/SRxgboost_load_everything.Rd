@@ -10,7 +10,7 @@ SRxgboost_load_everything(lauf)
 \item{lauf}{character}
 }
 \value{
-saves rds files in lauf-path
+loads rds-files into global environment
 }
 \description{
 Loads all previously prepared objects for SRxgboost modeling into global

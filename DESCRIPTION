@@ -26,5 +26,11 @@ Imports:
     data.table,
     SRfunctions,
     Matrix,
-    xgboost
+    xgboost,
+    scales,
+    earth,
+    reshape2,
+    Metrics,
+    grDevices,
+    plotmo
 VignetteBuilder: knitr
