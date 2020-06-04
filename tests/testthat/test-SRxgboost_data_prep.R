@@ -1,17 +1,24 @@
 ## setup
 path_output <- "output_temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
+if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
+  path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
+}
+if (dir.exists("/data/shared/CH00RHU/")) {
+  path_to_data <- "/data/shared/CH00RHU/z-Sonstiges/99 ML Algorithm Benchmark/"
+}
+library(dplyr)
 
 
 ## read data
 # regression
-house <- utils::read.csv(paste0("D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/",
+house <- utils::read.csv(paste0(path_to_data,
                                 "Regression/Kaggle - house prices/data/train.csv"))
 house_train <- house %>% dplyr::select(-Id)
 id_unique_train <- house$Id
 # classification
-churn <- utils::read.csv(paste0("D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/",
-                            "Classification/Telco Customer Churn/Telco-Customer-Churn.csv"))
+churn <- utils::read.csv(paste0(path_to_data,
+                                "Classification/Telco Customer Churn/Telco-Customer-Churn.csv"))
 
 
 ## regression / no_folds
@@ -60,3 +67,4 @@ test_that("regression / folds", {
                "NULL")})
 # clean up
 SRxgboost_cleanup()
+
