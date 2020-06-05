@@ -36,7 +36,7 @@
 #' @return several files in folder
 #'
 #' @export
-SRxgboost_run <- function(nround, eta, obj, metric, runs,
+SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                           nfold = NULL, folds = NULL,
                           trees = 1, dart = 0, tree_method = "auto", verbose = 0,
                           test_param = FALSE, shap = TRUE, continue_threshold = 0.1,
@@ -114,8 +114,8 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
     # }
     #
     # make a copy of the actual R script
-    file.copy(this_file, paste0(path_output, gsub(".csv", "/", lauf), "R_Script.R"),
-              overwrite = TRUE)
+    try(file.copy(this_file, paste0(path_output, gsub(".csv", "/", lauf), "R_Script.R"),
+                  overwrite = TRUE), T)
     #
     # save everything (data)
     SRxgboost_save_everything(lauf)
@@ -163,7 +163,7 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
     } else if ((i == 2 & !is.null(best_params)) | feat_sel) {
       if (!feat_sel) {
         bp <- utils::read.table(paste0(path_output, gsub(".csv", "/", best_params),
-                                "Summary.csv"), header = TRUE, sep = ";", dec = ",")
+                                       "Summary.csv"), header = TRUE, sep = ";", dec = ",")
         if (metric %in% c("auc", "qwk_score", "f1_score", "mcc_score")) {
           bp <- bp %>% dplyr::arrange(dplyr::desc(test), dplyr::desc(eval_1fold))
         } else {
@@ -511,7 +511,7 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
             dplyr::select(-BIAS) %>%
             data.table::setnames(paste0(colnames(.), ": ",
                                         temp_data[row, colnames(.)] %>%
-                                          dplyr::mutate_if(is.Date, as.character) %>%
+                                          dplyr::mutate_if(lubridate::is.Date, as.character) %>%
                                           reshape2::melt(id = NULL) %>%
                                           dplyr::pull(value))) %>%
             data.table::setnames(gsub("_LabelEnc", "", names(.))) %>%
@@ -526,13 +526,13 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
                                             ", pred no. ", row, ")")) +
             ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
             ggplot2::theme(text = ggplot2::element_text(size = 8)) +
-            ggplot2:coord_flip()
+            ggplot2::coord_flip()
         }; rm(plot_i, row)
         p <- do.call(gridExtra::arrangeGrob, c(p, ncol = 2, as.table = FALSE))
         # p <- do.call(grid.arrange, c(p, ncol = 2, as.table = FALSE))
-        ggplot2:ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                              gsub(":", ".", as.character(start)), "_Shap_plot.png"),
-                       plot = p, width = 9.92, height = 5.3)
+        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                               gsub(":", ".", as.character(start)), "_Shap_plot.png"),
+                        plot = p, width = 9.92, height = 5.3)
         #
         # clean up
         rm(OOFforecast, selection, temp_data, shapley, p)
@@ -613,7 +613,7 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
         #                           header = TRUE, sep = ";", dec = ",")
         OOFforecast <- cbind(OOFforecast, bst$pred)
         data.table::setnames(OOFforecast, names(OOFforecast)[ncol(OOFforecast)],
-                 gsub(":", ".", as.character(temp[1])))
+                             gsub(":", ".", as.character(temp[1])))
         saveRDS(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
         # write.table(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf),
         #                                        gsub(".csv", "", lauf), "_OOFforecast.csv"),
@@ -698,7 +698,7 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
     # }
     temp[19] <- metric
     utils::write.table(temp, paste0(path_output, gsub(".csv", "/", lauf), "Summary.csv"),
-                row.names = FALSE, col.names = FALSE, append = TRUE, sep = ";", dec = ",")
+                       row.names = FALSE, col.names = FALSE, append = TRUE, sep = ";", dec = ",")
     #
     # Re-Read results
     SummaryCV <- SRxgboost_get_summary_CV(lauf)
@@ -716,15 +716,15 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
                                                     linetype = "dashed")} +
         {if (max_overfit != -1) ggplot2::geom_hline(yintercept = evaluation_log[temp[[4]], 3],
                                                     linetype = "dashed")} +
-        ggplot2:labs(title = "Entwicklung der Fehlerrate", x = "iteration", y = metric, colour = "",
-             subtitle = paste0("max_overfit = ", max_overfit * 100, "% ",
-                               "(loss = ", min(round(loss * 100, 1), 0), "%)")) +
+        ggplot2::labs(title = "Entwicklung der Fehlerrate", x = "iteration", y = metric, colour = "",
+                      subtitle = paste0("max_overfit = ", max_overfit * 100, "% ",
+                                        "(loss = ", min(round(loss * 100, 1), 0), "%)")) +
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
         ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
-        theme(legend.position = "top")
-      ggplot2:ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                    gsub(":", ".", as.character(start)), "_Error_rate.png"),
-             width = 9.92, height = 5.3)  # 4.67
+        ggplot2::theme(legend.position = "top")
+      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                             gsub(":", ".", as.character(start)), "_Error_rate.png"),
+                      width = 9.92, height = 5.3)  # 4.67
       rm(evaluation_log, error_rate, loss)
     }
     #
@@ -817,8 +817,8 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
         c <- a
       }
       suppressMessages(
-        ggplot2:ggsave(filename = paste0(path_output, gsub(".csv", "/", lauf), "Summary.png"),
-                       plot = c, width = 9.92, height = 5.3))  # 4.67)
+        ggplot2::ggsave(filename = paste0(path_output, gsub(".csv", "/", lauf), "Summary.png"),
+                        plot = c, width = 9.92, height = 5.3))  # 4.67)
       #
       # Plot parameter check up: without/with interaction
       if (nrow(SummaryCV) >= 10) {
@@ -870,9 +870,9 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
         # if (!exists("a") & !exists("b")) {
         if (exists("c")) {
           suppressMessages(
-            ggplot2:ggsave(filename = paste0(path_output, gsub(".csv", "/", lauf),
-                                             "Runtime and nrounds.png"), plot = c,
-                           width = 9.92, height = 5.3))  # 4.67))
+            ggplot2::ggsave(filename = paste0(path_output, gsub(".csv", "/", lauf),
+                                              "Runtime and nrounds.png"), plot = c,
+                            width = 9.92, height = 5.3))  # 4.67))
         }
       } , TRUE)
       #
@@ -889,8 +889,8 @@ SRxgboost_run <- function(nround, eta, obj, metric, runs,
           ggplot2::scale_x_continuous(limits = c(min, max)) +
           ggplot2::scale_y_continuous(limits = c(min, max)) +
           ggplot2::geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed")
-        ggplot2:ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Eval_1fold vs. test.png"),
-                       plot = p, width = 9.92, height = 5.3)  # 4.67
+        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Eval_1fold vs. test.png"),
+                        plot = p, width = 9.92, height = 5.3)  # 4.67
       }
       #
       ### Clean up

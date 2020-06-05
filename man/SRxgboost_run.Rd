@@ -5,11 +5,11 @@
 \title{SRxgboost_run}
 \usage{
 SRxgboost_run(
-  nround,
-  eta,
+  nround = 1000,
+  eta = 0.1,
   obj,
   metric,
-  runs,
+  runs = 2,
   nfold = NULL,
   folds = NULL,
   trees = 1,
