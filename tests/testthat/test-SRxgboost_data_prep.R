@@ -8,8 +8,8 @@ if (dir.exists("/data/shared/CH00RHU/")) {
   path_to_data <- "/data/shared/CH00RHU/z-Sonstiges/99 ML Algorithm Benchmark/"
 }
 library(dplyr)
-
-
+#
+#
 ## read data
 # regression
 house <- utils::read.csv(paste0(path_to_data,
@@ -31,6 +31,9 @@ test_that("regression / no_folds", {
                                          no_folds = 5,
                                          objective = "regression")),
                "NULL")})
+test_that("regression / no_folds, no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 19)
+})
 # clean up
 SRxgboost_cleanup()
 
@@ -47,6 +50,9 @@ test_that("regression / eval_index", {
                                          eval_index = eval_index,
                                          objective = "regression")),
                "NULL")})
+test_that("regression / no_folds, no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 19)
+})
 # clean up
 SRxgboost_cleanup()
 
@@ -65,6 +71,12 @@ test_that("regression / folds", {
                                          folds = folds,
                                          objective = "regression")),
                "NULL")})
+test_that("regression / no_folds, no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 19)
+})
 # clean up
 SRxgboost_cleanup()
 
+
+## clean up
+rm(churn, house, house_train, id_unique_train, path_output, path_to_data)

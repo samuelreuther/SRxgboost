@@ -13,18 +13,18 @@ knitr::opts_chunk$set(
 )
 ```
 
-# SRxgboost
+## SRxgboost
 
 <!-- badges: start -->
 <!-- badges: end -->
 
 The goal of SRxgboost is to ...
 
-## Installation
+### Installation
 
 You can install the released version of SRxgboost from [CRAN](https://CRAN.R-project.org) with:
 
-``` r
-install.packages("SRxgboost")
-devtools::install_github("samuelreuther/SRxgboost")
+```{r setup}
+# library(SRxgboost)
+# devtools::install_github("samuelreuther/SRxgboost")
 ```
