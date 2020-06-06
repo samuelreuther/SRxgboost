@@ -22,9 +22,7 @@ assign('smooth_span', smooth_span, envir = .GlobalEnv)
 
 
 
-# Regression --------------------------------------------------------------
-#
-## read data
+# Regression: read data --------------------------------------------------------------
 #
 house <- utils::read.csv(paste0(path_to_data,
                                 "Regression/Kaggle - house prices/data/train.csv"))
@@ -35,11 +33,13 @@ train <- house %>% dplyr::select(-Id)
 assign('train', train, envir = .GlobalEnv)
 
 
-### regression / no_folds
+
+
+# Regression: no_folds ----------------------------------------------------
 #
 ## run models
 #
-lauf <- "SRxgboost_test.csv"
+lauf <- "SRxgboost_test_regression_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # prepare data and test
 SRxgboost_data_prep(yname = "SalePrice",
@@ -53,42 +53,34 @@ SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse
 #
 ## tests
 #
-# no. ob objects in memory
-test_that("regression / no_folds, no. ob objects", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 27)
-})
-# eval_index
-test_that("length(id_unique_train[eval_index])", {
-  expect_equal(length(id_unique_train[eval_index]), nrow(datenModell_train))
-})
 # no. of files
-test_that("files in path_output/lauf", {
+test_that("regression / no_folds: files in path_output/lauf", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
 })
-test_that("files in path_output/lauf/All Models", {
+test_that("regression / no_folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
-# test_that("files in path_output/lauf/Best Model", {
+# test_that("regression / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
-test_that("files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+test_that("regression / no_folds: files in path_output/lauf/Data", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
 })
 # runtime
-test_that("runtime[1]", {
+test_that("regression / no_folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 0.2)
 })
-test_that("runtime[2]", {
+test_that("regression / no_folds: runtime[2]", {
   expect_true(SummaryCV$runtime[2] < 0.1)
 })
 # rmse
-test_that("SummaryCV$eval_1fold[1]", {
+test_that("regression / no_folds: SummaryCV$eval_1fold[1]", {
   expect_equal(round(SummaryCV$eval_1fold[1], -3), 27000)
 })
-test_that("SummaryCV$train[1]", {
+test_that("regression / no_folds: SummaryCV$train[1]", {
   expect_equal(round(SummaryCV$train[1], -3), 3000)
 })
-test_that("SummaryCV$test[1]", {
+test_that("regression / no_folds: SummaryCV$test[1]", {
   expect_equal(round(SummaryCV$test[1], -3), 28000)
 })
 #
@@ -96,11 +88,142 @@ test_that("SummaryCV$test[1]", {
 ## clean up
 #
 SRxgboost_cleanup()
-unlink(path_output, recursive = TRUE)
+
+
+
+
+# Regression: eval_index --------------------------------------------------
+#
+## run models
+#
+lauf <- "SRxgboost_test_regression_eval_index.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# create eval_index
+eval_index <- which(train$MSSubClass > 90)
+assign('eval_index', eval_index, envir = .GlobalEnv)
+# prepare data and test
+SRxgboost_data_prep(yname = "SalePrice",
+                    data_train = train,
+                    eval_index = eval_index,
+                    objective = "regression")
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
+              run_final_model = FALSE)
+#
+#
+## tests
+#
+# no. of files
+test_that("regression / eval_index: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 6)
+})
+test_that("regression / eval_index: files in path_output/lauf/All Models", {
+  expect_true(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))) %in% c(8, 16))
+})
+# test_that("regression / eval_index: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
+# assert(paste0("\n files in path_output/lauf/Best Model = ",
+#               length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model")))),
+#        length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))) ==
+#          read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+#                           "/Best Model/0 Variable importance.csv")) %>%
+#          filter(Gain >= 0.01) %>%
+#          nrow() * 2 + 12)
+test_that("regression / eval_index: files in path_output/lauf/Data", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+})
+# runtime
+test_that("regression / eval_index: runtime[1]", {
+  expect_true(SummaryCV$runtime[1] < 0.1)
+})
+test_that("regression / eval_index: runtime[2]", {
+  expect_true(SummaryCV$runtime[2] < 0.1)
+})
+# rmse
+test_that("regression / eval_index: SummaryCV$eval_1fold[1]", {
+  expect_equal(round(SummaryCV$eval_1fold[1], -3), 21000)
+})
+#
+#
+## clean up
+#
+SRxgboost_cleanup()
+
+
+
+
+# Regression: folds -------------------------------------------------------
+#
+## run models
+#
+lauf <- "SRxgboost_test_regression_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# create folds
+train$group <- rep(1:(nrow(train) / 10), each = 10)
+folds <- SRxgboost_create_folds(df = train, foldcolumn = "group", k = 5)
+assign('folds', folds, envir = .GlobalEnv)
+train <- train %>% dplyr::select(-group)
+# prepare data and test
+SRxgboost_data_prep(yname = "SalePrice",
+                    data_train = train,
+                    folds = folds,
+                    objective = "regression")
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
+              folds = folds)
+#
+#
+## tests
+#
+# no. of files
+test_that("regression / folds: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
+})
+test_that("regression / folds: files in path_output/lauf/All Models", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
+})
+# test_that("regression / folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
+test_that("regression / folds: files in path_output/lauf/Data", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+})
+# runtime
+test_that("regression / folds: runtime[1]", {
+  expect_true(SummaryCV$runtime[1] < 0.2)
+})
+test_that("regression / folds: runtime[2]", {
+  expect_true(SummaryCV$runtime[2] < 0.1)
+})
+# rmse
+test_that("regression / folds: SummaryCV$eval_1fold[1]", {
+  expect_equal(round(SummaryCV$eval_1fold[1], -3), 27000)
+})
+test_that("regression / folds: SummaryCV$train[1]", {
+  expect_equal(round(SummaryCV$train[1], -3), 4000)
+})
+test_that("regression / folds: SummaryCV$test[1]", {
+  expect_equal(round(SummaryCV$test[1], -3), 29000)
+})
+#
+#
+## clean up
+#
+SRxgboost_cleanup()
+
+
+
+
+# Regression: clean up ----------------------------------------------------
+#
 rm(house, train, id_unique_train)
+
 
 
 
 # Clean up ----------------------------------------------------------------
 #
+unlink(path_output, recursive = TRUE)
 rm(path_output, path_to_data, smooth_span, this_file)
+

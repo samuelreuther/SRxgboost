@@ -15,9 +15,7 @@ assign('path_to_data', path_to_data, envir = .GlobalEnv)
 
 
 
-# Regression --------------------------------------------------------------
-#
-## read data
+# Regression: read data ---------------------------------------------------
 #
 house <- utils::read.csv(paste0(path_to_data,
                                 "Regression/Kaggle - house prices/data/train.csv"))
@@ -28,9 +26,11 @@ train <- house %>% dplyr::select(-Id)
 assign('train', train, envir = .GlobalEnv)
 
 
-## no_folds
+
+
+# Regression: no_folds ----------------------------------------------------
 #
-lauf <- "SRxgboost_test"
+lauf <- "SRxgboost_test_regression_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # prepare data and test
 test_that("regression / no_folds", {
@@ -39,16 +39,23 @@ test_that("regression / no_folds", {
                                          no_folds = 5,
                                          objective = "regression")),
                "NULL")})
-test_that("regression / no_folds, no. ob objects", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
+# no. ob objects in memory
+test_that("regression / no_folds: no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 22)
+})
+# no_folds
+test_that("regression / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
+  expect_equal(round(nrow(datenModell_eval) / nrow(datenModell), 1), 1/5)
 })
 # clean up
 SRxgboost_cleanup()
 
 
-## eval_index
+
+
+# Regression: eval_index --------------------------------------------------
 #
-lauf <- "SRxgboost_test"
+lauf <- "SRxgboost_test_regression_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create eval_index
 eval_index <- which(train$MSSubClass > 90)
@@ -60,16 +67,23 @@ test_that("regression / eval_index", {
                                          eval_index = eval_index,
                                          objective = "regression")),
                "NULL")})
-test_that("regression / no_folds, no. ob objects", {
+# no. ob objects in memory
+test_that("regression / eval_index: no. ob objects", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
+})
+# eval_index
+test_that("regression / eval_index: length(id_unique_train[eval_index])", {
+  expect_equal(length(id_unique_train[eval_index]), nrow(datenModell_eval))
 })
 # clean up
 SRxgboost_cleanup()
 
 
-## folds
+
+
+# Regression: folds -------------------------------------------------------
 #
-lauf <- "SRxgboost_test"
+lauf <- "SRxgboost_test_regression_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create folds
 train$group <- rep(1:(nrow(train) / 10), each = 10)
@@ -83,27 +97,135 @@ test_that("regression / folds", {
                                          folds = folds,
                                          objective = "regression")),
                "NULL")})
-test_that("regression / no_folds, no. ob objects", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+# no. ob objects in memory
+test_that("regression / folds: no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
+})
+# eval_index
+test_that("regression / folds: length(folds[[1]])", {
+  expect_equal(length(folds[[1]]), nrow(datenModell_eval))
 })
 # clean up
 SRxgboost_cleanup()
 
 
-## clean up
+
+
+# Regression: clean up ----------------------------------------------------
+#
 rm(house, train, id_unique_train)
 
 
 
-# Classification ----------------------------------------------------------
+
+# Classification: read data -----------------------------------------------
 #
-# read data
-# train <- utils::read.csv(paste0(path_to_data,
-#                                 "Classification/Telco Customer Churn/Telco-Customer-Churn.csv"))
-# assign('train', train, envir = .GlobalEnv)
+churn <- utils::read.csv(paste0(path_to_data,
+                                "Classification/Telco Customer Churn/Telco-Customer-Churn.csv"))
+assign('churn', churn, envir = .GlobalEnv)
+id_unique_train <- churn$customerID
+assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
+train <- churn %>%
+  mutate(Churn = case_when(Churn == "No"  ~ 0,
+                           Churn == "Yes" ~ 1,
+                           T              ~ NA_real_)) %>%
+  select(-customerID)
+assign('train', train, envir = .GlobalEnv)
+
+
+
+
+# Classification: no_folds ------------------------------------------------
+#
+lauf <- "SRxgboost_test_classification_no_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# prepare data and test
+test_that("classification / no_folds", {
+  expect_equal(class(SRxgboost_data_prep(yname = "Churn",
+                                         data_train = train,
+                                         no_folds = 5,
+                                         objective = "binary")),
+               "NULL")})
+# no. ob objects in memory
+test_that("classification / no_folds, no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23) # eigentlich 23, but house still exists
+})
+# no_folds
+test_that("classification / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
+  expect_equal(round(nrow(datenModell_eval) / nrow(datenModell), 1), 1/5)
+})
+# clean up
+SRxgboost_cleanup()
+
+
+
+
+# Classification: eval_index ----------------------------------------------
+#
+lauf <- "SRxgboost_test_classification_eval_index.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# create eval_index
+eval_index <- which(train$MonthlyCharges > 100)
+assign('eval_index', eval_index, envir = .GlobalEnv)
+# prepare data and test
+test_that("classification / eval_index", {
+  expect_equal(class(SRxgboost_data_prep(yname = "Churn",
+                                         data_train = train,
+                                         eval_index = eval_index,
+                                         objective = "binary")),
+               "NULL")})
+# no. ob objects in memory
+test_that("classification / eval_index, no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+})
+# eval_index
+test_that("classification / eval_index: length(id_unique_train[eval_index])", {
+  expect_equal(length(id_unique_train[eval_index]), nrow(datenModell_eval))
+})
+# clean up
+SRxgboost_cleanup()
+
+
+
+
+# Classification: folds ---------------------------------------------------
+#
+lauf <- "SRxgboost_test_classification_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# create folds
+train$group <- c(1, 1, 1, rep(1:(nrow(train) / 10), each = 10))
+folds <- SRxgboost_create_folds(df = train, foldcolumn = "group", k = 5)
+assign('folds', folds, envir = .GlobalEnv)
+train <- train %>% dplyr::select(-group)
+# prepare data and test
+test_that("classification / folds", {
+  expect_equal(class(SRxgboost_data_prep(yname = "Churn",
+                                         data_train = train,
+                                         folds = folds,
+                                         objective = "binary")),
+               "NULL")})
+# no. ob objects in memory
+test_that("classification / folds: no. ob objects", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+})
+# folds
+test_that("regression / folds: length(folds[[1]])", {
+  expect_equal(length(folds[[1]]), nrow(datenModell_eval))
+})
+# clean up
+SRxgboost_cleanup()
+
+
+
+
+# Classification: clean up ------------------------------------------------
+#
+rm(churn, train, id_unique_train)
+
 
 
 
 # Clean up ----------------------------------------------------------------
 #
 rm(path_output, path_to_data)
+

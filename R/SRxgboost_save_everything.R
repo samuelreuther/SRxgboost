@@ -24,7 +24,7 @@ SRxgboost_save_everything <- function(lauf) {
     }
     saveRDS(train, paste0(path_temp, "train.rds"))
     saveRDS(y, paste0(path_temp, "y_train.rds"))
-    if (exists("test")) saveRDS(test, paste0(path_temp, "test.rds"))
+    if (exists("test")) saveRDS(test, paste0(path_temp, "test.rds")) #  & class(test) == "data.frame"
     if (exists("y_test")) saveRDS(y_test, paste0(path_temp, "y_test.rds"))
     #
     # saveRDS(d_train_eval, paste0(path_temp, "d_train_eval.rds"))

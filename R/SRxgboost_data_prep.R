@@ -179,6 +179,7 @@ SRxgboost_data_prep <- function(yname,
   ### create eval partitions
   if (!is.null(eval_index)) {
     # if exists eval_index
+    assign('eval_index', eval_index, envir = .GlobalEnv)
     inTrain <- setdiff(1:nrow(datenModell), eval_index)
   } else if (!is.null(folds)) {
     # if exists folds
@@ -189,7 +190,8 @@ SRxgboost_data_prep <- function(yname,
     seed <- 12345
     for (tries in 1:10) {
       set.seed(seed + tries - 1)
-      inTrain <- caret::createDataPartition(y = y, p = 1 - 1/no_folds, list = FALSE)
+      inTrain <- caret::createDataPartition(y = y, p = 1 - 1/no_folds, list = FALSE) %>%
+        as.vector()
       if (min(y[inTrain]) != max(y[inTrain]) &
           min(y[-inTrain]) != max(y[-inTrain])) {
         set.seed(Sys.time())
@@ -197,7 +199,7 @@ SRxgboost_data_prep <- function(yname,
       }
     }; rm(seed, tries)
   }
-  assign('eval_index', inTrain, envir = .GlobalEnv)
+  # assign('inTrain', inTrain, envir = .GlobalEnv)
   train_eval <- datenModell[inTrain, ]
   test_eval <- datenModell[-inTrain, ]
   if (objective == "regression") {
