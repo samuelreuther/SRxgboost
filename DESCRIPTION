@@ -41,5 +41,6 @@ Imports:
     pROC,
     doParallel,
     parallel,
-    h2o
+    h2o,
+    unbalanced
 VignetteBuilder: knitr
