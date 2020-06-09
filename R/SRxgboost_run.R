@@ -1,15 +1,17 @@
 #' SRxgboost_run
 #'
 #' Main function to run XGBOOST models (regression, binary classification,
-#' multiclass classification)
+#' multiclass classification).
 #' Implemented metrics:
-#' "reg:squarederror"  "rmse", "auc", "rmsle", "mae", "mape"
-#' "reg:logistic"      "error", "auc"
-#' "binary:logistic"   "error", "logloss", "auc", "roc", "qwk_score", "f1_score",
-#'                     "mcc_score"
-#' "multi:softprob"    "merror", "logloss"
-#' "multi:softmax"     "merror", "auc"
-#' "rank:pairwise"     "ndcg"
+#' \itemize{
+#'   \item "reg:squarederror": "rmse", "auc", "rmsle", "mae", "mape"
+#'   \item "reg:logistic": "error", "auc"
+#'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
+#'                            "f1_score", "mcc_score"
+#'   \item "multi:softprob": "merror", "logloss"
+#'   \item "multi:softmax": "merror", "auc"
+#'   \item "rank:pairwise": "ndcg"
+#' }
 #'
 #' @param nround integer
 #' @param eta numeric

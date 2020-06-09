@@ -13,7 +13,7 @@ SRxgboost_data_prep(
   eval_index = NULL,
   objective = NULL,
   label_encoding = TRUE,
-  check_covariate_drift = TRUE
+  check_covariate_drift = FALSE
 )
 }
 \arguments{

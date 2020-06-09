@@ -24,7 +24,7 @@ SRxgboost_data_prep <- function(yname,
                                 no_folds = NULL, folds = NULL, eval_index = NULL,
                                 objective = NULL,
                                 label_encoding = TRUE,
-                                check_covariate_drift = TRUE) {
+                                check_covariate_drift = FALSE) {
   ### checks
   if (!exists("path_output")) {
     cat("Error: 'path_output' is missing. \n")

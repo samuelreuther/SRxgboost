@@ -37,5 +37,6 @@ Imports:
     utils,
     caret,
     groupdata2,
-    gridExtra
+    gridExtra,
+    pROC
 VignetteBuilder: knitr
