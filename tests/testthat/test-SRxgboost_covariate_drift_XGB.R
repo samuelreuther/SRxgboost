@@ -1,5 +1,7 @@
 # Setup -------------------------------------------------------------------
 #
+# empty memory and cache
+rm(list = ls()); gc()
 # load libraries
 library(dplyr)
 # set paths
@@ -68,4 +70,3 @@ test_that("files in path_output/lauf/Data", {
 SRxgboost_cleanup()
 unlink(path_output, recursive = TRUE)
 rm(df1, df2, path_output, path_to_data, smooth_span, this_file)
-

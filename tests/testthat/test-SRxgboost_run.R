@@ -1,5 +1,7 @@
 # Setup -------------------------------------------------------------------
 #
+# empty memory and cache
+rm(list = ls()); gc()
 # load libraries
 library(dplyr)
 # set paths
@@ -58,7 +60,7 @@ SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
 #
 # no. of files
 test_that("regression / no_folds: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
 test_that("regression / no_folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
@@ -124,21 +126,21 @@ SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
 #
 # no. of files
 test_that("regression / eval_index: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 6)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
 })
 test_that("regression / eval_index: files in path_output/lauf/All Models", {
   expect_true(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))) %in% c(8, 16))
 })
 test_that("regression / eval_index: files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                "/Best Model/0 Variable importance.csv")) %>%
+                 filter(Gain >= 0.01) %>%
+                 nrow() * 2 + 12)
 })
-# assert(paste0("\n files in path_output/lauf/Best Model = ",
-#               length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model")))),
-#        length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))) ==
-#          read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-#                           "/Best Model/0 Variable importance.csv")) %>%
-#          filter(Gain >= 0.01) %>%
-#          nrow() * 2 + 12)
+# test_that("regression / eval_index: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 28)
+# })
 test_that("regression / eval_index: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
 })
@@ -191,7 +193,7 @@ SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
 #
 # no. of files
 test_that("regression / folds: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
 test_that("regression / folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
@@ -271,21 +273,21 @@ SRxgboost_data_prep(yname = "Churn",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               nfold = 5)
 # plot results of best model
-# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
 #
 #
 ## tests
 #
 # no. of files
 test_that("classification / no_folds: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
 test_that("classification / no_folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
-# test_that("classification / no_folds: files in path_output/lauf/Best Model", {
-#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
-# })
+test_that("classification / no_folds: files in path_output/lauf/Best Model", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+})
 test_that("classification / no_folds: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
 })
@@ -334,28 +336,28 @@ SRxgboost_data_prep(yname = "Churn",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               run_final_model = FALSE)
 # plot results of best model
-# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
 #
 #
 ## tests
 #
 # no. of files
 test_that("classification / eval_index: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 6)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
 })
 test_that("classification / eval_index: files in path_output/lauf/All Models", {
   expect_true(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))) %in% c(8, 16))
 })
+test_that("classification / eval_index: files in path_output/lauf/Best Model", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                "/Best Model/0 Variable importance.csv")) %>%
+                 filter(Gain >= 0.05) %>%
+                 nrow() * 2 + 18)
+})
 # test_that("classification / eval_index: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
-# assert(paste0("\n files in path_output/lauf/Best Model = ",
-#               length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model")))),
-#        length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))) ==
-#          read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-#                           "/Best Model/0 Variable importance.csv")) %>%
-#          filter(Gain >= 0.05) %>%
-#          nrow() * 2 + 18)
 test_that("classification / eval_index: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
 })
@@ -401,21 +403,21 @@ SRxgboost_data_prep(yname = "Churn",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               folds = folds)
 # plot results of best model
-# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
 #
 #
 ## tests
 #
 # no. of files
 test_that("classification / folds: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
 test_that("classification / folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
-# test_that("classification / folds: files in path_output/lauf/Best Model", {
-#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
-# })
+test_that("classification / folds: files in path_output/lauf/Best Model", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+})
 test_that("classification / folds: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
 })

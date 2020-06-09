@@ -1,5 +1,7 @@
 # Setup -------------------------------------------------------------------
 #
+# empty memory and cache
+rm(list = ls()); gc()
 # load libraries
 library(dplyr)
 # set paths
@@ -40,7 +42,7 @@ test_that("regression / no_folds", {
                                          objective = "regression")),
                "NULL")})
 # no. ob objects in memory
-test_that("regression / no_folds: no. ob objects", {
+test_that("regression / no_folds: no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 22)
 })
 # no_folds
@@ -68,7 +70,7 @@ test_that("regression / eval_index", {
                                          objective = "regression")),
                "NULL")})
 # no. ob objects in memory
-test_that("regression / eval_index: no. ob objects", {
+test_that("regression / eval_index: no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
 })
 # eval_index
@@ -98,7 +100,7 @@ test_that("regression / folds", {
                                          objective = "regression")),
                "NULL")})
 # no. ob objects in memory
-test_that("regression / folds: no. ob objects", {
+test_that("regression / folds: no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
 })
 # eval_index
@@ -147,7 +149,7 @@ test_that("classification / no_folds", {
                                          objective = "binary")),
                "NULL")})
 # no. ob objects in memory
-test_that("classification / no_folds, no. ob objects", {
+test_that("classification / no_folds, no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 23) # eigentlich 23, but house still exists
 })
 # no_folds
@@ -175,7 +177,7 @@ test_that("classification / eval_index", {
                                          objective = "binary")),
                "NULL")})
 # no. ob objects in memory
-test_that("classification / eval_index, no. ob objects", {
+test_that("classification / eval_index, no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
 })
 # eval_index
@@ -205,7 +207,7 @@ test_that("classification / folds", {
                                          objective = "binary")),
                "NULL")})
 # no. ob objects in memory
-test_that("classification / folds: no. ob objects", {
+test_that("classification / folds: no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
 })
 # folds
