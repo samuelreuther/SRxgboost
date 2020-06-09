@@ -1,7 +1,7 @@
 # Setup -------------------------------------------------------------------
 #
 # empty memory and cache
-rm(list = ls()); gc()
+rm(list = ls(all.names = TRUE)); gc()
 # load libraries
 library(dplyr)
 # set paths
@@ -150,7 +150,7 @@ test_that("classification / no_folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23) # eigentlich 23, but house still exists
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
 })
 # no_folds
 test_that("classification / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
