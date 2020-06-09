@@ -9,6 +9,7 @@
 #' @param sample integer
 #' @param pdp_sample integer
 #' @param pdp_cuts integer
+#' @param pdp_parallel boolean
 #' @param n_core character
 #' @param silent boolean
 #'
@@ -18,7 +19,8 @@
 SRxgboost_plots <- function(lauf, rank = 1,
                             plots = TRUE,
                             min_rel_Gain = 0.01,
-                            sample = 100000, pdp_sample = 20000, pdp_cuts = 50, n_core = "max",
+                            sample = 100000, pdp_sample = 20000, pdp_cuts = 50,
+                            pdp_parallel = FALSE, n_core = "max",
                             silent = FALSE) {
   #
   # delete old plots
@@ -447,14 +449,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     if (nrow(temp) > 1) {
       # run dpd::partial in parallel
-      if (nrow(datenModell_eval) > 1000) {
-        pdp_parallel <- TRUE
-        p_load(doParallel, parallel)
+      if (nrow(datenModell_eval) > 1000 & pdp_parallel) {
         if (n_core == "max") n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
         cl <- parallel::makeCluster(n_core)
         doParallel::registerDoParallel(cl)
-      } else {
-        pdp_parallel <- FALSE
+        # parallel::clusterEvalQ(cl, library(stats)) # ?
       }
       #
       for (i in 1:nrow(temp)) {

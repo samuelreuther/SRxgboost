@@ -12,6 +12,7 @@ SRxgboost_plots(
   sample = 1e+05,
   pdp_sample = 20000,
   pdp_cuts = 50,
+  pdp_parallel = FALSE,
   n_core = "max",
   silent = FALSE
 )
@@ -30,6 +31,8 @@ SRxgboost_plots(
 \item{pdp_sample}{integer}
 
 \item{pdp_cuts}{integer}
+
+\item{pdp_parallel}{boolean}
 
 \item{n_core}{character}
 
