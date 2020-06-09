@@ -40,5 +40,6 @@ Imports:
     gridExtra,
     pROC,
     doParallel,
-    parallel
+    parallel,
+    h2o
 VignetteBuilder: knitr
