@@ -22,7 +22,7 @@
 #' https://cran.r-project.org/web/packages/unbalanced/unbalanced.pdf
 #'
 #' @param df data.frame
-#' @param folds list, output from xxx
+#' @param folds list
 #' @param sample_method character: ubOver, ubUnder, ubSMOTE, ubOSS, ubCNN, ubENN, ubNCL, ubTomek
 #' @param percOver integer: parameter used in ubSMOTE
 #' @param percUnder integer: parameter used in ubSMOTE
