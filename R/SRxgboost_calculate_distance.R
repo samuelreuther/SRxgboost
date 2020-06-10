@@ -2,15 +2,9 @@
 #'
 #' Calculates the distance of two vectors.
 #'
-#' @param lauf character
-#' @param rank integer
-#' @param plots boolean
-#' @param min_rel_Gain numeric
-#' @param sample integer
-#' @param pdp_sample integer
-#' @param pdp_cuts integer
-#' @param n_core character
-#' @param silent boolean
+#' @param variable_old character
+#' @param variable_new character
+#' @param bins integer
 #'
 #' @return numeric value
 #'

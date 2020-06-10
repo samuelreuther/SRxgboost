@@ -66,8 +66,15 @@ test_that("regression / no_folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
 test_that("regression / no_folds: files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                "/Best Model/0 Variable importance.csv")) %>%
+                 filter(Gain >= 0.01) %>%
+                 nrow() * 2 + 14)
 })
+# test_that("regression / no_folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
 test_that("regression / no_folds: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
 })
@@ -199,8 +206,15 @@ test_that("regression / folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
 test_that("regression / folds: files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                "/Best Model/0 Variable importance.csv")) %>%
+                 filter(Gain >= 0.01) %>%
+                 nrow() * 2 + 14)
 })
+# test_that("regression / folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
 test_that("regression / folds: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
 })
@@ -286,8 +300,15 @@ test_that("classification / no_folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
 test_that("classification / no_folds: files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                "/Best Model/0 Variable importance.csv")) %>%
+                 filter(Gain >= 0.05) %>%
+                 nrow() * 2 + 20)
 })
+# test_that("classification / no_folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
 test_that("classification / no_folds: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
 })
@@ -416,8 +437,15 @@ test_that("classification / folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
 test_that("classification / folds: files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                "/Best Model/0 Variable importance.csv")) %>%
+                 filter(Gain >= 0.05) %>%
+                 nrow() * 2 + 20)
 })
+# test_that("classification / folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
 test_that("classification / folds: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
 })

@@ -29,7 +29,7 @@
 #' @param k integer: parameter used in ubOver, ubSMOTE, ubCNN, ubENN, ubNCL
 #' @param perc integer: parameter used in ubUnder
 #' @param method character; parameter used in ubUnder
-#' @param w: parameter used in ubUnder
+#' @param w ???: parameter used in ubUnder
 #' @param verbose boolean
 #'
 #' @return return sampled data and new folds
