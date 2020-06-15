@@ -7,23 +7,11 @@
 SRxgboost_calculate_distance(variable_old, variable_new, bins = 5)
 }
 \arguments{
-\item{lauf}{character}
+\item{variable_old}{character}
 
-\item{rank}{integer}
+\item{variable_new}{character}
 
-\item{plots}{boolean}
-
-\item{min_rel_Gain}{numeric}
-
-\item{sample}{integer}
-
-\item{pdp_sample}{integer}
-
-\item{pdp_cuts}{integer}
-
-\item{n_core}{character}
-
-\item{silent}{boolean}
+\item{bins}{integer}
 }
 \value{
 numeric value

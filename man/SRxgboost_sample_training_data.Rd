@@ -34,9 +34,9 @@ SRxgboost_sample_training_data(
 
 \item{method}{character; parameter used in ubUnder}
 
-\item{verbose}{boolean}
+\item{w}{???: parameter used in ubUnder}
 
-\item{w:}{parameter used in ubUnder}
+\item{verbose}{boolean}
 }
 \value{
 return sampled data and new folds
