@@ -211,7 +211,7 @@ test_that("classification / folds: no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
 })
 # folds
-test_that("regression / folds: length(folds[[1]])", {
+test_that("classification / folds: length(folds[[1]])", {
   expect_equal(length(folds[[1]]), nrow(datenModell_eval))
 })
 # clean up
@@ -223,6 +223,114 @@ SRxgboost_cleanup()
 # Classification: clean up ------------------------------------------------
 #
 rm(churn, train, id_unique_train)
+
+
+
+
+# Multilabel Classification: read data ------------------------------------
+#
+birds <- utils::read.csv(paste0(path_to_data,
+                                "Multilabel Classification/Birds Bones and Living Habits/data.csv"))
+assign('birds', birds, envir = .GlobalEnv)
+id_unique_train <- birds$id
+assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
+train <- birds %>%
+  mutate(type = as.numeric(type)) %>%
+  select(-id)
+assign('train', train, envir = .GlobalEnv)
+
+
+
+
+# Multilabel Classification: no_folds -------------------------------------
+#
+lauf <- "SRxgboost_test_multilabel_classification_no_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# prepare data and test
+test_that("multilabel classification / no_folds", {
+  expect_equal(class(SRxgboost_data_prep(yname = "type",
+                                         data_train = train,
+                                         no_folds = 5,
+                                         objective = "multilabel")),
+               "NULL")})
+# no. ob objects in memory
+test_that("multilabel classification / no_folds, no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+})
+# no_folds
+test_that("multilabel classification / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
+  expect_equal(round(nrow(datenModell_eval) / nrow(datenModell), 1), 1/5)
+})
+# clean up
+SRxgboost_cleanup()
+
+
+
+
+# Multilabel Classification: eval_index -----------------------------------
+#
+lauf <- "SRxgboost_test_multilabel_classification_eval_index.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# create eval_index
+set.seed(12345)
+eval_index <- sample(id_unique_train, 50)
+set.seed(Sys.time())
+# eval_index <- which(train$huml > 90)
+assign('eval_index', eval_index, envir = .GlobalEnv)
+# prepare data and test
+test_that("multilabel classification / eval_index", {
+  expect_equal(class(SRxgboost_data_prep(yname = "type",
+                                         data_train = train,
+                                         eval_index = eval_index,
+                                         objective = "multilabel")),
+               "NULL")})
+# no. ob objects in memory
+test_that("multilabel classification / eval_index, no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
+})
+# eval_index
+test_that("multilabel classification / eval_index: length(id_unique_train[eval_index])", {
+  expect_equal(length(id_unique_train[eval_index]), nrow(datenModell_eval))
+})
+# clean up
+SRxgboost_cleanup()
+
+
+
+
+# Multilabel Classification: folds ----------------------------------------
+#
+lauf <- "SRxgboost_test_multilabel_classification_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# create folds
+train$group <- c(rep(1:(nrow(train) / 10), each = 10))
+folds <- SRxgboost_create_folds(df = train, foldcolumn = "group", k = 5)
+assign('folds', folds, envir = .GlobalEnv)
+train <- train %>% dplyr::select(-group)
+# prepare data and test
+test_that("multilabel classification / folds", {
+  expect_equal(class(SRxgboost_data_prep(yname = "type",
+                                         data_train = train,
+                                         folds = folds,
+                                         objective = "multilabel")),
+               "NULL")})
+# no. ob objects in memory
+test_that("multilabel classification / folds: no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
+})
+# folds
+test_that("multilabel classification / folds: length(folds[[1]])", {
+  expect_equal(length(folds[[1]]), nrow(datenModell_eval))
+})
+# clean up
+SRxgboost_cleanup()
+
+
+
+
+# Multilabel Classification: clean up -------------------------------------
+#
+rm(birds, train, id_unique_train)
 
 
 

@@ -52,11 +52,11 @@ SRxgboost_data_prep <- function(yname,
   #
   #
   #
-  ### determine if objective is not given: regression, binary or multiclass   TODO multiclass !!!
+  ### determine if objective is not given: regression, binary or multilabel
   if (is.null(objective)) {
-    objective <- ifelse(length(data_train[, yname]) == 2, "binary",
-                        ifelse(class(data_train[, yname]) == "numeric",
-                               "regression", "multiclass"))
+    objective <- dplyr::case_when(length(data_train[, yname]) == 2        ~ "binary",
+                                  length(data_train[, yname]) <= 10       ~ "multilabel", # correct?
+                                  class(data_train[, yname]) == "numeric" ~ "regression")
   }
   #
   # # create random_noise variable to determine useful features (variable importance)
@@ -98,9 +98,24 @@ SRxgboost_data_prep <- function(yname,
       }
     }
     # }
-  } else {
-    # "multiclass"
-    # TODO !!!
+  } else if (objective == "multilabel") {
+    y <- data_train[, yname]
+    # check if y contains only numbers 1-10
+    if (sum(unique(y) %in% 1:10) != length(unique(y))) {
+      stop("XGB_data_prep: y must contain only numbers from 1 to 10!")
+    }
+    # check if y contains the number 1
+    if (sum(y == 1) == 0) {
+      stop("XGB_data_prep: y must include 1 as lowest label!")
+    }
+    # prepare y_test
+    if (!is.null(data_test) & !is.na(match(yname, names(data_test)))) {
+      y_test <- data_test[, yname]
+      # check if y_test contains only numbers 1-10
+      if (sum(unique(y_test) %in% 1:10) != length(unique(y_test))) {
+        stop("XGB_data_prep: y_test must contain only numbers from 1 to 10!")
+      }
+    }
   }
   #
   #
@@ -217,9 +232,19 @@ SRxgboost_data_prep <- function(yname,
     if (sum(y_test_eval == 1) == 0 | sum(y_test_eval == 1) == 0 ) {
       stop("Error: y == 1 does not exist in y_train_eval or y_test_eval !")
     }
-  } else {
-    # "multiclass"
-    # TODO !!!
+  } else if (objective == "multilabel") {
+    if (is.factor(datenModell[, yname])) {
+      y_train_eval <- as.numeric(train_eval[, yname])
+      y_test_eval <- as.numeric(test_eval[, yname])
+    } else {
+      y_train_eval <- train_eval[, yname]
+      y_test_eval <- test_eval[, yname]
+    }
+    # check if all labels exists in train and test set (problem at unbalanced data)   NECESSARY???
+    # if (sum(unique(y_test_eval)[order(unique(y_test_eval))] !=
+    #         unique(y_train_eval)[order(unique(y_train_eval))]) != 0) {
+    #   stop("Error: labels of y_test_eval are not equal to y_train_eval!")
+    # }
   }
   # rm(inTrain)
   #
