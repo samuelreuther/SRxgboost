@@ -8,7 +8,7 @@
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
 #'                            "f1_score", "mcc_score"
-#'   \item "multi:softprob": "merror", "mlogloss"
+#'   \item "multi:softprob": "merror", "mlogloss", "weighted_precision"
 #'   \item "multi:softmax": "merror", "mlogloss"
 #'   \item "rank:pairwise": "ndcg"
 #' }
@@ -20,6 +20,7 @@
 #' @param runs integer
 #' @param nfold integer
 #' @param folds list, output of SRxgboost_create_folds()
+#' @param early_stopping_rounds integer
 #' @param trees integer
 #' @param dart numeric
 #' @param tree_method character
@@ -39,7 +40,7 @@
 #'
 #' @export
 SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
-                          nfold = NULL, folds = NULL,
+                          nfold = NULL, folds = NULL, early_stopping_rounds = 30
                           trees = 1, dart = 0, tree_method = "auto", verbose = 0,
                           test_param = FALSE, shap = TRUE, continue_threshold = 0.1,
                           run_final_model = TRUE, best_params = NULL, max_overfit = -1,
@@ -288,6 +289,14 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
       return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
     }
+    weighted_precision <- function(preds, dtrain){
+      labels = xgboost::getinfo(dtrain, "label")
+      w = xgboost::getinfo(dtrain, "weight")
+      preds = matrix(preds, ncol = class_num, byrow = TRUE)
+      class = apply(preds, MARGIN = 1, which.max) - 1
+      prec = weighted.mean(class == labels, w)
+      return(list(metric="w_precision", value = prec))
+    }
     #
     #
     #
@@ -330,7 +339,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 num_parallel_tree = trees,
                                 tree_method = tree_method, booster = booster,
                                 rate_drop = rate_drop, skip_drop = skip_drop,
-                                early_stopping_rounds = min(max(0.05 * nround_test, 5), 30),
+                                early_stopping_rounds = early_stopping_rounds,
                                 missing = NA, data = d_train_eval, nround = nround_test,
                                 verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
@@ -345,7 +354,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 num_parallel_tree = trees,
                                 tree_method = tree_method, booster = booster,
                                 rate_drop = rate_drop, skip_drop = skip_drop,
-                                early_stopping_rounds = min(max(0.05 * nround_test, 5), 30),
+                                early_stopping_rounds = early_stopping_rounds,
                                 missing = NA, data = d_train_eval, nround = nround_test,
                                 verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
@@ -574,7 +583,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                num_parallel_tree = trees, stratified = TRUE,
                                tree_method = tree_method, booster = booster,
                                rate_drop = rate_drop, skip_drop = skip_drop,
-                               early_stopping_rounds = min(max(0.05 * nround_test, 5), 30),
+                               early_stopping_rounds = early_stopping_rounds,
                                missing = NA, data = d_train, nround = nround,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
@@ -588,7 +597,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                num_parallel_tree = trees, stratified = TRUE,
                                tree_method = tree_method, booster = booster,
                                rate_drop = rate_drop, skip_drop = skip_drop,
-                               early_stopping_rounds = min(max(0.05 * nround_test, 5), 30),
+                               early_stopping_rounds = early_stopping_rounds,
                                missing = NA, data = d_train, nround = nround,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
