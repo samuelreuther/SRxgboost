@@ -765,7 +765,6 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     if (metric %in% c("error", "merror", "weighted_precision")) {
       benchmark <- 1 - max(prop.table(table(y)))
     }
-    browser()
     # if (metric %in% c("weighted_precision")) benchmark <- 0                     # TODO !!!
     if (metric %in% c("auc")) benchmark <- 0.5
     if (metric %in% c("rmse")) benchmark <- Metrics::rmse(y, mean(y))  # sqrt(var(y))
