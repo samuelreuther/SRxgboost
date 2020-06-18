@@ -84,7 +84,7 @@ Implemented metrics:
   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
                            "f1_score", "mcc_score"
   \item "multi:softprob": "merror", "mlogloss"
-  \item "multi:softmax": "merror", "auc"
+  \item "multi:softmax": "merror", "mlogloss"
   \item "rank:pairwise": "ndcg"
 }
 }

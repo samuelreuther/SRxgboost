@@ -47,5 +47,6 @@ Imports:
     stringdist,
     tidyr,
     lubridate,
-    pdp
+    pdp,
+    ModelMetrics
 VignetteBuilder: knitr

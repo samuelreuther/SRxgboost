@@ -9,7 +9,7 @@
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
 #'                            "f1_score", "mcc_score"
 #'   \item "multi:softprob": "merror", "mlogloss"
-#'   \item "multi:softmax": "merror", "auc"
+#'   \item "multi:softmax": "merror", "mlogloss"
 #'   \item "rank:pairwise": "ndcg"
 #' }
 #'
@@ -757,7 +757,11 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     if (metric %in% c("mape")) benchmark <- sum(abs(mean(y) / y - 1)) / length(y)
     if (metric %in% c("mae")) benchmark <- Metrics::mae(y, mean(y))
     if (metric %in% c("logloss")) benchmark <- Metrics::logLoss(y, mean(y))
-    if (metric %in% c("mlogloss")) benchmark <- 0 # MLmetrics::MultiLogLoss(y, mean(y)) # funzt so ueberhaupt nicht!
+    if (metric %in% c("mlogloss")) benchmark <-
+      ModelMetrics::mlogLoss(y,
+                             matrix(rep(as.numeric(prop.table(table(y))),
+                                        each = length(y)),
+                                    ncol = params$num_class))
     if (metric %in% c("qwk_score")) benchmark <-
       Metrics::ScoreQuadraticWeightedKappa(y, mean(y),
                                            min.rating = min(y), max.rating = max(y))

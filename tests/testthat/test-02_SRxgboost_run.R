@@ -495,7 +495,7 @@ assign('train', train, envir = .GlobalEnv)
 
 
 # Multilabel Classification: no_folds -------------------------------------
-# #
+#
 # lauf <- "mclass_no_folds.csv"
 # assign('lauf', lauf, envir = .GlobalEnv)
 # cat(lauf, "\n")
@@ -504,8 +504,12 @@ assign('train', train, envir = .GlobalEnv)
 #                     data_train = train,
 #                     no_folds = 5,
 #                     objective = "multilabel")
+#
 # # run models
-# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "merror", runs = 2,
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "mlogloss", runs = 2,
+#               nfold = 5)
+#
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mlogloss", runs = 2,   # CRASHES !!!
 #               nfold = 5)
 #
 # # plot results of best model
