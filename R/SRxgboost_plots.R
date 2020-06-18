@@ -22,6 +22,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                             sample = 100000, pdp_sample = 20000, pdp_cuts = 50,
                             pdp_parallel = FALSE, n_core = "max",
                             silent = FALSE) {
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
   # delete old plots
   if (plots & dir.exists(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/"))) {

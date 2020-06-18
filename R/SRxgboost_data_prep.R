@@ -26,10 +26,13 @@ SRxgboost_data_prep <- function(yname,
                                 label_encoding = TRUE,
                                 check_covariate_drift = FALSE) {
   ### checks
+  # check path_output exists
   if (!exists("path_output")) {
     cat("Error: 'path_output' is missing. \n")
     return(invisible(NULL))
   }
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
   #
   #

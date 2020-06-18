@@ -46,6 +46,11 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                           run_final_model = TRUE, best_params = NULL, max_overfit = -1,
                           feat_sel = FALSE, Feat_Sel = NULL, Feat_Sel_Vars = NULL,
                           Selected_Features = FALSE) {
+  ### checks
+  # check path_output exists
+  if (!exists("path_output")) cat("'path_output' is missing \n")
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
   ### Suppress all warnings
   old_warn <- getOption("warn")
@@ -291,6 +296,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
     }
     # requieres weights in xgb.DMatrix
+    # weights = (survey_helvetia_segments_populations + laplace_smoothing) /
+    #   (prop.table(table(df_for_model$pred_class)) + laplace_smoothing)
     # xval_data = xgb.DMatrix(data = add_noise(as.matrix(df_for_model_transformed)),
     #                         label = df_for_model$pred_class - 1,
     #                         weight = weights[df_for_model$pred_class])

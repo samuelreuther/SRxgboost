@@ -12,6 +12,9 @@
 SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
                                                    top_rank = 1,
                                                    ensemble = FALSE) {
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  #
   # load result table
   SRxgboost_get_summary_CV(lauf, ensemble = ensemble)
   if (!exists("SummaryCV_META")) {

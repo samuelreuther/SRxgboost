@@ -10,6 +10,8 @@
 #' @export
 SRxgboost_covariate_drift_XGB <- function(df1 = NULL,
                                           df2 = NULL) {
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   # create folder
   dir.create(paste0(path_output, gsub(".csv", "/", lauf)), showWarnings = FALSE, recursive = TRUE)
   #

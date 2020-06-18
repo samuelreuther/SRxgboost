@@ -10,6 +10,8 @@
 SRxgboost_save_everything <- function(lauf) {
   ### checks
   if (!exists("path_output")) cat("'path_output' is missing \n")
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
   # create path
   path_temp <- paste0(path_output, gsub(".csv", "/", lauf), "Data/")

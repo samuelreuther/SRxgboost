@@ -61,6 +61,8 @@ SRxgboost_h2o_automl <- function(y = NULL,
                          keep_cross_validation_predictions = TRUE,
                          keep_cross_validation_models = TRUE,
                          seed = 12345)
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
   # create output dir
   path_output_ <- paste0(path_output, gsub(".csv", "", lauf), "/h2o.automl/")

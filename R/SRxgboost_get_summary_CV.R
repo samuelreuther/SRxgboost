@@ -10,6 +10,9 @@
 #' @export
 SRxgboost_get_summary_CV <- function(lauf,
                                      ensemble = FALSE) {
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  #
   # Read results
   if (!ensemble) {
     SummaryCV <- utils::read.table(paste0(path_output, gsub(".csv", "/", lauf),

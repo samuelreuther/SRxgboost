@@ -18,6 +18,9 @@ SRxgboost_submission <- function(lauf,
                                  id_name,
                                  y_name,
                                  y_transformation = NULL) {
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  #
   # load result table
   SRxgboost_get_summary_CV(lauf)
   #

@@ -35,6 +35,12 @@ SRxgboost_compare_sample_methods <- function(df_train,
                                              folds,
                                              runs = 2,
                                              sample_methods) {
+  ### checks
+  # check path_output exists
+  if (!exists("path_output")) cat("'path_output' is missing \n")
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  #
   # backup path_output
   path_output_backup <- path_output
   #
