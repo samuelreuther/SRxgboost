@@ -12,6 +12,7 @@ SRxgboost_run(
   runs = 2,
   nfold = NULL,
   folds = NULL,
+  early_stopping_rounds = 30,
   trees = 1,
   dart = 0,
   tree_method = "auto",
@@ -42,6 +43,8 @@ SRxgboost_run(
 \item{nfold}{integer}
 
 \item{folds}{list, output of SRxgboost_create_folds()}
+
+\item{early_stopping_rounds}{integer}
 
 \item{trees}{integer}
 
@@ -83,7 +86,7 @@ Implemented metrics:
   \item "reg:logistic": "error", "auc"
   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
                            "f1_score", "mcc_score"
-  \item "multi:softprob": "merror", "mlogloss"
+  \item "multi:softprob": "merror", "mlogloss", "weighted_precision"
   \item "multi:softmax": "merror", "mlogloss"
   \item "rank:pairwise": "ndcg"
 }

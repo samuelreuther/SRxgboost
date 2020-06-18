@@ -40,7 +40,7 @@
 #'
 #' @export
 SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
-                          nfold = NULL, folds = NULL, early_stopping_rounds = 30
+                          nfold = NULL, folds = NULL, early_stopping_rounds = 30,
                           trees = 1, dart = 0, tree_method = "auto", verbose = 0,
                           test_param = FALSE, shap = TRUE, continue_threshold = 0.1,
                           run_final_model = TRUE, best_params = NULL, max_overfit = -1,
