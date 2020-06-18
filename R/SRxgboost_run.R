@@ -8,7 +8,7 @@
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
 #'                            "f1_score", "mcc_score"
-#'   \item "multi:softprob": "merror", "mlogloss", "weighted_precision"
+#'   \item "multi:softprob": "merror", "mlogloss", ("weighted_precision" TODO!!!)
 #'   \item "multi:softmax": "merror", "mlogloss"
 #'   \item "rank:pairwise": "ndcg"
 #' }
@@ -245,7 +245,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     temp[16] <- skip_drop
     #
     # Custom metrics
-    custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score")
+    custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score",
+                        "weighted_precision")
     # Maximise metric
     metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score",
                                              "mcc_score"), TRUE, FALSE)
@@ -289,14 +290,18 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
       return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
     }
-    weighted_precision <- function(preds, dtrain){
-      labels = xgboost::getinfo(dtrain, "label")
-      w = xgboost::getinfo(dtrain, "weight")
-      preds = matrix(preds, ncol = class_num, byrow = TRUE)
-      class = apply(preds, MARGIN = 1, which.max) - 1
-      prec = stats::weighted.mean(class == labels, w)
-      return(list(metric="w_precision", value = prec))
-    }
+    # requieres weights in xgb.DMatrix
+    # xval_data = xgb.DMatrix(data = add_noise(as.matrix(df_for_model_transformed)),
+    #                         label = df_for_model$pred_class - 1,
+    #                         weight = weights[df_for_model$pred_class])
+    # weighted_precision <- function(pred, d_train){
+    #   labels = xgboost::getinfo(d_train, "label")
+    #   w = xgboost::getinfo(d_train, "weight")
+    #   pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
+    #   class = apply(pred, MARGIN = 1, which.max) - 1
+    #   prec = stats::weighted.mean(class == labels, w)
+    #   return(list(metric="w_precision", value = prec))
+    # }
     #
     #
     #
@@ -760,6 +765,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     if (metric %in% c("error", "merror", "weighted_precision")) {
       benchmark <- 1 - max(prop.table(table(y)))
     }
+    browser()
     # if (metric %in% c("weighted_precision")) benchmark <- 0                     # TODO !!!
     if (metric %in% c("auc")) benchmark <- 0.5
     if (metric %in% c("rmse")) benchmark <- Metrics::rmse(y, mean(y))  # sqrt(var(y))
