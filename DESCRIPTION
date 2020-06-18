@@ -42,5 +42,10 @@ Imports:
     doParallel,
     parallel,
     h2o,
-    unbalanced
+    unbalanced,
+    forcats,
+    stringdist,
+    tidyr,
+    lubridate,
+    pdp
 VignetteBuilder: knitr

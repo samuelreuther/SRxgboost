@@ -5,7 +5,7 @@ rm(list = ls()); gc()
 # load libraries
 library(dplyr)
 # set paths
-path_output <- "output_temp/"
+path_output <- "temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
 if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
   path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
@@ -17,9 +17,6 @@ assign('path_to_data', path_to_data, envir = .GlobalEnv)
 this_file <- list.files()[1]
 # try(this_file <- rstudioapi::getActiveDocumentContext()$path, T)
 assign('this_file', this_file, envir = .GlobalEnv)
-# set span for smoothing
-smooth_span = 0.5
-assign('smooth_span', smooth_span, envir = .GlobalEnv)
 
 
 
@@ -70,4 +67,4 @@ test_that("files in path_output/lauf/Data", {
 #
 SRxgboost_cleanup()
 unlink(path_output, recursive = TRUE)
-rm(df1, df2, path_output, path_to_data, smooth_span, this_file)
+rm(df1, df2, path_output, path_to_data, this_file)

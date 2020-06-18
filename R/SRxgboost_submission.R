@@ -54,7 +54,7 @@ SRxgboost_submission <- function(lauf,
   #   pr[, paste0("pr", i_SummaryCV)] <- round(TESTforecast[, i_TESTforecast+1], rounding)
   # }; summary(pr)
   # pr$median <- apply(pr[, 2:ncol(pr)], 1, "median"); summary(pr); hist(pr$median)
-  # submit <- data.frame(ID=test$ID, PredictedProb=pr$median); head(submit)
+  # submit <- data.frame(ID=test$ID, PredictedProb=pr$median); utils::head(submit)
   #
   # TODO: convert long columns to matrix MULTILABEL
   # pr <- matrix(pr, ncol=length(unique(y)), byrow=TRUE)
@@ -62,7 +62,7 @@ SRxgboost_submission <- function(lauf,
   # return result
   submit <- data.frame(id = TESTforecast[, 1], pr)
   data.table::setnames(submit, c(id_name, y_name))
-  print(head(submit))
+  print(utils::head(submit))
   modelname <- paste0("Submission - ", substr(lauf, 1, nchar(lauf) - 4), " - ",
                       gsub(":", ".", as.character(SummaryCV$date)),
                       " d", SummaryCV$depth, " e", SummaryCV$eta, " n", SummaryCV$nround,

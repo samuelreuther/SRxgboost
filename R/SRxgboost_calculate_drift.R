@@ -129,7 +129,7 @@ SRxgboost_calculate_drift <- function(data_old,
   p <- df %>%
     dplyr::arrange(-drift) %>%
     {if (nrow(.) > 30) dplyr::slice(., 1:30) else .} %>%
-    ggplot2::ggplot(aes(x = stats::reorder(variables, -drift), y = drift, fill = stars)) +
+    ggplot2::ggplot(ggplot2::aes(x = stats::reorder(variables, -drift), y = drift, fill = stars)) +
     ggplot2::geom_bar(stat = "identity", position = "dodge") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 0, vjust = 0.5),
                    legend.position = "top") +

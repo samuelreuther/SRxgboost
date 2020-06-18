@@ -27,4 +27,7 @@ You can install the released version of SRxgboost from [CRAN](https://CRAN.R-pro
 ```{r setup}
 # library(SRxgboost)
 # devtools::install_github("samuelreuther/SRxgboost")
+# 
+# install.packages("~/data/shared/CH00RHU/Libraries/SRxgboost_0.1.0.9000.tar.gz", 
+#                  repos = NULL, type = "source", dependencies = TRUE)
 ```

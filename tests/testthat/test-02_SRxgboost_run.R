@@ -17,9 +17,6 @@ assign('path_to_data', path_to_data, envir = .GlobalEnv)
 this_file <- list.files()[1]
 # try(this_file <- rstudioapi::getActiveDocumentContext()$path, T)
 assign('this_file', this_file, envir = .GlobalEnv)
-# set span for smoothing
-smooth_span = 0.5
-assign('smooth_span', smooth_span, envir = .GlobalEnv)
 
 
 
@@ -41,7 +38,7 @@ assign('train', train, envir = .GlobalEnv)
 #
 ## run models
 #
-lauf <- "SRxgboost_test_regression_no_folds.csv"
+lauf <- "regr_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat(lauf, "\n")
 # prepare data and test
@@ -67,9 +64,9 @@ test_that("regression / no_folds: files in path_output/lauf/All Models", {
 })
 test_that("regression / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
-               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                "/Best Model/0 Variable importance.csv")) %>%
-                 filter(Gain >= 0.01) %>%
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
                  nrow() * 2 + 14)
 })
 # test_that("regression / no_folds: files in path_output/lauf/Best Model", {
@@ -111,7 +108,7 @@ SRxgboost_cleanup()
 #
 ## run models
 #
-lauf <- "SRxgboost_test_regression_eval_index.csv"
+lauf <- "regr_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat(lauf, "\n")
 # create eval_index
@@ -140,9 +137,9 @@ test_that("regression / eval_index: files in path_output/lauf/All Models", {
 })
 test_that("regression / eval_index: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
-               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                "/Best Model/0 Variable importance.csv")) %>%
-                 filter(Gain >= 0.01) %>%
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
                  nrow() * 2 + 12)
 })
 # test_that("regression / eval_index: files in path_output/lauf/Best Model", {
@@ -176,7 +173,7 @@ SRxgboost_cleanup()
 #
 ## run models
 #
-lauf <- "SRxgboost_test_regression_folds.csv"
+lauf <- "regr_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat(lauf, "\n")
 # create folds
@@ -207,9 +204,9 @@ test_that("regression / folds: files in path_output/lauf/All Models", {
 })
 test_that("regression / folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
-               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                "/Best Model/0 Variable importance.csv")) %>%
-                 filter(Gain >= 0.01) %>%
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
                  nrow() * 2 + 14)
 })
 # test_that("regression / folds: files in path_output/lauf/Best Model", {
@@ -262,10 +259,10 @@ assign('churn', churn, envir = .GlobalEnv)
 id_unique_train <- churn$customerID
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- churn %>%
-  mutate(Churn = case_when(Churn == "No"  ~ 0,
-                           Churn == "Yes" ~ 1,
-                           T              ~ NA_real_)) %>%
-  select(-customerID)
+  dplyr::mutate(Churn = dplyr::case_when(Churn == "No"  ~ 0,
+                                         Churn == "Yes" ~ 1,
+                                         T              ~ NA_real_)) %>%
+  dplyr::select(-customerID)
 assign('train', train, envir = .GlobalEnv)
 
 
@@ -275,7 +272,7 @@ assign('train', train, envir = .GlobalEnv)
 #
 ## run models
 #
-lauf <- "SRxgboost_test_classification_no_folds.csv"
+lauf <- "class_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat(lauf, "\n")
 # prepare data and test
@@ -301,9 +298,9 @@ test_that("classification / no_folds: files in path_output/lauf/All Models", {
 })
 test_that("classification / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
-               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                "/Best Model/0 Variable importance.csv")) %>%
-                 filter(Gain >= 0.05) %>%
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.05) %>%
                  nrow() * 2 + 20)
 })
 # test_that("classification / no_folds: files in path_output/lauf/Best Model", {
@@ -342,7 +339,7 @@ SRxgboost_cleanup()
 #
 ## run models
 #
-lauf <- "SRxgboost_test_classification_eval_index.csv"
+lauf <- "class_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat(lauf, "\n")
 # create eval_index
@@ -371,9 +368,9 @@ test_that("classification / eval_index: files in path_output/lauf/All Models", {
 })
 test_that("classification / eval_index: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
-               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                "/Best Model/0 Variable importance.csv")) %>%
-                 filter(Gain >= 0.05) %>%
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.05) %>%
                  nrow() * 2 + 18)
 })
 # test_that("classification / eval_index: files in path_output/lauf/Best Model", {
@@ -407,7 +404,7 @@ SRxgboost_cleanup()
 #
 ## run models
 #
-lauf <- "SRxgboost_test_classification_folds.csv"
+lauf <- "class_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat(lauf, "\n")
 # create folds
@@ -438,9 +435,9 @@ test_that("classification / folds: files in path_output/lauf/All Models", {
 })
 test_that("classification / folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
-               read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                "/Best Model/0 Variable importance.csv")) %>%
-                 filter(Gain >= 0.05) %>%
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.05) %>%
                  nrow() * 2 + 20)
 })
 # test_that("classification / folds: files in path_output/lauf/Best Model", {
@@ -482,8 +479,103 @@ rm(churn, train, id_unique_train)
 
 
 
+# Multilabel Classification: read data ------------------------------------
+#
+birds <- utils::read.csv(paste0(path_to_data,
+                                "Multilabel Classification/Birds Bones and Living Habits/data.csv"))
+assign('birds', birds, envir = .GlobalEnv)
+id_unique_train <- birds$id
+assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
+train <- birds %>%
+  dplyr::mutate(type = as.numeric(type) - 1) %>%
+  dplyr::select(-id)
+assign('train', train, envir = .GlobalEnv)
+
+
+
+
+# Multilabel Classification: no_folds -------------------------------------
+# #
+# lauf <- "mclass_no_folds.csv"
+# assign('lauf', lauf, envir = .GlobalEnv)
+# cat(lauf, "\n")
+# # prepare data and test
+# SRxgboost_data_prep(yname = "type",
+#                     data_train = train,
+#                     no_folds = 5,
+#                     objective = "multilabel")
+# # run models
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "merror", runs = 2,
+#               nfold = 5)
+#
+# # plot results of best model
+# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+#
+# #
+# #
+# ## tests
+# #
+# # no. of files
+# test_that("classification / no_folds: files in path_output/lauf", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+# })
+# test_that("classification / no_folds: files in path_output/lauf/All Models", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
+# })
+# test_that("classification / no_folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+#                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+#                                 "/Best Model/0 Variable importance.csv")) %>%
+#                  dplyr::filter(Gain >= 0.05) %>%
+#                  nrow() * 2 + 20)
+# })
+# # test_that("classification / no_folds: files in path_output/lauf/Best Model", {
+# #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# # })
+# test_that("classification / no_folds: files in path_output/lauf/Data", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
+# })
+# # runtime
+# test_that("classification / no_folds: runtime[1]", {
+#   expect_true(SummaryCV$runtime[1] < 0.2)
+# })
+# test_that("classification / no_folds: runtime[2]", {
+#   expect_true(SummaryCV$runtime[2] < 0.1)
+# })
+# # auc
+# test_that("classification / no_folds: SummaryCV$eval_1fold[1]", {
+#   expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.84)
+# })
+# test_that("classification / no_folds: SummaryCV$train[1]", {
+#   expect_equal(round(SummaryCV$train[1], 2), 0.92)
+# })
+# test_that("classification / no_folds: SummaryCV$test[1]", {
+#   expect_equal(round(SummaryCV$test[1], 2), 0.84)
+# })
+# #
+# #
+# ## clean up
+# #
+# SRxgboost_cleanup()
+#
+#
+#
+# # no. ob objects in memory
+# test_that("multilabel classification / no_folds, no. ob objects in memory", {
+#   expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+# })
+# # no_folds
+# test_that("multilabel classification / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
+#   expect_equal(round(nrow(datenModell_eval) / nrow(datenModell), 1), 1/5)
+# })
+# # clean up
+# SRxgboost_cleanup()
+
+
+
+
 # Clean up ----------------------------------------------------------------
 #
 unlink(path_output, recursive = TRUE)
-rm(path_output, path_to_data, smooth_span, this_file)
+rm(path_output, path_to_data, this_file)
 

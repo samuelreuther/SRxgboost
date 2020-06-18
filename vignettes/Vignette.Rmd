@@ -25,6 +25,7 @@ knitr::opts_chunk$set(
 
 ### TODOs
 
+- plot shapley contribution: more expressive graphic for multilabel classification
 - Enforcing Monotonic Constraints:
   - https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html
   - params_constrained = params.copy()

@@ -54,7 +54,7 @@ SRxgboost_sample_training_data <- function(df,
     # get rows for this fold
     df_temp <- df[folds[[i]], ] %>%
       dplyr::mutate(y = as.factor(y))
-    # df_temp %>% count(y) %>% mutate(n_percent = n/sum(n))
+    # df_temp %>% dplyr::count(y) %>% dplyr::mutate(n_percent = n/sum(n))
     #
     # sample data
     df_temp <- unbalanced::ubBalance(X = df_temp %>% dplyr::select(-y),

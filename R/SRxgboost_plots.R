@@ -36,7 +36,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
   # Get summary
   SRxgboost_get_summary_CV(lauf)
   assign('SummaryCV', SummaryCV, envir = .GlobalEnv)
-  if (!silent) print(head(SummaryCV[!is.na(SummaryCV$eval_1fold), c(1:12)]))
+  if (!silent) print(utils::head(SummaryCV[!is.na(SummaryCV$eval_1fold), c(1:12)]))
   #
   # Load model
   if (!silent) print(paste0("Loading model: ", SummaryCV$date[rank]))
@@ -96,7 +96,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 overwrite = TRUE)
     }, TRUE)
   } else {
-    # re-run best model     TODO!!!
+    # re-run best model     TODO !!!
     # bst <- xgboost(data = d_train, objective = "multi:softprob", num_class = length(unique(y)),
     #                metric = "mlogloss", verbose = 0, max.depth = SummaryCV$depth,
     #                eta = SummaryCV$eta, nround = SummaryCV$nround,
@@ -264,9 +264,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
                       width = 9.92, height = 5.3)
       #
       # save ROC data
-      write.table(temp, paste0(path_output, gsub(".csv", "/", lauf),
-                               "Best Model/Cut off, accuracy and costs.csv"),
-                  row.names = FALSE, sep = ";")
+      utils::write.table(temp, paste0(path_output, gsub(".csv", "/", lauf),
+                                      "Best Model/Cut off, accuracy and costs.csv"),
+                         row.names = FALSE, sep = ";")
       #
       # confusion matrix
       if (!cut_off_a %in% c(-Inf, Inf, 0, 1)) {
@@ -296,7 +296,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         temp <- data.frame(pred = pred, labels = labels)
         if (length(pred) > 100000) {   # NAs produced by integer overflow > 500'000
           set.seed(12345)
-          temp <- temp %>% sample_n(100000)
+          temp <- temp %>% dplyr::sample_n(100000)
           set.seed(Sys.time())
         }
         prediction <- ROCR::prediction(temp$pred, temp$labels)
@@ -437,10 +437,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
                     width = 9.92, height = 5.3)  # 4.67
     # save table
     assign('importance_matrix', importance_matrix, envir = .GlobalEnv)
-    write.table(importance_matrix,
-                paste0(path_output, gsub(".csv", "/", lauf),
-                       "Best Model/0 Variable importance.csv"),
-                row.names = FALSE, col.names = TRUE, append = FALSE, sep = ";", dec = ",")
+    utils::write.table(importance_matrix,
+                       paste0(path_output, gsub(".csv", "/", lauf),
+                              "Best Model/0 Variable importance.csv"),
+                       row.names = FALSE, col.names = TRUE, append = FALSE,
+                       sep = ";", dec = ",")
     #
     # Partial Dependence Plots
     temp <- importance_matrix %>%
@@ -505,7 +506,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
             p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
               ggplot2::geom_bar(stat = "identity", position = "dodge") +
               ggplot2::labs(x = xlabel); p2
-            p <- grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
+            p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
           } else {
             # x is numeric, integer or Date
             xlabel <- temp$Feature[i]
@@ -538,7 +539,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                   Actual = y_$y, Predicted = pr_$pr) %>%
                 dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
                                           include.lowest = TRUE, dig.lab = 10)) %>%
-                # mutate(Group = cut(x_orig, breaks = unique(quantile(x_orig, seq(0, 1.01, 0.02))),
+                # dplyr::mutate(Group = cut(x_orig, breaks = unique(quantile(x_orig, seq(0, 1.01, 0.02))),
                 #                    include.lowest = TRUE, dig.lab = 10)) %>%
                 dplyr::group_by(Group) %>%
                 dplyr::summarise(x = mean(x),
@@ -672,10 +673,10 @@ SRxgboost_plots <- function(lauf, rank = 1,
                               plot = p, width = 9.92, height = 5.3))  # 4.67
           try(rm(p), TRUE)
           # save summary table
-          write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
-                                    "Best Model/", i, " ", gsub("LabelEnc", "",
-                                                                xlabel), ".csv"),
-                      row.names = FALSE, sep = ";")
+          utils::write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
+                                           "Best Model/", i, " ", gsub("LabelEnc", "",
+                                                                       xlabel), ".csv"),
+                             row.names = FALSE, sep = ";")
         })
       }
       #

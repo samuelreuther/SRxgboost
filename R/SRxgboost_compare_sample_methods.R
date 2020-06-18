@@ -69,7 +69,8 @@ SRxgboost_compare_sample_methods <- function(df_train,
       #
       # run XGB_data_prep
       SRxgboost_data_prep(yname = "y", data_train = df_sampled, data_test = df_test,
-                          folds = folds_sampled, objective = "binary", covariate_drift = FALSE)
+                          folds = folds_sampled, objective = "binary",
+                          check_covariate_drift = FALSE)
       #
       # run XGB_RUN with CV on folds
       SRxgboost_run(nround = 10000, eta = 0.1, obj = "binary:logistic", metric = "auc",
@@ -90,9 +91,9 @@ SRxgboost_compare_sample_methods <- function(df_train,
   comparison <- data.frame()
   for (i in files) {
     comparison <- dplyr::bind_rows(comparison,
-                                   read.csv2(paste0(path_output, i)) %>%
+                                   utils::read.csv2(paste0(path_output, i)) %>%
                                      dplyr::arrange(-test) %>%
-                                     head(1) %>%
+                                     utils::head(1) %>%
                                      dplyr::mutate(Lauf = i %>%
                                                      gsub("sample_", "", .) %>%
                                                      gsub("/Summary.csv", "", .)))

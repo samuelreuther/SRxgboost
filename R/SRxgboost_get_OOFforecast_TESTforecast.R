@@ -15,7 +15,9 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
   # load result table
   SRxgboost_get_summary_CV(lauf, ensemble = ensemble)
   if (!exists("SummaryCV_META")) {
-    SummaryCV_META <- SummaryCV %>% filter(date < "2000-01-01") %>% mutate(Lauf = lauf)
+    SummaryCV_META <- SummaryCV %>%
+      dplyr::filter(date < "2000-01-01") %>%
+      dplyr::mutate(Lauf = lauf)
   }
   #
   # get OOFforecast
@@ -41,7 +43,7 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
                                                     gsub(" ", "x", SummaryCV$date[i])))))
       OOFforecast <- cbind(OOFforecast, select)
       # save information of model performance
-      SummaryCV_META <- rbind(SummaryCV_META, SummaryCV[i, ] %>% mutate(Lauf = lauf))
+      SummaryCV_META <- rbind(SummaryCV_META, SummaryCV[i, ] %>% dplyr::mutate(Lauf = lauf))
     }
     assign('OOFforecast', OOFforecast, envir = .GlobalEnv)
     assign('SummaryCV_META', SummaryCV_META, envir = .GlobalEnv)

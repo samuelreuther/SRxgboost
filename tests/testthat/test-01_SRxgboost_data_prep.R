@@ -5,7 +5,7 @@ rm(list = ls(all.names = TRUE)); gc()
 # load libraries
 library(dplyr)
 # set paths
-path_output <- "output_temp/"
+path_output <- "temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
 if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
   path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
@@ -32,7 +32,7 @@ assign('train', train, envir = .GlobalEnv)
 
 # Regression: no_folds ----------------------------------------------------
 #
-lauf <- "SRxgboost_test_regression_no_folds.csv"
+lauf <- "regr_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # prepare data and test
 test_that("regression / no_folds", {
@@ -57,7 +57,7 @@ SRxgboost_cleanup()
 
 # Regression: eval_index --------------------------------------------------
 #
-lauf <- "SRxgboost_test_regression_eval_index.csv"
+lauf <- "regr_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create eval_index
 eval_index <- which(train$MSSubClass > 90)
@@ -85,7 +85,7 @@ SRxgboost_cleanup()
 
 # Regression: folds -------------------------------------------------------
 #
-lauf <- "SRxgboost_test_regression_folds.csv"
+lauf <- "regr_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create folds
 train$group <- rep(1:(nrow(train) / 10), each = 10)
@@ -128,10 +128,10 @@ assign('churn', churn, envir = .GlobalEnv)
 id_unique_train <- churn$customerID
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- churn %>%
-  mutate(Churn = case_when(Churn == "No"  ~ 0,
-                           Churn == "Yes" ~ 1,
-                           T              ~ NA_real_)) %>%
-  select(-customerID)
+  dplyr::mutate(Churn = dplyr::case_when(Churn == "No"  ~ 0,
+                                         Churn == "Yes" ~ 1,
+                                         T              ~ NA_real_)) %>%
+  dplyr::select(-customerID)
 assign('train', train, envir = .GlobalEnv)
 
 
@@ -139,7 +139,7 @@ assign('train', train, envir = .GlobalEnv)
 
 # Classification: no_folds ------------------------------------------------
 #
-lauf <- "SRxgboost_test_classification_no_folds.csv"
+lauf <- "class_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # prepare data and test
 test_that("classification / no_folds", {
@@ -164,7 +164,7 @@ SRxgboost_cleanup()
 
 # Classification: eval_index ----------------------------------------------
 #
-lauf <- "SRxgboost_test_classification_eval_index.csv"
+lauf <- "class_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create eval_index
 eval_index <- which(train$MonthlyCharges > 100)
@@ -192,7 +192,7 @@ SRxgboost_cleanup()
 
 # Classification: folds ---------------------------------------------------
 #
-lauf <- "SRxgboost_test_classification_folds.csv"
+lauf <- "class_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create folds
 train$group <- c(1, 1, 1, rep(1:(nrow(train) / 10), each = 10))
@@ -235,8 +235,8 @@ assign('birds', birds, envir = .GlobalEnv)
 id_unique_train <- birds$id
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- birds %>%
-  mutate(type = as.numeric(type)) %>%
-  select(-id)
+  dplyr::mutate(type = as.numeric(type) - 1) %>%
+  dplyr::select(-id)
 assign('train', train, envir = .GlobalEnv)
 
 
@@ -244,7 +244,7 @@ assign('train', train, envir = .GlobalEnv)
 
 # Multilabel Classification: no_folds -------------------------------------
 #
-lauf <- "SRxgboost_test_multilabel_classification_no_folds.csv"
+lauf <- "mclass_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # prepare data and test
 test_that("multilabel classification / no_folds", {
@@ -269,7 +269,7 @@ SRxgboost_cleanup()
 
 # Multilabel Classification: eval_index -----------------------------------
 #
-lauf <- "SRxgboost_test_multilabel_classification_eval_index.csv"
+lauf <- "mclass_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create eval_index
 set.seed(12345)
@@ -300,7 +300,7 @@ SRxgboost_cleanup()
 
 # Multilabel Classification: folds ----------------------------------------
 #
-lauf <- "SRxgboost_test_multilabel_classification_folds.csv"
+lauf <- "mclass_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # create folds
 train$group <- c(rep(1:(nrow(train) / 10), each = 10))

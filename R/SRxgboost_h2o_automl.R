@@ -73,8 +73,8 @@ SRxgboost_h2o_automl <- function(y = NULL,
   saveRDS(lb_leader, paste0(path_output_, "leaderboard_leader.rds"))
   lb %>%
     as.data.frame() %>%
-    head(20) %>%
-    # mutate(model_id = substr(model_id, 1, regexpr("_AutoML_", model_id) - 1) %>%
+    utils::head(20) %>%
+    # dplyr::mutate(model_id = substr(model_id, 1, regexpr("_AutoML_", model_id) - 1) %>%
     #          gsub("_", " ", .)) %>%
     dplyr::mutate(model_id = stats::reorder(model_id, auc)) %>%
     reshape2::melt(id = "model_id") %>%
@@ -112,12 +112,12 @@ SRxgboost_h2o_automl <- function(y = NULL,
     ggplot2::ggplot(ggplot2::aes(x = stats::reorder(variable, percentage), y = percentage)) +
     ggplot2::geom_bar(stat = "identity") +
     ggplot2::labs(x = "Variable", y = "Importance (%)") +
-    ggplot2::scale_y_continuous(labels = percent, breaks = scales::pretty_breaks(5)) +
+    ggplot2::scale_y_continuous(labels = scales::percent, breaks = scales::pretty_breaks(5)) +
     ggplot2::coord_flip()
   ggplot2::ggsave(paste0(path_output_, "varimp_plot_topmodel.png"), width = 9.92, height = 5.3)
   #
-  # partial dependence plots
-  # TODO !!!
+  # partial dependence plots   TODO !!!
+  # tbd
   #
   # Shap values
   if (run_shap) {

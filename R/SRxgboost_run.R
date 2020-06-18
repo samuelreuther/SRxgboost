@@ -8,7 +8,7 @@
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
 #'                            "f1_score", "mcc_score"
-#'   \item "multi:softprob": "merror", "logloss"
+#'   \item "multi:softprob": "merror", "mlogloss"
 #'   \item "multi:softmax": "merror", "auc"
 #'   \item "rank:pairwise": "ndcg"
 #' }
@@ -503,13 +503,25 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         selection <- as.numeric(selection)
         set.seed(Sys.time())
         #
-        # plot shapley contribution
+        # convert shapley to data.frame
+        if (class(shapley) == "matrix") {
+          shapley <- data.frame(shapley)
+        } else if (class(shapley) == "list") {
+          # for multilabel classification: select class of OOFforecast
+          shapley_df <- data.frame()
+          for (row in 1:nrow(shapley[[1]])) {
+            shapley_df <- dplyr::bind_rows(shapley_df,
+                                           shapley[[OOFforecast[row] + 1]][row, ])
+          }; rm(row)
+          shapley <- shapley_df
+          rm(shapley_df)
+        }
+        #
+        # plot shapley contribution   TODO !!! more expressive graphic for multilabel classification
         p <- list()
         for (plot_i in 1:length(selection)) {
           row <- selection[plot_i]
           p[[plot_i]] <- shapley[row, ] %>%
-            t() %>%
-            data.frame() %>%
             dplyr::select(-BIAS) %>%
             data.table::setnames(paste0(colnames(.), ": ",
                                         temp_data[row, colnames(.)] %>%
@@ -531,7 +543,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
             ggplot2::coord_flip()
         }; rm(plot_i, row)
         p <- do.call(gridExtra::arrangeGrob, c(p, ncol = 2, as.table = FALSE))
-        # p <- do.call(grid.arrange, c(p, ncol = 2, as.table = FALSE))
+        # p <- do.call(gridExtra::grid.arrange, c(p, ncol = 2, as.table = FALSE))
         ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
                                gsub(":", ".", as.character(start)), "_Shap_plot.png"),
                         plot = p, width = 9.92, height = 5.3)
@@ -617,7 +629,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         data.table::setnames(OOFforecast, names(OOFforecast)[ncol(OOFforecast)],
                              gsub(":", ".", as.character(temp[1])))
         saveRDS(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
-        # write.table(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf),
+        # utils::write.table(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf),
         #                                        gsub(".csv", "", lauf), "_OOFforecast.csv"),
         #             row.names = FALSE, col.names = TRUE, append = FALSE, sep = ";", dec = ",")
       }
@@ -887,7 +899,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         max <- max(c(SummaryCV_temp$test, SummaryCV_temp$eval_1fold), na.rm = TRUE)
         p <- ggplot2::ggplot(SummaryCV_temp, ggplot2::aes(x = test, y = eval_1fold)) +
           ggplot2::geom_point() +
-          ggplot2::geom_smooth(method = "loess", formula = "y ~ x", span = smooth_span * 2) +
+          ggplot2::geom_smooth(method = "loess", formula = "y ~ x", span = 1) +
           ggplot2::scale_x_continuous(limits = c(min, max)) +
           ggplot2::scale_y_continuous(limits = c(min, max)) +
           ggplot2::geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed")

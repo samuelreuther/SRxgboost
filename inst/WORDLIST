@@ -14,7 +14,9 @@ mae
 mape
 mcc
 merror
+mlogloss
 multiclass
+multilabel
 ndcg
 num
 OOFforecast
@@ -29,6 +31,7 @@ rds
 rmse
 rmsle
 roc
+shapley
 softmax
 softprob
 squarederror

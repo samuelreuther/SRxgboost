@@ -55,7 +55,7 @@ SRxgboost_data_prep <- function(yname,
   ### determine if objective is not given: regression, binary or multilabel
   if (is.null(objective)) {
     objective <- dplyr::case_when(length(data_train[, yname]) == 2        ~ "binary",
-                                  length(data_train[, yname]) <= 10       ~ "multilabel", # correct?
+                                  length(data_train[, yname]) <= 10       ~ "multilabel", # ??? !!!
                                   class(data_train[, yname]) == "numeric" ~ "regression")
   }
   #
@@ -67,7 +67,7 @@ SRxgboost_data_prep <- function(yname,
   #
   ### remove rows in train, where is.na(y)
   data_train <- data_train[!is.na(data_train[yname]), ]
-  # data_train <- data_train %>% filter(!is.na(matches(yname)))
+  # data_train <- data_train %>% dplyr::filter(!is.na(matches(yname)))
   #
   #
   #
@@ -100,20 +100,20 @@ SRxgboost_data_prep <- function(yname,
     # }
   } else if (objective == "multilabel") {
     y <- data_train[, yname]
-    # check if y contains only numbers 1-10
-    if (sum(unique(y) %in% 1:10) != length(unique(y))) {
-      stop("XGB_data_prep: y must contain only numbers from 1 to 10!")
+    # check if y contains only numbers 0-9
+    if (sum(unique(y) %in% 0:9) != length(unique(y))) {
+      stop("XGB_data_prep: y must contain only numbers from 0 to 9!")
     }
     # check if y contains the number 1
-    if (sum(y == 1) == 0) {
-      stop("XGB_data_prep: y must include 1 as lowest label!")
+    if (sum(y == 0) == 0) {
+      stop("XGB_data_prep: y must include 0 as lowest label!")
     }
     # prepare y_test
     if (!is.null(data_test) & !is.na(match(yname, names(data_test)))) {
       y_test <- data_test[, yname]
-      # check if y_test contains only numbers 1-10
-      if (sum(unique(y_test) %in% 1:10) != length(unique(y_test))) {
-        stop("XGB_data_prep: y_test must contain only numbers from 1 to 10!")
+      # check if y_test contains only numbers 0-9
+      if (sum(unique(y_test) %in% 0:9) != length(unique(y_test))) {
+        stop("XGB_data_prep: y_test must contain only numbers from 0 to 9!")
       }
     }
   }
@@ -234,8 +234,8 @@ SRxgboost_data_prep <- function(yname,
     }
   } else if (objective == "multilabel") {
     if (is.factor(datenModell[, yname])) {
-      y_train_eval <- as.numeric(train_eval[, yname])
-      y_test_eval <- as.numeric(test_eval[, yname])
+      y_train_eval <- as.numeric(train_eval[, yname]) - 1
+      y_test_eval <- as.numeric(test_eval[, yname]) - 1
     } else {
       y_train_eval <- train_eval[, yname]
       y_test_eval <- test_eval[, yname]
@@ -287,7 +287,7 @@ SRxgboost_data_prep <- function(yname,
   #
   #
   ### turn train and test into matrices for dummy variables
-  options(na.action = 'na.pass')  # global option !!!
+  options(na.action = 'na.pass')  # global option
   #
   train_mat <- Matrix::sparse.model.matrix(y~. - 1,
                                            data = datenModell)
