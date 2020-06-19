@@ -496,6 +496,8 @@ assign('train', train, envir = .GlobalEnv)
 
 # Multilabel Classification: no_folds -------------------------------------
 #
+# WARNING: mlogloss CRASHES with xgboost v0.90.0.2 !!!
+#
 # lauf <- "mclass_no_folds.csv"
 # assign('lauf', lauf, envir = .GlobalEnv)
 # cat(lauf, "\n")
@@ -504,15 +506,14 @@ assign('train', train, envir = .GlobalEnv)
 #                     data_train = train,
 #                     no_folds = 5,
 #                     objective = "multilabel")
-#
+# #
 # # run models
-# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "mlogloss", runs = 2,
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "mAUC", runs = 2,
+#               nfold = 5)
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
 #               nfold = 5)
 #
-# SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mlogloss", runs = 2,   # CRASHES !!!
-#               nfold = 5)
-#
-# # plot results of best model
+# plot results of best model
 # SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
 #
 # #

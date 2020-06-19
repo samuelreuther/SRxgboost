@@ -314,8 +314,12 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       }
       mAUC <- function(pred, d_train) {
         labels = xgboost::getinfo(d_train, "label")
+        if (length(pred) / params$num_class == length(labels)) {
+          # convert vector of class probabilites to matrix and determine class
+          pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
+          pred <- apply(pred, MARGIN = 1, FUN = which.max)
+        }
         err = as.numeric(pROC::multiclass.roc(labels, pred, direction = "<")$auc)
-        # pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
         # err = pROC::multiclass.roc(labels, data.frame(pred) %>% stats::setNames(0:(params$num_class - 1)))
         # https://www.datascienceblog.net/post/machine-learning/performance-measures-multi-class-problems/
         return(list(metric="mAUC", value = err))
@@ -443,25 +447,40 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         try({
           TESTforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
                                          "Data/TESTforecast.rds"))
-          TESTforecast <- cbind(TESTforecast, stats::predict(bst, d_test, missing = NA))  # test_mat
-          data.table::setnames(TESTforecast, names(TESTforecast)[ncol(TESTforecast)],
-                               gsub(":", ".", as.character(temp[1])))
+          if (obj != "multi:softprob") {
+            pred <- data.frame(stats::predict(bst, d_test, missing = NA))
+            data.table::setnames(pred, gsub(":", ".", as.character(temp[1])))
+          } else {
+            # obj == "multi:softprob": calculate class out of class probabilities
+            pred <- data.frame(stats::predict(bst, d_test, missing = NA, reshape = TRUE))
+            data.table::setnames(pred,
+                                 paste0(rep(gsub(":", ".", as.character(temp[1])), ncol(pred)),
+                                        "_", names(pred)))
+          }
+          TESTforecast <- cbind(TESTforecast, pred)
           saveRDS(TESTforecast, paste0(path_output, gsub(".csv", "/", lauf),
                                        "Data/TESTforecast.rds"))
-          rm(TESTforecast)
+          rm(pred, TESTforecast)
         })
         #
         # Save OOFforecast (this is only OOF on 1/kfold or eval_index)
         try({
           OOFforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
                                         "Data/OOFforecast.rds"))
-          OOFforecast <- cbind(OOFforecast, stats::predict(bst, d_test_eval, missing = NA))
-          # OOFforecast <- cbind(OOFforecast, stats::predict(bst, d_train[eval_index], missing = NA))
-          data.table::setnames(OOFforecast, names(OOFforecast)[ncol(OOFforecast)],
-                               gsub(":", ".", as.character(temp[1])))
+          if (obj != "multi:softprob") {
+            pred <- data.frame(stats::predict(bst, d_test_eval, missing = NA))
+            data.table::setnames(pred, gsub(":", ".", as.character(temp[1])))
+          } else {
+            # obj == "multi:softprob": calculate class out of class probabilities
+            pred <- data.frame(stats::predict(bst, d_test_eval, missing = NA, reshape = TRUE))
+            data.table::setnames(pred,
+                                 paste0(rep(gsub(":", ".", as.character(temp[1])), ncol(pred)),
+                                        "_", names(pred)))
+          }
+          OOFforecast <- cbind(OOFforecast, pred)
           saveRDS(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf),
                                       "Data/OOFforecast.rds"))
-          rm(OOFforecast)
+          rm(pred, OOFforecast)
         })
       }
       #
@@ -477,13 +496,24 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         #               span_loess = 0.3)
         #
         # get forecast values
-        OOFforecast <- stats::predict(bst, d_test_eval, missing = NA)
-        saveRDS(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+        if (obj != "multi:softprob") {
+          shap_pred <- stats::predict(bst, d_test_eval, missing = NA)
+          saveRDS(shap_pred, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
                                     gsub(":", ".", as.character(start)),
                                     "_Shap_prediction.rds"))
+        } else {
+          # obj == "multi:softprob": calculate class out of class probabilities
+          shap_pred <- stats::predict(bst, d_test_eval, missing = NA, reshape = TRUE)
+          shap_pred <- data.frame(shap_pred,
+                                  class = apply(shap_pred, MARGIN = 1, FUN = which.max))
+          saveRDS(shap_pred, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                                    gsub(":", ".", as.character(start)),
+                                    "_Shap_prediction.rds"))
+          shap_pred <- as.vector(shap_pred$class) - 1
+        }
         #
         # check if rowSums of shapley == model prediction   ok
-        # OOFforecast[1:5]
+        # shap_pred[1:5]
         # rowSums(shapley[1:5, 1:(ncol(shapley))])
         #
         # clean up data
@@ -506,32 +536,42 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         #
         # get some high and low forecasts
         set.seed(12345)
-        if (length(OOFforecast) >= 300) {
-          selection <- c(which(OOFforecast == min(OOFforecast))[1],
-                         try(sample(which(OOFforecast   >  stats::quantile(OOFforecast, 0.00) &
-                                            OOFforecast <= stats::quantile(OOFforecast, 0.01)), 1), TRUE),
-                         try(sample(which(OOFforecast   >  stats::quantile(OOFforecast, 0.04) &
-                                            OOFforecast <= stats::quantile(OOFforecast, 0.05)), 1), TRUE),
-                         try(sample(which(OOFforecast   >  stats::quantile(OOFforecast, 0.09) &
-                                            OOFforecast <= stats::quantile(OOFforecast, 0.10)), 1), TRUE),
-                         try(sample(which(OOFforecast   >  stats::quantile(OOFforecast, 0.19) &
-                                            OOFforecast <= stats::quantile(OOFforecast, 0.20)), 1), TRUE),
-                         try(sample(which(OOFforecast   >= stats::quantile(OOFforecast, 0.80) &
-                                            OOFforecast <  stats::quantile(OOFforecast, 0.81)), 1), TRUE),
-                         try(sample(which(OOFforecast   >= stats::quantile(OOFforecast, 0.90) &
-                                            OOFforecast <  stats::quantile(OOFforecast, 0.91)), 1), TRUE),
-                         try(sample(which(OOFforecast   >= stats::quantile(OOFforecast, 0.95) &
-                                            OOFforecast <  stats::quantile(OOFforecast, 0.96)), 1), TRUE),
-                         try(sample(which(OOFforecast   >= stats::quantile(OOFforecast, 0.99) &
-                                            OOFforecast <  stats::quantile(OOFforecast, 1.00)), 1), TRUE),
-                         which(OOFforecast   == max(OOFforecast))[1])
-          selection <- selection[!grepl("Error", selection)]
+        if (!grepl("multi", obj)) {
+          if (length(shap_pred) >= 300) {
+            selection <- c(which(shap_pred == min(shap_pred))[1],
+                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.00) &
+                                              shap_pred <= stats::quantile(shap_pred, 0.01)), 1), TRUE),
+                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.04) &
+                                              shap_pred <= stats::quantile(shap_pred, 0.05)), 1), TRUE),
+                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.09) &
+                                              shap_pred <= stats::quantile(shap_pred, 0.10)), 1), TRUE),
+                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.19) &
+                                              shap_pred <= stats::quantile(shap_pred, 0.20)), 1), TRUE),
+                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.80) &
+                                              shap_pred <  stats::quantile(shap_pred, 0.81)), 1), TRUE),
+                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.90) &
+                                              shap_pred <  stats::quantile(shap_pred, 0.91)), 1), TRUE),
+                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.95) &
+                                              shap_pred <  stats::quantile(shap_pred, 0.96)), 1), TRUE),
+                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.99) &
+                                              shap_pred <  stats::quantile(shap_pred, 1.00)), 1), TRUE),
+                           which(shap_pred == max(shap_pred))[1])
+            selection <- selection[!grepl("Error", selection)]
+          } else {
+            # length(shap_pred) < 300
+            high <- sample(which(shap_pred >= stats::quantile(shap_pred, 0.8)), 3)
+            set.seed(12345)
+            low <- sample(which(shap_pred <= stats::quantile(shap_pred, 0.2)), 3)
+            selection <- c(low, high)[order(c(shap_pred[low], shap_pred[high]))]
+            rm(high, low)
+          }
         } else {
-          high <- sample(which(OOFforecast >= stats::quantile(OOFforecast, 0.8)), 3)
-          set.seed(12345)
-          low <- sample(which(OOFforecast <= stats::quantile(OOFforecast, 0.2)), 3)
-          selection <- c(low, high)[order(c(OOFforecast[low], OOFforecast[high]))]
-          rm(high, low)
+          # multilabel classification: select 1 or 2 cases for each class
+          selection <- data.frame(a = shap_pred) %>%
+            dplyr::mutate(selection = dplyr::row_number()) %>%
+            dplyr::group_by(a) %>%
+            dplyr::sample_n(dplyr::if_else(length(unique(shap_pred)) <= 4, 2, 1)) %>%
+            dplyr::pull(selection)
         }
         selection <- as.numeric(selection)
         set.seed(Sys.time())
@@ -540,17 +580,17 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         if (class(shapley) == "matrix") {
           shapley <- data.frame(shapley)
         } else if (class(shapley) == "list") {
-          # for multilabel classification: select class of OOFforecast
+          # for multilabel classification: select class of shap_pred
           shapley_df <- data.frame()
           for (row in 1:nrow(shapley[[1]])) {
             shapley_df <- dplyr::bind_rows(shapley_df,
-                                           shapley[[OOFforecast[row] + 1]][row, ])
+                                           shapley[[shap_pred[row] + 1]][row, ])
           }; rm(row)
           shapley <- shapley_df
           rm(shapley_df)
         }
         #
-        # plot shapley contribution   TODO !!! more expressive graphic for multilabel classification
+        # plot shapley contribution
         p <- list()
         for (plot_i in 1:length(selection)) {
           row <- selection[plot_i]
@@ -568,27 +608,27 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
             ggplot2::ggplot(ggplot2::aes(x = stats::reorder(variable, abs(value)), y = value)) +
             ggplot2::geom_bar(stat = "identity") +
             ggplot2::labs(x = "", y = "",
-                          subtitle = paste0("pred = ", round(OOFforecast[row], 3),
-                                            " (mean pred = ", round(mean(OOFforecast), 3),
-                                            ", pred no. ", row, ")")) +
+                          subtitle = paste0("pred = ", round(shap_pred[row], 3),
+                                            ifelse(grepl("multi", obj), " (",
+                                                   paste0(" (mean pred = ",
+                                                          round(mean(shap_pred), 3), ", ")),
+                                            "pred no. ", row, ")")) +
             ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
             ggplot2::theme(text = ggplot2::element_text(size = 8)) +
             ggplot2::coord_flip()
         }; rm(plot_i, row)
         p <- do.call(gridExtra::arrangeGrob, c(p, ncol = 2, as.table = FALSE))
-        # p <- do.call(gridExtra::grid.arrange, c(p, ncol = 2, as.table = FALSE))
         ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
                                gsub(":", ".", as.character(start)), "_Shap_plot.png"),
                         plot = p, width = 9.92, height = 5.3)
         #
         # clean up
-        rm(OOFforecast, selection, temp_data, shapley, p)
+        rm(shap_pred, selection, temp_data, shapley, p)
       }
     } # end "good" model
     #
     # clean up
     rm(bst, evaluation_log_); invisible(gc())
-    #
     #
     #
     ### Run CV model
@@ -655,16 +695,19 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # Save OOFforecast
       if (!feat_sel) {
         OOFforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
-        # OOFforecast <- read.table(paste0(path_output, gsub(".csv", "/", lauf),
-        #                                         gsub(".csv", "", lauf), "_OOFforecast.csv"),
-        #                           header = TRUE, sep = ";", dec = ",")
-        OOFforecast <- cbind(OOFforecast, bst$pred)
-        data.table::setnames(OOFforecast, names(OOFforecast)[ncol(OOFforecast)],
-                             gsub(":", ".", as.character(temp[1])))
+        bst_pred <- data.frame(bst$pred)
+        # multi:softmax: select only first column (others are duplicates)
+        if (obj == "multi:softmax") bst_pred <- bst_pred %>% select(X1)
+        if (obj != "multi:softprob") {
+          data.table::setnames(bst_pred, gsub(":", ".", as.character(temp[1])))
+        } else {
+          data.table::setnames(bst_pred,
+                               paste0(rep(gsub(":", ".", as.character(temp[1])), ncol(bst_pred)),
+                                      "_", names(bst_pred)))
+        }
+        OOFforecast <- cbind(OOFforecast, bst_pred)
         saveRDS(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
-        # utils::write.table(OOFforecast, paste0(path_output, gsub(".csv", "/", lauf),
-        #                                        gsub(".csv", "", lauf), "_OOFforecast.csv"),
-        #             row.names = FALSE, col.names = TRUE, append = FALSE, sep = ";", dec = ",")
+        rm(bst_pred)
       }
       #
       # get error rate => save below
@@ -715,11 +758,20 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # Save TESTforecast
       TESTforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
                                      "Data/TESTforecast.rds"))
-      TESTforecast <- cbind(TESTforecast, stats::predict(bst, d_test, missing = NA))  # test_mat
-      data.table::setnames(TESTforecast, names(TESTforecast)[ncol(TESTforecast)],
-                           gsub(":", ".", as.character(temp[1])))
+      if (obj != "multi:softprob") {
+        pred <- data.frame(stats::predict(bst, d_test, missing = NA))
+        data.table::setnames(pred, gsub(":", ".", as.character(temp[1])))
+      } else {
+        # obj == "multi:softprob": calculate class out of class probabilities
+        pred <- data.frame(stats::predict(bst, d_test, missing = NA, reshape = TRUE))
+        data.table::setnames(pred,
+                             paste0(rep(gsub(":", ".", as.character(temp[1])), ncol(pred)),
+                                    "_", names(pred)))
+      }
+      TESTforecast <- cbind(TESTforecast, pred)
       saveRDS(TESTforecast, paste0(path_output, gsub(".csv", "/", lauf),
                                    "Data/TESTforecast.rds"))
+      rm(pred)
       #
       # Save model
       xgboost::xgb.save(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
@@ -808,43 +860,78 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     # Grafic output of runs
     suppressWarnings(
       if (sum(!is.na(SummaryCV$test)) > 0) {
-        if (obj %in% c("binary:logistic", "multi:softmax", "multi:softprob")) {
-          a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "CV error",
-                              ylab = metric, xlab = "Run", ylim = c(0, NA)) +
-            ggplot2::geom_point(ggplot2::aes(y = SummaryCV$test), colour = "red",
-                                size = 3.5) +
-            ggplot2::geom_text(ggplot2::aes(y = SummaryCV$test *
-                                              ifelse(metrics_maximize, 0.92, 1.08),
-                                            label = round(SummaryCV$test,3)),
-                               vjust = 0.4, angle = 90) +
-            # geom_text(ggplot2::aes(y = SummaryCV$test, label = round(SummaryCV$test,3)),
-            #           hjust = -0.1, vjust = 0.3, angle = 90) +
-            ggplot2::geom_line(ggplot2::aes(y = SummaryCV$best_test), colour = "red") +
-            ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
-        } else {
-          a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "CV error",
-                              ylab = metric, xlab = "Run", ylim = c(0, NA)) +
-            ggplot2::geom_point(ggplot2::aes(y = SummaryCV$test), colour = "red", size = 3.5) +
-            ggplot2::geom_text(ggplot2::aes(y = SummaryCV$test *
-                                              ifelse(metrics_maximize, 0.92, 1.08),
-                                            label = round(SummaryCV$test,3)),
-                               vjust = 0.4, angle = 90) +
-            # geom_text(ggplot2::aes(y = SummaryCV$test, label = round(SummaryCV$test,3)),
-            #           hjust = -0.1, vjust = 0.3, angle = 90) +
-            ggplot2::geom_line(ggplot2::aes(y = SummaryCV$best_test), colour = "red") +
-            ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
-        }
+        # if (obj %in% c("binary:logistic", "multi:softmax", "multi:softprob")) {
+        a <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = index, y = eval_1fold)) +
+          ggplot2::labs(title = "CV error", y = metric, x = "Run") +
+          ggplot2::scale_y_continuous(limits = c(0, NA)) +
+          ggplot2::geom_point(ggplot2::aes(y = test), colour = "red", size = 3.5) +
+          ggplot2::geom_text(ggplot2::aes(y = test *
+                                            ifelse(metrics_maximize, 0.92, 1.08),
+                                          label = round(test, 3)),
+                             vjust = 0.4, angle = 90) +
+          # geom_text(ggplot2::aes(y = test, label = round(test,3)),
+          #           hjust = -0.1, vjust = 0.3, angle = 90) +
+          ggplot2::geom_line(ggplot2::aes(y = best_test), colour = "red") +
+          ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
+        # a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "CV error",
+        #                     ylab = metric, xlab = "Run", ylim = c(0, NA)) +
+        #   ggplot2::geom_point(ggplot2::aes(y = SummaryCV$test), colour = "red",
+        #                       size = 3.5) +
+        #   ggplot2::geom_text(ggplot2::aes(y = SummaryCV$test *
+        #                                     ifelse(metrics_maximize, 0.92, 1.08),
+        #                                   label = round(SummaryCV$test, 3)),
+        #                      vjust = 0.4, angle = 90) +
+        #   # geom_text(ggplot2::aes(y = SummaryCV$test, label = round(SummaryCV$test,3)),
+        #   #           hjust = -0.1, vjust = 0.3, angle = 90) +
+        #   ggplot2::geom_line(ggplot2::aes(y = SummaryCV$best_test), colour = "red") +
+        #   ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
+        # } else {
+        #   a <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = index, y = eval_1fold)) +
+        #     ggplot2::labs(title = "CV error", y = metric, x = "Run") +
+        #     ggplot2::scale_y_continuous(limits = c(0, NA)) +
+        #     ggplot2::geom_point(ggplot2::aes(y = test), colour = "red", size = 3.5) +
+        #     ggplot2::geom_text(ggplot2::aes(y = test *
+        #                                       ifelse(metrics_maximize, 0.92, 1.08),
+        #                                     label = round(test, 3)),
+        #                        vjust = 0.4, angle = 90) +
+        #     # geom_text(ggplot2::aes(y = test, label = round(test,3)),
+        #     #           hjust = -0.1, vjust = 0.3, angle = 90) +
+        #     ggplot2::geom_line(ggplot2::aes(y = best_test), colour = "red") +
+        #     ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
+        # a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "CV error",
+        #                     ylab = metric, xlab = "Run", ylim = c(0, NA)) +
+        #   ggplot2::geom_point(ggplot2::aes(y = SummaryCV$test), colour = "red",
+        #                       size = 3.5) +
+        #   ggplot2::geom_text(ggplot2::aes(y = SummaryCV$test *
+        #                                     ifelse(metrics_maximize, 0.92, 1.08),
+        #                                   label = round(SummaryCV$test,3)),
+        #                      vjust = 0.4, angle = 90) +
+        #   # geom_text(ggplot2::aes(y = SummaryCV$test, label = round(SummaryCV$test,3)),
+        #   #           hjust = -0.1, vjust = 0.3, angle = 90) +
+        #   ggplot2::geom_line(ggplot2::aes(y = SummaryCV$best_test), colour = "red") +
+        #   ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
+        # }
       } else {
-        if (obj %in% c("binary:logistic", "multi:softmax", "multi:softprob")) {
-          a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "Test error",
-                              ylab = metric, xlab = "Run", ylim = c(0, NA)) +
-            ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
-        } else {
-          a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "Test error",
-                              ylab = metric, xlab = "Run", ylim = c(0, NA)) +
-            ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black") +
-            ggplot2::geom_line(ggplot2::aes(y = SummaryCV$best_test), colour = "red")
-        }
+        # if (obj %in% c("binary:logistic", "multi:softmax", "multi:softprob")) {
+        a <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = index, y = eval_1fold)) +
+          ggplot2::labs(title = "Test error", y = metric, x = "Run") +
+          ggplot2::scale_y_continuous(limits = c(0, NA)) +
+          ggplot2::geom_line(ggplot2::aes(y = best_test), colour = "red") +
+          ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
+        # a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "Test error",
+        #                     ylab = metric, xlab = "Run", ylim = c(0, NA)) +
+        #   ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
+        # } else {
+        #   a <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = index, y = eval_1fold)) +
+        #     ggplot2::labs(title = "Test error", y = metric, x = "Run") +
+        #     ggplot2::scale_y_continuous(limits = c(0, NA)) +
+        #     ggplot2::geom_line(ggplot2::aes(y = best_test), colour = "red") +
+        #     ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black")
+        # a <- ggplot2::qplot(index, eval_1fold, data = SummaryCV, main = "Test error",
+        #                     ylab = metric, xlab = "Run", ylim = c(0, NA)) +
+        #   ggplot2::geom_line(ggplot2::aes(y = benchmark), colour = "black") +
+        #   ggplot2::geom_line(ggplot2::aes(y = SummaryCV$best_test), colour = "red")
+        # }
       }   # end grafic
     )
     suppressMessages(try(print(a)))
@@ -858,10 +945,16 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       #
       # Plot train vs. test
       if (sum(!is.na(SummaryCV$test)) > 0) {
-        b <- ggplot2::qplot(train, test, color = nround, data = SummaryCV,
-                            main = "test vs train", asp = 1,
-                            xlim = c(0,NA), ylim = c(0,NA)) +
+        b <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = train, y = test, color = nround)) +
+          ggplot2::labs(title = "test vs train") +
+          ggplot2::scale_x_continuous(limits = c(0, NA)) +
+          ggplot2::scale_y_continuous(limits = c(0, NA)) +
+          ggplot2::coord_fixed() + # asp = 1,
           ggplot2::geom_abline(intercept = 0, slope = 1)
+        # b <- ggplot2::qplot(train, test, color = nround, data = SummaryCV,
+        #                     main = "test vs train", asp = 1,
+        #                     xlim = c(0,NA), ylim = c(0,NA)) +
+        #   ggplot2::geom_abline(intercept = 0, slope = 1)
       }
       if (sum(!is.na(SummaryCV$test)) > 0) {
         suppressMessages({
@@ -902,18 +995,28 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # Plot runtime and nrounds: for eval_1fold and full model
       try(rm(a,b),TRUE)
       if (nrow(SummaryCV[is.na(SummaryCV$test), ]) >= 1) {
-        a <- ggplot2::qplot(nround, runtime, color = depth,
-                            data = SummaryCV[is.na(SummaryCV$test), ],
-                            xlim = c(0,NA), ylim = c(0,NA),
-                            main = "Runtime and nrounds (eval_1fold)",
-                            ylab = "Runtime (mins)")
+        a <- ggplot2::ggplot(SummaryCV[is.na(SummaryCV$test), ],
+                             ggplot2::aes(x = nround, y = runtime, color = depth)) +
+          ggplot2::labs(title = "Runtime and nrounds (eval_1fold)", y = "Runtime (mins)") +
+          ggplot2::scale_x_continuous(limits = c(0, NA)) +
+          ggplot2::scale_y_continuous(limits = c(0, NA))
+        # a <- ggplot2::qplot(nround, runtime, color = depth,
+        #                     data = SummaryCV[is.na(SummaryCV$test), ],
+        #                     xlim = c(0,NA), ylim = c(0,NA),
+        #                     main = "Runtime and nrounds (eval_1fold)",
+        #                     ylab = "Runtime (mins)")
       }
       if (nrow(SummaryCV[!is.na(SummaryCV$test), ]) >= 1) {
-        b <- ggplot2::qplot(nround, runtime, color = depth,
-                            data = SummaryCV[!is.na(SummaryCV$test), ],
-                            xlim = c(0,NA), ylim = c(0,NA),
-                            main = "Runtime and nrounds (full model)",
-                            ylab = "Runtime (mins)")
+        b <- ggplot2::ggplot(SummaryCV[!is.na(SummaryCV$test), ],
+                             ggplot2::aes(x = nround, y = runtime, color = depth)) +
+          ggplot2::labs(title = "Runtime and nrounds (full model)", y = "Runtime (mins)") +
+          ggplot2::scale_x_continuous(limits = c(0, NA)) +
+          ggplot2::scale_y_continuous(limits = c(0, NA))
+        # b <- ggplot2::qplot(nround, runtime, color = depth,
+        #                     data = SummaryCV[!is.na(SummaryCV$test), ],
+        #                     xlim = c(0,NA), ylim = c(0,NA),
+        #                     main = "Runtime and nrounds (full model)",
+        #                     ylab = "Runtime (mins)")
       }
       try({
         rm(c)

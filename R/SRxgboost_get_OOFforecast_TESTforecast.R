@@ -38,15 +38,28 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
       i_OOFforecast <-
         stringdist::stringdistmatrix(gsub("-",".", gsub(":", ".", SummaryCV$date)),
                                      gsub("X","", colnames(temp)[2:ncol(temp)]))[i, ]
-      i_OOFforecast <- which.min(i_OOFforecast)
-      select <- data.frame(temp[, i_OOFforecast + 1])
-      data.table::setnames(select, paste0("m",
-                                          gsub("-", "",
-                                               gsub(":", "",
-                                                    gsub(" ", "x", SummaryCV$date[i])))))
+      i_OOFforecast <- which(i_OOFforecast == min(i_OOFforecast))
+      # i_OOFforecast <- which.min(i_OOFforecast)
+      select <- temp %>%
+        dplyr::select(i_OOFforecast + 1) %>%
+        stats::setNames(paste0("m", names(.) %>%
+                               gsub("-", "", .) %>%
+                               gsub(":", "", .) %>%
+                                 gsub(".", "", ., fixed = TRUE) %>%
+                               gsub(" ", "x", .)))
+      # if "multi:softprob" then determine class
+      if (length(i_OOFforecast) > 1) {
+        select <- select %>% mutate(class = apply(select, MARGIN = 1, which.max))
+      }
+      # select <- data.frame(temp[, i_OOFforecast + 1])
+      # data.table::setnames(select, paste0("m",
+      #                                     gsub("-", "",
+      #                                          gsub(":", "",
+      #                                               gsub(" ", "x", SummaryCV$date[i])))))
       OOFforecast <- cbind(OOFforecast, select)
       # save information of model performance
       SummaryCV_META <- rbind(SummaryCV_META, SummaryCV[i, ] %>% dplyr::mutate(Lauf = lauf))
+      rm(temp)
     }
     assign('OOFforecast', OOFforecast, envir = .GlobalEnv)
     assign('SummaryCV_META', SummaryCV_META, envir = .GlobalEnv)
@@ -66,13 +79,26 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
     i_TESTforecast <-
       stringdist::stringdistmatrix(gsub("-", ".", gsub(":", ".", SummaryCV$date)),
                                    gsub("X", "", colnames(temp)[2:ncol(temp)]))[i, ]
-    i_TESTforecast <- which.min(i_TESTforecast)
-    select <- data.frame(temp[, i_TESTforecast + 1])
-    data.table::setnames(select, paste0("m",
-                                        gsub("-", "",
-                                             gsub(":", "",
-                                                  gsub(" ", "x", SummaryCV$date[i])))))
+    i_TESTforecast <- which(i_TESTforecast == min(i_TESTforecast))
+    # i_TESTforecast <- which.min(i_TESTforecast)
+    select <- temp %>%
+      dplyr::select(i_TESTforecast + 1) %>%
+      stats::setNames(paste0("m", names(.) %>%
+                               gsub("-", "", .) %>%
+                               gsub(":", "", .) %>%
+                               gsub(".", "", ., fixed = TRUE) %>%
+                               gsub(" ", "x", .)))
+    # if "multi:softprob" then determine class
+    if (length(i_OOFforecast) > 1) {
+      select <- select %>% mutate(class = apply(select, MARGIN = 1, which.max))
+    }
+    # select <- data.frame(temp[, i_TESTforecast + 1])
+    # data.table::setnames(select, paste0("m",
+    #                                     gsub("-", "",
+    #                                          gsub(":", "",
+    #                                               gsub(" ", "x", SummaryCV$date[i])))))
     TESTforecast <- cbind(TESTforecast, select)
+    rm(temp)
   }
   assign('TESTforecast', TESTforecast, envir = .GlobalEnv)
   #
