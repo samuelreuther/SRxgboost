@@ -12,6 +12,7 @@ lauf
 logloss
 mae
 mape
+mAUC
 mcc
 merror
 mlogloss
