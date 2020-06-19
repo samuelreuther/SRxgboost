@@ -8,8 +8,8 @@
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
 #'                            "f1_score", "mcc_score"
-#'   \item "multi:softprob": "merror", "mlogloss", ("weighted_precision" TODO!!!)
-#'   \item "multi:softmax": "merror", "mlogloss"
+#'   \item "multi:softprob": "merror", "mlogloss", "mAUC", ("weighted_precision" TODO!!!)
+#'   \item "multi:softmax": "merror", "mlogloss", "mAUC", ("weighted_precision" TODO!!!)
 #'   \item "rank:pairwise": "ndcg"
 #' }
 #'
@@ -251,64 +251,76 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     # Custom metrics
     custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score",
-                        "weighted_precision")
+                        "weighted_precision", "mAUC")
     # Maximise metric
     metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score",
-                                             "mcc_score"), TRUE, FALSE)
-    # functions to be used by XGBOOST during optimization
-    rmsle <- function(preds, d_train) {
-      labels <- xgboost::getinfo(d_train, "label")
-      preds[preds < -1] <- -1               # avoids error of log(x < -1) = -Inf
-      err <- Metrics::rmsle(labels, preds)
-      return(list(metric = "rmsle", value = err))
+                                             "mcc_score", "mAUC"), TRUE, FALSE)
+    # custom functions to be used by XGBOOST during optimization           TODO: check if d_train is correct!!!
+    if (metric %in% custom_metrics) {
+      rmsle <- function(preds, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        preds[preds < -1] <- -1               # avoids error of log(x < -1) = -Inf
+        err <- Metrics::rmsle(labels, preds)
+        return(list(metric = "rmsle", value = err))
+      }
+      mape <- function(preds, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        err <- sum(abs(preds / labels - 1)) / length(labels)
+        return(list(metric = "mape", value = err))
+      }
+      mae <- function(preds, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        err <- Metrics::mae(labels, preds)
+        return(list(metric = "mae", value = err))
+      }
+      qwk_score <- function(preds, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        preds <- round(preds, 0)
+        err <- Metrics::ScoreQuadraticWeightedKappa(
+          labels, preds, min.rating = min(y), max.rating = max(y))
+        return(list(metric = "qwk", value = err))
+      }
+      f1_score <- function(pred, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        pred <- ROCR::prediction(pred, labels)
+        f <- ROCR::performance(pred, "f")
+        err <- max(f@y.values[[1]], na.rm = TRUE)
+        opt_cutoff = f@x.values[[1]][which.max(f@y.values[[1]])]
+        return(list(metric = "f1", value = err, opt_cutoff = opt_cutoff))
+      }
+      mcc_score <- function(pred, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        pred <- ROCR::prediction(pred, labels)
+        mcc <- ROCR::performance(pred, "mat")
+        err <- max(mcc@y.values[[1]], na.rm = TRUE)
+        opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
+        return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
+      }
+      # weighted_precision: requieres weights in xgb.DMatrix                    # TODO !!!
+      # weights = (survey_helvetia_segments_populations + laplace_smoothing) /
+      #   (prop.table(table(df_for_model$pred_class)) + laplace_smoothing)
+      # xval_data = xgb.DMatrix(data = add_noise(as.matrix(df_for_model_transformed)),
+      #                         label = df_for_model$pred_class - 1,
+      #                         weight = weights[df_for_model$pred_class])
+      # w <- as.numeric(prop.table(table(y_train_eval)))
+      weighted_precision <- function(pred, d_train) {
+        labels = xgboost::getinfo(d_train, "label")
+        # w <- prop.table(table(y_train_eval))[d_train]
+        w = xgboost::getinfo(d_train, "weight")
+        pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
+        class = apply(pred, MARGIN = 1, which.max) - 1
+        prec = stats::weighted.mean(class == labels, w)
+        return(list(metric="w_precision", value = prec))
+      }
+      mAUC <- function(pred, d_train) {
+        labels = xgboost::getinfo(d_train, "label")
+        err = as.numeric(pROC::multiclass.roc(labels, pred, direction = "<")$auc)
+        # pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
+        # err = pROC::multiclass.roc(labels, data.frame(pred) %>% stats::setNames(0:(params$num_class - 1)))
+        # https://www.datascienceblog.net/post/machine-learning/performance-measures-multi-class-problems/
+        return(list(metric="mAUC", value = err))
+      }
     }
-    mape <- function(preds, d_train) {
-      labels <- xgboost::getinfo(d_train, "label")
-      err <- sum(abs(preds / labels - 1)) / length(labels)
-      return(list(metric = "mape", value = err))
-    }
-    mae <- function(preds, d_train) {
-      labels <- xgboost::getinfo(d_train, "label")
-      err <- Metrics::mae(labels, preds)
-      return(list(metric = "mae", value = err))
-    }
-    qwk_score <- function(preds, d_train) {
-      labels <- xgboost::getinfo(d_train, "label")
-      preds <- round(preds, 0)
-      err <- Metrics::ScoreQuadraticWeightedKappa(
-        labels, preds, min.rating = min(y), max.rating = max(y))
-      return(list(metric = "qwk", value = err))
-    }
-    f1_score <- function(pred, d_train) {
-      labels <- xgboost::getinfo(d_train, "label")
-      pred <- ROCR::prediction(pred, labels)
-      f <- ROCR::performance(pred, "f")
-      err <- max(f@y.values[[1]], na.rm = TRUE)
-      opt_cutoff = f@x.values[[1]][which.max(f@y.values[[1]])]
-      return(list(metric = "f1", value = err, opt_cutoff = opt_cutoff))
-    }
-    mcc_score <- function(pred, d_train) {
-      labels <- xgboost::getinfo(d_train, "label")
-      pred <- ROCR::prediction(pred, labels)
-      mcc <- ROCR::performance(pred, "mat")
-      err <- max(mcc@y.values[[1]], na.rm = TRUE)
-      opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
-      return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
-    }
-    # requieres weights in xgb.DMatrix
-    # weights = (survey_helvetia_segments_populations + laplace_smoothing) /
-    #   (prop.table(table(df_for_model$pred_class)) + laplace_smoothing)
-    # xval_data = xgb.DMatrix(data = add_noise(as.matrix(df_for_model_transformed)),
-    #                         label = df_for_model$pred_class - 1,
-    #                         weight = weights[df_for_model$pred_class])
-    # weighted_precision <- function(pred, d_train){
-    #   labels = xgboost::getinfo(d_train, "label")
-    #   w = xgboost::getinfo(d_train, "weight")
-    #   pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
-    #   class = apply(pred, MARGIN = 1, which.max) - 1
-    #   prec = stats::weighted.mean(class == labels, w)
-    #   return(list(metric="w_precision", value = prec))
-    # }
     #
     #
     #
@@ -773,7 +785,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       benchmark <- 1 - max(prop.table(table(y)))
     }
     # if (metric %in% c("weighted_precision")) benchmark <- 0                     # TODO !!!
-    if (metric %in% c("auc")) benchmark <- 0.5
+    if (metric %in% c("auc", "mAUC")) benchmark <- 0.5
     if (metric %in% c("rmse")) benchmark <- Metrics::rmse(y, mean(y))  # sqrt(var(y))
     if (metric %in% c("rmsle")) benchmark <- Metrics::rmsle(y, mean(y))
     if (metric %in% c("msle")) benchmark <- Metrics::msle(y, mean(y))
