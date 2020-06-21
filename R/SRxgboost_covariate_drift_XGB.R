@@ -48,7 +48,7 @@ SRxgboost_covariate_drift_XGB <- function(df1 = NULL,
   no_folds <- 5
   assign('no_folds', no_folds, envir = .GlobalEnv)
   SRxgboost_data_prep("y", data_train = train, data_test = NULL, no_folds = no_folds,
-                      eval_index = NULL, objective = "binary", label_encoding = TRUE,
+                      eval_index = NULL, objective = "classification", label_encoding = TRUE,
                       check_covariate_drift = FALSE)
   #
   # SRxgboost_run

@@ -75,7 +75,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
       #
       # run XGB_data_prep
       SRxgboost_data_prep(yname = "y", data_train = df_sampled, data_test = df_test,
-                          folds = folds_sampled, objective = "binary",
+                          folds = folds_sampled, objective = "classification",
                           check_covariate_drift = FALSE)
       #
       # run XGB_RUN with CV on folds

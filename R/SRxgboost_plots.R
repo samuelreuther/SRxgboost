@@ -107,46 +107,83 @@ SRxgboost_plots <- function(lauf, rank = 1,
   }
   rm(modelpath)
   #
-  # get pr_oof
-  OOFforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
-  i_OOFforecast <- stringdist::stringdistmatrix(
-    gsub("-",".",gsub(":",".",SummaryCV$date)),
-    gsub("X","",colnames(OOFforecast)[2:ncol(OOFforecast)]))[rank, ]
-  i_OOFforecast <- which.min(i_OOFforecast); as.character(SummaryCV$date[rank])
-  colnames(OOFforecast[i_OOFforecast + 1])
-  pr <- OOFforecast[, i_OOFforecast + 1]
-  if (length(y) == length(pr)) {
-    train_pr_oof <- as.data.frame(cbind(y, pr))
+  #
+  #
+  ### get OOFforecast and TESTforecast
+  #
+  SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf, top_rank = 1, ensemble = FALSE)
+  if (length(y) == nrow(OOFforecast)) {
+    train_pr_oof <- as.data.frame(cbind(y, pr = OOFforecast[, ncol(OOFforecast)]))
   } else {
-    train_pr_oof <- as.data.frame(cbind(y = y[eval_index], pr))
+    train_pr_oof <- as.data.frame(cbind(y = y[eval_index],
+                                        pr = OOFforecast[, ncol(OOFforecast)]))
   }
   assign('train_pr_oof', train_pr_oof, envir = .GlobalEnv)
-  #
-  # get pr_test
   if (file.exists(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))) {
-    TESTforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
-                                   "Data/TESTforecast.rds"))
     y_test <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))
-    pr_test <- TESTforecast[, i_OOFforecast + 1]
-    test_pr <- as.data.frame(cbind(y_test, pr_test))
+    test_pr <- as.data.frame(cbind(y_test,
+                                   pr_test = TESTforecast[, ncol(TESTforecast)]))
     assign('test_pr', test_pr, envir = .GlobalEnv)
   }
+  # # get pr_oof
+  # OOFforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
+  # i_OOFforecast <- stringdist::stringdistmatrix(
+  #   gsub("-",".",gsub(":",".",SummaryCV$date)),
+  #   gsub("X","",colnames(OOFforecast)[2:ncol(OOFforecast)]))[rank, ]
+  # i_OOFforecast <- which.min(i_OOFforecast); as.character(SummaryCV$date[rank])
+  # colnames(OOFforecast[i_OOFforecast + 1])
+  # pr <- OOFforecast[, i_OOFforecast + 1]
+  # if (length(y) == length(pr)) {
+  #   train_pr_oof <- as.data.frame(cbind(y, pr))
+  # } else {
+  #   train_pr_oof <- as.data.frame(cbind(y = y[eval_index], pr))
+  # }
+  # assign('train_pr_oof', train_pr_oof, envir = .GlobalEnv)
+  # #
+  # # get pr_test
+  # if (file.exists(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))) {
+  #   TESTforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
+  #                                  "Data/TESTforecast.rds"))
+  #   y_test <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))
+  #   pr_test <- TESTforecast[, i_OOFforecast + 1]
+  #   test_pr <- as.data.frame(cbind(y_test, pr_test))
+  #   assign('test_pr', test_pr, envir = .GlobalEnv)
+  # }
   #
   #
   #
   ### generate graphics
   if (plots) {
+    ### downsample train_pr_oof if nrow > sample
+    # quite different results, e.g. optimal cutoff value! error at XGBFI_PDP1!
     #
-    ### downsample train_pr_oof if nrow > sample   # quite different results, e.g. optimal cutoff value! error at XGBFI_PDP1!
     if (nrow(train_pr_oof) > sample) {
       set.seed(12345)
       train_pr_oof <- train_pr_oof %>% dplyr::sample_n(sample)
       set.seed(Sys.time())
     }
     #
+    # define mcc function
+    # ROCR currently supports only evaluation of binary classification tasks !!!
+    mcc <- function(pred, labels) {
+      temp <- data.frame(pred = pred, labels = labels)
+      if (length(pred) > 100000) {   # NAs produced by integer overflow > 500'000
+        set.seed(12345)
+        temp <- temp %>% dplyr::sample_n(100000)
+        set.seed(Sys.time())
+      }
+      prediction <- ROCR::prediction(temp$pred, temp$labels)
+      mcc <- ROCR::performance(prediction, "mat")
+      err <- max(mcc@y.values[[1]], na.rm = TRUE)
+      opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
+      return(list(mcc = err, opt_cutoff = opt_cutoff))
+    }
+    #
+    #
+    #
     ### Plot y vs. model prediction
-    if (SRfunctions::SR_is_number(y) & length(unique(y)) > 2) {
-      #
+    #
+    if (objective == "regression") {   # SRfunctions::SR_is_number(y) & length(unique(y)) > 2
       # avoid negative values if min(y) >= 0
       if (min(y, na.rm = TRUE) >=  0) {   # train_pr_oof$y
         train_pr_oof$pr <- dplyr::case_when(is.na(train_pr_oof$pr) ~ NA_real_,
@@ -154,7 +191,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                             TRUE                   ~ train_pr_oof$pr)
       }
       #
-      # regression
+      # plot
       ggplot2::ggplot(train_pr_oof, ggplot2::aes(x = y, y = pr)) +
         ggplot2::geom_point() +
         ggplot2::geom_abline(intercept = 0, slope = 1,
@@ -178,8 +215,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
                              "Best Model/Accuracy y vs. model prediction.png"),
                       width = 9.92, height = 5.3)  # 4.67
-    } else {
-      #
+    } else if (objective == "classification") {
       # calculate ROC-curve
       ROC <- pROC::roc(response = train_pr_oof$y,
                        predictor = train_pr_oof$pr, algorithm = 2,
@@ -293,21 +329,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
                         width = 9.92, height = 5.3)  # 4.67
       }
       #
-      # define mcc function
-      mcc <- function(pred, labels) {
-        temp <- data.frame(pred = pred, labels = labels)
-        if (length(pred) > 100000) {   # NAs produced by integer overflow > 500'000
-          set.seed(12345)
-          temp <- temp %>% dplyr::sample_n(100000)
-          set.seed(Sys.time())
-        }
-        prediction <- ROCR::prediction(temp$pred, temp$labels)
-        mcc <- ROCR::performance(prediction, "mat")
-        err <- max(mcc@y.values[[1]], na.rm = TRUE)
-        opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
-        return(list(mcc = err, opt_cutoff = opt_cutoff))
-      }
-      #
       # print ROC-curve
       try({
         temp <- data.frame(tpr = ROC$sensitivities,
@@ -378,9 +399,104 @@ SRxgboost_plots <- function(lauf, rank = 1,
       ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
                              "Best Model/Class distributions.png"),
                       width = 9.92, height = 5.3)
+    } else {
+      # "multilabel"
+      # https://www.datascienceblog.net/post/machine-learning/performance-measures-multi-class-problems/
+      #
+      # calculate ROC-curve
+      ROC <- pROC::multiclass.roc(train_pr_oof$y,
+                                  train_pr_oof$pr,
+                                  levels = levels(factor(train_pr_oof$y)),
+                                  direction = "<")
+      #
+      # calculate ROC-curve binary
+      auc_bin <- data.frame()
+      for (i in levels(factor(train_pr_oof$y))) {
+        auc <- pROC::multiclass.roc(dplyr::if_else(train_pr_oof$y == i, 1, 0),
+                                    dplyr::if_else(train_pr_oof$pr == i, 1, 0),
+                                    direction = "<")$auc %>%
+          as.numeric()
+        auc_bin <- dplyr::bind_rows(auc_bin, data.frame(auc = auc))
+        rm(auc)
+      }; rm(i)
+      #
+      # confusion matrix
+      confusion_matrix <- caret::confusionMatrix(factor(train_pr_oof$pr,
+                                                        levels = levels(factor(train_pr_oof$y))),
+                                                 factor(train_pr_oof$y))
+      print(confusion_matrix)
+      sink(paste0(path_output, gsub(".csv", "/", lauf),
+                  "Best Model/Confusion matrix.txt"), append = FALSE)
+      print(confusion_matrix)
+      print(confusion_matrix[["byClass"]])
+      sink()
+      # plot confusion matrix
+      SRfunctions::SR_mosaicplot(var1 = factor(train_pr_oof$y),
+                                 var2 = factor(train_pr_oof$pr,
+                                               levels = levels(factor(train_pr_oof$y))))
+      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                             "Best Model/Confusion Matrix.png"),
+                      width = 9.92, height = 5.3)  # 4.67
+      #
+      # calculate mcc
+      # ROCR currently supports only evaluation of binary classification tasks !!!
+      # mcc <- mcc(train_pr_oof$pr, train_pr_oof$y)
+      #
+      # get binary ROC curves
+      ROC_bin <- data.frame()
+      for (i in 1:length(ROC[['rocs']])) {
+        suppressMessages({
+          ROC_bin <- dplyr::bind_rows(ROC_bin,
+                                      data.frame(binary_ROC = toString(ROC[['rocs']][[i]][["levels"]]),
+                                                 binary_AUC = as.numeric(pROC::auc(ROC[["rocs"]][[i]][["response"]],
+                                                                                   ROC[["rocs"]][[i]][["predictor"]],
+                                                                                   direction = "<")),
+                                                 thresholds = ROC[['rocs']][[i]][["thresholds"]],
+                                                 tpr = ROC[['rocs']][[i]][["sensitivities"]],
+                                                 fpr = 1 - ROC[['rocs']][[i]][["specificities"]],
+                                                 no = length(ROC[['rocs']][[i]][["response"]]),
+                                                 no_y_1 = length(ROC[['rocs']][[i]][["controls"]]),
+                                                 stringsAsFactors = FALSE))
+        })
+      }; rm(i)
+      ROC_bin <- ROC_bin %>%
+        dplyr::mutate(binary = paste0(binary_ROC, " (AUC = ", round(binary_AUC, 2), ")"))
+      #
+      # print ROC-curve
+      try({
+        ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr, colour = binary)) +
+          ggplot2::geom_line() +
+          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
+                               linetype = "dashed") +
+          ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(5),
+                                      limits = c(0, 1)) +
+          ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(5),
+                                      limits = c(0, 1)) +
+          ggplot2::labs(title = "ROC",
+                        x = "Rate of false positives", y = "Rate of true positives",
+                        subtitle = paste0("AUC:                  ",
+                                          round(as.numeric(ROC$auc), 3),
+                                          # "\nMCC:                  ",
+                                          # paste0(round(mcc$mcc, 3),
+                                          #        " (cutoff = ",
+                                          #        round(mcc$opt_cutoff, 3), ")"),
+                                          "\nAccuracy:           ",
+                                          round(as.numeric(confusion_matrix$overall[1]), 3),
+                                          "\nPrecision:           ",
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 5]), 3)),
+                                          "\nSensitivity/TPR:  ",
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 1]), 3)),
+                                          "\nSpecificity/TNR:  ",
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 2]), 3))))
+        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/ROC.png"),
+                        width = 9.92, height = 5.3)  # 4.67
+      })
     }
     #
+    #
+    #
     ### Residual drift
+    #
     if (exists("test_pr")) {
       train_temp <- train_pr_oof %>%
         dplyr::mutate(residuals = y - pr)
@@ -393,29 +509,85 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                                                 "/Best Model/"))
     }
     #
+    #
+    #
     ### Lift Chart
-    train_pr_oof$group <- cut(train_pr_oof$pr,
-                              breaks = unique(stats::quantile(train_pr_oof$pr,
-                                                              probs = seq(0, 1.01, by = 1/20),
-                                                              na.rm = TRUE)),
-                              ordered_result = TRUE, dig.lab = 10,
-                              include.lowest = TRUE, labels = FALSE)
-    temp <- train_pr_oof %>%
-      dplyr::group_by(group) %>%
-      dplyr::summarise(Actual = mean(y), Predicted = mean(pr))
-    train_pr_oof$group <- NULL
-    temp <- reshape2::melt(temp, id.vars = "group")
-    ggplot2::ggplot(temp, ggplot2::aes(x = group, y = value, colour = variable)) +
-      ggplot2::geom_point() +
-      ggplot2::geom_line() +
-      ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
-      ggplot2::labs(title = "Lift Chart", y = "y", x = "Sorted Prediction", colour = "")
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Best Model/Lift Chart.png"),
-                    width = 9.92, height = 5.3)  # 4.67
-    rm(temp)
+    #
+    if (objective %in% c("regression", "classification")) {
+      train_pr_oof$group <- cut(train_pr_oof$pr,
+                                breaks = unique(stats::quantile(train_pr_oof$pr,
+                                                                probs = seq(0, 1.01, by = 1/20),
+                                                                na.rm = TRUE)),
+                                ordered_result = TRUE, dig.lab = 10,
+                                include.lowest = TRUE, labels = FALSE)
+      temp <- train_pr_oof %>%
+        dplyr::group_by(group) %>%
+        dplyr::summarise(Actual = mean(y), Predicted = mean(pr))
+      train_pr_oof$group <- NULL
+      temp <- reshape2::melt(temp, id.vars = "group")
+      #
+      ggplot2::ggplot(temp, ggplot2::aes(x = group, y = value, colour = variable)) +
+        ggplot2::geom_point() +
+        ggplot2::geom_line() +
+        ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
+        ggplot2::labs(title = "Lift Chart", y = "y", x = "Sorted Prediction", colour = "")
+      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                             "Best Model/Lift Chart.png"),
+                      width = 9.92, height = 5.3)  # 4.67
+      rm(temp)
+    } else {
+      # "multilabel
+      # add baseline of random group
+      set.seed(12345)
+      train_pr_oof <- train_pr_oof %>%
+        dplyr::mutate(random = sample(train_pr_oof$y, nrow(train_pr_oof), replace = FALSE),
+                      model_correct = dplyr::if_else(y == pr, 1, 0),
+                      baseline_correct = dplyr::if_else(y == random, 1, 0))
+      set.seed(Sys.time())
+      #
+      temp <- dplyr::full_join(
+        # calculate precision for model
+        train_pr_oof %>%
+          dplyr::count(y, model_correct) %>%
+          dplyr::group_by(y) %>%
+          dplyr::mutate(model_precision = n / sum(n)) %>%
+          dplyr::filter(model_correct == 1) %>%
+          dplyr::select(y, model = model_precision),
+        # calculate precision for baseline
+        train_pr_oof %>%
+          dplyr::count(y, baseline_correct) %>%
+          dplyr::group_by(y) %>%
+          dplyr::mutate(baseline_precision = n / sum(n)) %>%
+          dplyr::filter(baseline_correct == 1) %>%
+          dplyr::select(y, baseline = baseline_precision),
+        by = "y") %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(y = as.character(y),
+                      lift_factor = model / baseline)
+      #
+      temp %>%
+        dplyr::select(-lift_factor) %>%
+        reshape2::melt(id.vars = "y") %>%
+        ggplot2::ggplot(ggplot2::aes(x = y, y = value, colour = variable, group = variable)) +
+        ggplot2::geom_point() +
+        ggplot2::geom_line() +
+        ggplot2::annotate(geom = "text", x = temp$y, y = temp$model,
+                          label = paste0("lift =\n", round(temp$lift_factor, 1)),
+                          hjust = "center", vjust = "top", size = 3) +
+        # ggplot2::geom_label(data = temp,
+        #                     ggplot2::aes(x = y, y = model, label = round(lift_factor, 1)))
+        ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6), limits = c(0, 1)) +
+        ggplot2::labs(title = "Lift Chart", y = "Precision", x = "Class", colour = "")
+      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                             "Best Model/Lift Chart.png"),
+                      width = 9.92, height = 5.3)  # 4.67
+      rm(temp)
+    }
+    #
+    #
     #
     ### 1way graphics
+    #
     # variable importance
     importance_matrix <- xgboost::xgb.importance(colnames(train_mat), model = bst)
     importance_matrix <- importance_matrix %>%
@@ -562,6 +734,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                       # grid.resolution = 30,
                                       train = test_eval_mat_,
                                       plot = FALSE, chull = TRUE, type = "regression",
+                                      # type = ifelse(objective == "multilabel",
+                                      #               "classification", objective))
                                       parallel = TRUE, paropts = list(.packages = "xgboost"))
             } else {
               # single core
@@ -572,6 +746,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                       # grid.resolution = 30,
                                       train = test_eval_mat_,
                                       plot = FALSE, chull = TRUE, type = "regression")
+                                      # type = ifelse(objective == "multilabel",
+                                      #               "classification", objective))
             }
             #
             stats <- stats %>%

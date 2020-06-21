@@ -146,7 +146,7 @@ test_that("classification / no_folds", {
   expect_equal(class(SRxgboost_data_prep(yname = "Churn",
                                          data_train = train,
                                          no_folds = 5,
-                                         objective = "binary")),
+                                         objective = "classification")),
                "NULL")})
 # no. ob objects in memory
 test_that("classification / no_folds, no. ob objects in memory", {
@@ -174,7 +174,7 @@ test_that("classification / eval_index", {
   expect_equal(class(SRxgboost_data_prep(yname = "Churn",
                                          data_train = train,
                                          eval_index = eval_index,
-                                         objective = "binary")),
+                                         objective = "classification")),
                "NULL")})
 # no. ob objects in memory
 test_that("classification / eval_index, no. ob objects in memory", {
@@ -204,7 +204,7 @@ test_that("classification / folds", {
   expect_equal(class(SRxgboost_data_prep(yname = "Churn",
                                          data_train = train,
                                          folds = folds,
-                                         objective = "binary")),
+                                         objective = "classification")),
                "NULL")})
 # no. ob objects in memory
 test_that("classification / folds: no. ob objects in memory", {

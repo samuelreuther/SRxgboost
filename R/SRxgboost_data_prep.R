@@ -55,12 +55,13 @@ SRxgboost_data_prep <- function(yname,
   #
   #
   #
-  ### determine if objective is not given: regression, binary or multilabel
+  ### determine if objective is not given: regression, binary classification or multilabel classification
   if (is.null(objective)) {
-    objective <- dplyr::case_when(length(data_train[, yname]) == 2        ~ "binary",
-                                  length(data_train[, yname]) <= 10       ~ "multilabel", # ??? !!!
-                                  class(data_train[, yname]) == "numeric" ~ "regression")
+    objective <- dplyr::case_when(length(unique(data_train[, yname])) == 2  ~ "classification",
+                                  length(unique(data_train[, yname])) <= 10 ~ "multilabel", # ??? !!!
+                                  class(data_train[, yname]) == "numeric"   ~ "regression")
   }
+  assign('objective', objective, envir = .GlobalEnv)
   #
   # # create random_noise variable to determine useful features (variable importance)
   # data_train$random_noise <- rnorm(nrow(data_train), mean = 0, sd = 1)
@@ -81,8 +82,8 @@ SRxgboost_data_prep <- function(yname,
     if (!is.null(data_test) & !is.na(match(yname, names(data_test)))) {
       y_test <- data_test[, yname]
     }
-  } else if (objective == "binary") {
-    # "binary" must be 0 and 1
+  } else if (objective == "classification") {
+    # "classification" must be 0 and 1
     # if (sum(is.factor(data_train[, yname]) |
     #         (unique(data_train[, yname])[1] == 1 & unique(data_train[, yname])[2] == 2) |
     #         (unique(data_train[, yname])[1] == 2 & unique(data_train[, yname])[2] == 1)) > 0) {
@@ -223,7 +224,7 @@ SRxgboost_data_prep <- function(yname,
   if (objective == "regression") {
     y_train_eval <- train_eval[, yname]
     y_test_eval <- test_eval[, yname]
-  } else if (objective == "binary") {
+  } else if (objective == "classification") {
     if (is.factor(datenModell[, yname])) {
       y_train_eval <- as.numeric(train_eval[, yname]) - 1
       y_test_eval <- as.numeric(test_eval[, yname]) - 1
