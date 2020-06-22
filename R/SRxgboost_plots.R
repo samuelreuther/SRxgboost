@@ -483,11 +483,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           "\nAccuracy:           ",
                                           round(as.numeric(confusion_matrix$overall[1]), 3),
                                           "\nPrecision:           ",
-                                          toString(round(as.numeric(confusion_matrix$byClass[, 5]), 3)),
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 5]), 2)),
                                           "\nSensitivity/TPR:  ",
-                                          toString(round(as.numeric(confusion_matrix$byClass[, 1]), 3)),
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 1]), 2)),
                                           "\nSpecificity/TNR:  ",
-                                          toString(round(as.numeric(confusion_matrix$byClass[, 2]), 3))))
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 2]), 2))))
         ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/ROC.png"),
                         width = 9.92, height = 5.3)  # 4.67
       })
