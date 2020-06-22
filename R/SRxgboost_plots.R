@@ -663,7 +663,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
             stats <- data.frame(x = datenModell_eval_[, xlabel] == xlabel2,
                                 Actual = y_$y, Predicted = pr_$pr) %>%
               dplyr::group_by(x) %>%
-              dplyr::summarise(Count = n(),
+              dplyr::summarise(Count = dplyr::n(),
                                Predicted = mean(Predicted),
                                Actual = mean(Actual))
             stats <- stats %>%
@@ -705,7 +705,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 dplyr::group_by(Group) %>%
                 dplyr::summarise(x = x[1],
                                  x_orig = mean(x_orig),
-                                 Count = n(),
+                                 Count = dplyr::n(),
                                  Predicted = mean(Predicted),
                                  Actual = mean(Actual))
             } else {
@@ -719,7 +719,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 dplyr::group_by(Group) %>%
                 dplyr::summarise(x = mean(x),
                                  x_orig = mean(x_orig),
-                                 Count = n(),
+                                 Count = dplyr::n(),
                                  Predicted = mean(Predicted),
                                  Actual = mean(Actual))
             }
