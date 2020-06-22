@@ -862,6 +862,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       if (sum(!is.na(SummaryCV$test)) > 0) {
         # if (obj %in% c("binary:logistic", "multi:softmax", "multi:softprob")) {
         a <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = index, y = eval_1fold)) +
+          ggplot2::geom_point() +
           ggplot2::labs(title = "CV error", y = metric, x = "Run") +
           ggplot2::scale_y_continuous(limits = c(0, NA)) +
           ggplot2::geom_point(ggplot2::aes(y = test), colour = "red", size = 3.5) +
@@ -914,6 +915,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       } else {
         # if (obj %in% c("binary:logistic", "multi:softmax", "multi:softprob")) {
         a <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = index, y = eval_1fold)) +
+          ggplot2::geom_point() +
           ggplot2::labs(title = "Test error", y = metric, x = "Run") +
           ggplot2::scale_y_continuous(limits = c(0, NA)) +
           ggplot2::geom_line(ggplot2::aes(y = best_test), colour = "red") +
@@ -946,6 +948,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # Plot train vs. test
       if (sum(!is.na(SummaryCV$test)) > 0) {
         b <- ggplot2::ggplot(SummaryCV, ggplot2::aes(x = train, y = test, color = nround)) +
+          ggplot2::geom_point() +
           ggplot2::labs(title = "test vs train") +
           ggplot2::scale_x_continuous(limits = c(0, NA)) +
           ggplot2::scale_y_continuous(limits = c(0, NA)) +
@@ -997,6 +1000,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       if (nrow(SummaryCV[is.na(SummaryCV$test), ]) >= 1) {
         a <- ggplot2::ggplot(SummaryCV[is.na(SummaryCV$test), ],
                              ggplot2::aes(x = nround, y = runtime, color = depth)) +
+          ggplot2::geom_point() +
           ggplot2::labs(title = "Runtime and nrounds (eval_1fold)", y = "Runtime (mins)") +
           ggplot2::scale_x_continuous(limits = c(0, NA)) +
           ggplot2::scale_y_continuous(limits = c(0, NA))
@@ -1009,6 +1013,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       if (nrow(SummaryCV[!is.na(SummaryCV$test), ]) >= 1) {
         b <- ggplot2::ggplot(SummaryCV[!is.na(SummaryCV$test), ],
                              ggplot2::aes(x = nround, y = runtime, color = depth)) +
+          ggplot2::geom_point() +
           ggplot2::labs(title = "Runtime and nrounds (full model)", y = "Runtime (mins)") +
           ggplot2::scale_x_continuous(limits = c(0, NA)) +
           ggplot2::scale_y_continuous(limits = c(0, NA))

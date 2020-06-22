@@ -49,7 +49,8 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
                                gsub(" ", "x", .)))
       # if "multi:softprob" then determine class
       if (length(i_OOFforecast) > 1) {
-        select <- select %>% mutate(class = apply(select, MARGIN = 1, which.max))
+        select <- select %>%
+          dplyr::mutate(class = apply(select, MARGIN = 1, which.max) - 1)
       }
       # select <- data.frame(temp[, i_OOFforecast + 1])
       # data.table::setnames(select, paste0("m",
@@ -90,7 +91,8 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
                                gsub(" ", "x", .)))
     # if "multi:softprob" then determine class
     if (length(i_OOFforecast) > 1) {
-      select <- select %>% mutate(class = apply(select, MARGIN = 1, which.max))
+      select <- select %>%
+        dplyr::mutate(class = apply(select, MARGIN = 1, which.max) - 1)
     }
     # select <- data.frame(temp[, i_TESTforecast + 1])
     # data.table::setnames(select, paste0("m",

@@ -562,8 +562,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
           dplyr::select(y, baseline = baseline_precision),
         by = "y") %>%
         dplyr::ungroup() %>%
+        dplyr::mutate_at(dplyr::vars(model, baseline), ~tidyr::replace_na(., 0)) %>%
         dplyr::mutate(y = as.character(y),
-                      lift_factor = model / baseline)
+                      lift_factor = dplyr::if_else(baseline != 0, model / baseline, 0))
       #
       temp %>%
         dplyr::select(-lift_factor) %>%

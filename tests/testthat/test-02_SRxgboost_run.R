@@ -528,7 +528,7 @@ test_that("classification / no_folds: files in path_output/lauf/All Models", {
 test_that("classification / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/0 Variable importance.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
                  nrow() * 2 + 16)
 })
