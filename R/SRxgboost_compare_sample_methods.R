@@ -123,7 +123,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
     ggplot2::ggsave(paste0(path_output, "sample_comparison_of_methods.png"), p,
                     width = 9.92, height = 5.3)
   } else {
-    # plot train, test and CV results
+    # plot train, test and CV results                      WARNING !!! works only if runs = 2   TODO !!!
     # read y_test
     TESTforecast <- data.frame(y_test = readRDS(paste0(path_output, "unbalanced/Data/y_test.rds")))
     # read TESTforecast i loop

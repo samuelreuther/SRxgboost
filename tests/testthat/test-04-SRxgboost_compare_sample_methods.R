@@ -153,7 +153,7 @@ train <- train %>%
 # only numeric features are allowed: ubENN, ubNCL, ubOSS, ubCNN, ubTomek        TODO !!!
 #
 path_output <- "output_temp/"
-comparison <- SRxgboost_compare_sample_methods(df_train = train,
+comparison <- SRxgboost_compare_sample_methods(df_train = train,              # TODO !!! remove 31 warnings: Unequal factor levels: coercing to character
                                                # y_name = "Churn",              TODO !!!
                                                df_test = test,
                                                folds = folds5, runs = 2,
