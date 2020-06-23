@@ -57,9 +57,10 @@ SRxgboost_sample_training_data <- function(df,
     # df_temp %>% dplyr::count(y) %>% dplyr::mutate(n_percent = n/sum(n))
     #
     # sample data
+    # only numeric features are allowed: ubENN, ubNCL, ubOSS, ubCNN, ubTomek    TODO !!!
     df_temp <- unbalanced::ubBalance(X = df_temp %>% dplyr::select(-y),
                                      Y = df_temp$y,
-                                     positive = "1",
+                                     positive = 1,
                                      type = sample_method,
                                      percOver = percOver,
                                      percUnder = percUnder,
@@ -71,7 +72,8 @@ SRxgboost_sample_training_data <- function(df,
     #
     # sampled dataset
     df_temp <- data.frame(y = df_temp$Y, df_temp$X) %>%
-      dplyr::mutate(y = as.numeric(as.character(y)))
+      dplyr::mutate(y = as.numeric(as.character(y)),
+                    fold = i)
     # df_temp %>% dplyr::count(y) %>% dplyr::mutate(n_percent = n/sum(n))
     #
     # rewrite folds[[i]]
@@ -93,6 +95,23 @@ SRxgboost_sample_training_data <- function(df,
       print()
   }
   #
+  # randomize rows again (because it is sorted by fold now)
+  set.seed(12345)
+  rows_randomised <- sample(1:nrow(df_sampled), nrow(df_sampled), replace = FALSE)
+  set.seed(Sys.time())
+  #
+  df_sampled_ <- df_sampled %>%
+    mutate(row = 1:nrow(.))
+  df_sampled_ <- df_sampled_[rows_randomised, ] %>%
+    mutate(row_new = 1:nrow(.))
+  #
+  folds_ <- vector("list", length(folds))
+  for (i in 1:length(folds)) {
+    folds_[[i]] <- df_sampled_$row_new[df_sampled_$fold == i]
+  }; rm(i)
+  #
+  rm(rows_randomised)
+  #
   # return sampled data and new folds
-  return(list(df_sampled, folds))
+  return(list(df_sampled_, folds_))
 }

@@ -24,10 +24,11 @@ The goal of SRxgboost is to ...
 
 You can install the released version of SRxgboost from [CRAN](https://CRAN.R-project.org) with:
 
-```{r setup}
-# library(SRxgboost)
-# devtools::install_github("samuelreuther/SRxgboost")
-# 
-# install.packages("~/data/shared/CH00RHU/Libraries/SRxgboost_0.2.0.tar.gz", 
-#                  repos = NULL, type = "source", dependencies = TRUE)
+```{r setup, eval=FALSE, echo=TRUE}
+devtools::install_github("samuelreuther/SRxgboost")
+
+install.packages("~/data/shared/CH00RHU/Libraries/SRxgboost_0.2.1.tar.gz",
+                 repos = NULL, type = "source", dependencies = TRUE)
+
+library(SRxgboost)
 ```

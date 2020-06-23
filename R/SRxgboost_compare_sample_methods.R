@@ -31,6 +31,7 @@
 #'
 #' @export
 SRxgboost_compare_sample_methods <- function(df_train,
+                                             # y_name,                  TODO !!!
                                              df_test = NULL,
                                              folds,
                                              runs = 2,
@@ -38,8 +39,8 @@ SRxgboost_compare_sample_methods <- function(df_train,
   ### checks
   # check path_output exists
   if (!exists("path_output")) cat("'path_output' is missing \n")
-  # check lauf ends with ".csv"
-  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  # check if y_name is 'y'
+  if (!"y" %in% names(df_train)) stop("y_name must be 'y'")
   #
   # backup path_output
   path_output_backup <- path_output
@@ -49,7 +50,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
     # check if run exists already and print progress
     lauf <- paste0(m, ".csv")
     assign("lauf", lauf, envir = .GlobalEnv)
-    path_output <- paste0(path_output_backup, lauf_name, "_", i, "/compare sample methods/")
+    path_output <- paste0(path_output_backup, "compare sample methods/")
     assign("path_output", path_output, envir = .GlobalEnv)
     if (dir.exists(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))) {
       rm(lauf, path_output)
@@ -86,14 +87,14 @@ SRxgboost_compare_sample_methods <- function(df_train,
       SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.04)
       #
       # clean up
-      rm(return, df_sampled, folds_sampled, id_unique_train)
+      rm(return, df_sampled, folds_sampled, id_unique_train, OOFforecast, TESTforecast,
+         SummaryCV_META, test_pr, y_OOF)
       SRxgboost_cleanup()
     }, TRUE)
-  }; rm(m)
+  }; rm(m, lauf)
   #
   # plot error comparison
   files <- list.files(path_output, pattern = "Summary.csv", recursive = TRUE)
-  files <- files[grepl("sample_", files)] #; files
   comparison <- data.frame()
   for (i in files) {
     comparison <- dplyr::bind_rows(comparison,
@@ -101,25 +102,66 @@ SRxgboost_compare_sample_methods <- function(df_train,
                                      dplyr::arrange(-test) %>%
                                      utils::head(1) %>%
                                      dplyr::mutate(Lauf = i %>%
-                                                     gsub("sample_", "", .) %>%
                                                      gsub("/Summary.csv", "", .)))
   }; rm(i, files)
-  p <- comparison %>%
-    dplyr::select(Lauf, train, test) %>%
-    dplyr::mutate(Lauf = factor(Lauf),
-                  Lauf = stats::reorder(Lauf, -test)) %>%
-    reshape2::melt(id = "Lauf") %>%
-    ggplot2::ggplot(ggplot2::aes(x = Lauf, y = value, colour = variable, group = variable)) +
-    ggplot2::geom_line(size = 1) +
-    ggplot2::geom_point(size = 3) +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 0, vjust = 0.5)) +
-    ggplot2::labs(y = "AUC", colour = "",
-                  title = "Vergleich der Modellgüte der einzelnen Sample Methoden") +
-    ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
-    ggplot2::theme(legend.position = "top")
-  print(p)
-  ggplot2::ggsave(paste0(path_output, "sample_comparison_of_methods.png"), p,
-                  width = 9.92, height = 5.3)
+  if (!file.exists(paste0(path_output, "unbalanced/Data/y_test.rds"))) {
+    # plot train and CV results
+    p <- comparison %>%
+      dplyr::select(Lauf, train, CV = test) %>%
+      dplyr::mutate(Lauf = factor(Lauf),
+                    Lauf = stats::reorder(Lauf, -CV)) %>%
+      reshape2::melt(id = "Lauf") %>%
+      ggplot2::ggplot(ggplot2::aes(x = Lauf, y = value, colour = variable, group = variable)) +
+      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_point(size = 3) +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 0, vjust = 0.5)) +
+      ggplot2::labs(y = "AUC", colour = "",
+                    title = "Vergleich der Modellgüte der einzelnen Sample Methoden") +
+      ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+      ggplot2::theme(legend.position = "top")
+    print(p)
+    ggplot2::ggsave(paste0(path_output, "sample_comparison_of_methods.png"), p,
+                    width = 9.92, height = 5.3)
+  } else {
+    # plot train, test and CV results
+    # read y_test
+    TESTforecast <- data.frame(y_test = readRDS(paste0(path_output, "unbalanced/Data/y_test.rds")))
+    # read TESTforecast i loop
+    files <- list.files(path_output, pattern = "Summary.csv", recursive = TRUE)
+    auc_test <- data.frame(Lauf = gsub("/Summary.csv", "", files))
+    for (i in files) {
+      # calculate AUC
+      TESTforecast <- dplyr::bind_cols(TESTforecast,
+                                       readRDS(paste0(path_output, gsub("Summary.csv", "", i),
+                                                      "Data/TESTforecast.rds")) %>%
+                                         dplyr::select(2) %>%
+                                         stats::setNames(gsub("/Summary.csv", "", i, fixed = TRUE)))
+      # calculate AUC
+      auc_test$auc[grep(i, files)] <- round(as.numeric(pROC::auc(TESTforecast$y_test,
+                                                                 TESTforecast[, ncol(TESTforecast)],
+                                                                 levels = c(0, 1), direction = "<")), 3)
+    }; rm(i, files)
+    #
+    # plot
+    p <- dplyr::left_join(auc_test %>% dplyr::rename(test = auc),
+                     comparison %>% dplyr::select(Lauf, train, CV = test),
+                     by = "Lauf") %>%
+      dplyr::mutate(Lauf = factor(Lauf),
+                    Lauf = stats::reorder(Lauf, -test)) %>%
+      reshape2::melt(id = "Lauf") %>%
+      ggplot2::ggplot(ggplot2::aes(x = Lauf, y = value, colour = variable, group = variable)) +
+      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_point(size = 3) +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 0, vjust = 0.5)) +
+      ggplot2::labs(y = "AUC", colour = "",
+                    title = "Vergleich der Modellgüte der einzelnen Sample Methoden") +
+      ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+      ggplot2::theme(legend.position = "top")
+    print(p)
+    ggplot2::ggsave(paste0(path_output, "sample_comparison_of_methods.png"), p,
+                    width = 9.92, height = 5.3)
+  }
+  #
   #
   # reset path_output
   path_output <- path_output_backup
