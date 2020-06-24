@@ -204,18 +204,21 @@ SRxgboost_plots <- function(lauf, rank = 1,
                              colour = "red", linetype = "dashed") +
         ggplot2::labs(y = "model prediction", title = "y vs. model prediction",
                       subtitle = paste0("RMSE:    ", round(Metrics::rmse(train_pr_oof$y,
-                                                                         train_pr_oof$pr), 3),
+                                                                         train_pr_oof$pr), 3) %>%
+                                          format(., nsmall = 3),
                                         "\nMAE:      ",
                                         round(Metrics::mae(train_pr_oof$y,
-                                                           train_pr_oof$pr), 3),
+                                                           train_pr_oof$pr), 3) %>%
+                                          format(., nsmall = 3),
                                         "\nMAPE:    ",
                                         round(sum(abs(train_pr_oof$pr /
                                                         train_pr_oof$y - 1)) /
-                                                length(train_pr_oof$y), 3),
+                                                length(train_pr_oof$y), 3) %>%
+                                          format(., nsmall = 3),
                                         "\nR2:          ",
-                                        format(stats::cor(train_pr_oof$y,
-                                                          train_pr_oof$pr)^2,
-                                               digits = 3))) # ,
+                                        round(stats::cor(train_pr_oof$y,
+                                                          train_pr_oof$pr)^2, 3) %>%
+                                          format(., nsmall = 3))) # ,
       # "\nAUC:       ", round(pROC::auc(train_pr_oof$y,
       #                                  train_pr_oof$pr), 3)))
       ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
@@ -359,17 +362,22 @@ SRxgboost_plots <- function(lauf, rank = 1,
           ggplot2::labs(title = "ROC",
                         x = "Rate of false positives", y = "Rate of true positives",
                         subtitle = paste0("AUC:                  ",
-                                          round(as.numeric(ROC$auc), 3),
+                                          round(as.numeric(ROC$auc), 3) %>%
+                                            format(., nsmall = 3),
                                           "\nMCC:                  ",
                                           paste0(round(mcc$mcc, 3),
                                                  " (cutoff = ",
-                                                 round(mcc$opt_cutoff, 3), ")"),
+                                                 round(mcc$opt_cutoff, 3) %>%
+                                                   format(., nsmall = 3), ")"),
                                           "\nAccuracy:           ",
-                                          round(as.numeric(confusion_matrix$overall[1]), 3),
+                                          round(as.numeric(confusion_matrix$overall[1]), 3) %>%
+                                            format(., nsmall = 3),
                                           "\nSensitivity/TPR:  ",
-                                          round(as.numeric(confusion_matrix$byClass[1]), 3),
+                                          round(as.numeric(confusion_matrix$byClass[1]), 3) %>%
+                                            format(., nsmall = 3),
                                           "\nSpecificity/TNR:  ",
-                                          round(as.numeric(confusion_matrix$byClass[2]), 3)))
+                                          round(as.numeric(confusion_matrix$byClass[2]), 3) %>%
+                                            format(., nsmall = 3)))
         ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/ROC.png"),
                         width = 9.92, height = 5.3)  # 4.67
       })
@@ -412,8 +420,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       # calculate ROC-curve
       ROC <- pROC::multiclass.roc(train_pr_oof$y,
                                   train_pr_oof$pr,
-                                  levels = levels(factor(train_pr_oof$y)),
-                                  direction = "<")
+                                  levels = levels(factor(train_pr_oof$y))) # direction = "<"
       # additionally compute ROC-curve for "multi:softprob"
       # WARNING: AUC is better/correcter with "multi:softprob" !!!
       if (ncol(train_pr_oof) > 2) {
@@ -422,16 +429,15 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                            setNames(0:(ncol(.) - 1)))
       }
       #
-      # calculate ROC-curve binary
-      auc_bin <- data.frame()
-      for (i in levels(factor(train_pr_oof$y))) {
-        auc <- pROC::multiclass.roc(dplyr::if_else(train_pr_oof$y == i, 1, 0),
-                                    dplyr::if_else(train_pr_oof$pr == i, 1, 0),
-                                    direction = "<")$auc %>%
-          as.numeric()
-        auc_bin <- dplyr::bind_rows(auc_bin, data.frame(auc = auc))
-        rm(auc)
-      }; rm(i)
+      # calculate ROC-curve binary (NOT USED FOR NOW)
+      # auc_bin <- data.frame()
+      # for (i in levels(factor(train_pr_oof$y))) {
+      #   auc <- pROC::multiclass.roc(dplyr::if_else(train_pr_oof$y == i, 1, 0),
+      #                               dplyr::if_else(train_pr_oof$pr == i, 1, 0))$auc %>%  # direction = "<"
+      #     as.numeric()
+      #   auc_bin <- dplyr::bind_rows(auc_bin, data.frame(auc = auc))
+      #   rm(auc)
+      # }; rm(i)
       #
       # confusion matrix
       confusion_matrix <- caret::confusionMatrix(factor(train_pr_oof$pr,
@@ -479,8 +485,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
             ROC_bin <- dplyr::bind_rows(ROC_bin,
                                         data.frame(binary_ROC = toString(ROC[['rocs']][[i]][["levels"]]),
                                                    binary_AUC = as.numeric(pROC::auc(ROC[["rocs"]][[i]][["response"]],
-                                                                                     ROC[["rocs"]][[i]][["predictor"]],
-                                                                                     direction = "<")),
+                                                                                     ROC[["rocs"]][[i]][["predictor"]])), # direction = "<" ???
                                                    thresholds = ROC[['rocs']][[i]][["thresholds"]],
                                                    tpr = ROC[['rocs']][[i]][["sensitivities"]],
                                                    fpr = 1 - ROC[['rocs']][[i]][["specificities"]],
@@ -491,11 +496,14 @@ SRxgboost_plots <- function(lauf, rank = 1,
         }
       }; rm(i)
       ROC_bin <- ROC_bin %>%
-        dplyr::mutate(binary = paste0(binary_ROC, " (AUC = ", round(binary_AUC, 2), ")"))
+        dplyr::mutate(binary = paste0(binary_ROC,
+                                      " (AUC = ", round(binary_AUC, 2) %>% format(., nsmall = 2),
+                                      ", data = ", no, ")"))
       #
       # print ROC-curve
       try({
-        ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr, colour = binary)) +
+        ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr,
+                                              colour = stats::reorder(binary, -binary_AUC))) +
           ggplot2::geom_line() +
           ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
                                linetype = "dashed") +
@@ -503,24 +511,30 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                       limits = c(0, 1)) +
           ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(5),
                                       limits = c(0, 1)) +
-          ggplot2::labs(title = "ROC",
+          ggplot2::labs(title = "ROC", colour = "Binary AUC",
                         x = "Rate of false positives", y = "Rate of true positives",
                         subtitle = paste0("AUC:                  ",
                                           round(ifelse(exists("ROC_prob"),
                                                               as.numeric(ROC_prob$auc),
-                                                              as.numeric(ROC$auc)), 3),
+                                                              as.numeric(ROC$auc)), 3) %>%
+                                            format(., nsmall = 3),
                                           # "\nMCC:                  ",
                                           # paste0(round(mcc$mcc, 3),
                                           #        " (cutoff = ",
                                           #        round(mcc$opt_cutoff, 3), ")"),
                                           "\nAccuracy:           ",
-                                          round(as.numeric(confusion_matrix$overall[1]), 3),
+                                          round(as.numeric(confusion_matrix$overall[1]), 3) %>%
+                                            format(., nsmall = 3),
                                           "\nPrecision:           ",
-                                          toString(round(as.numeric(confusion_matrix$byClass[, 5]), 2)),
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 5]), 2) %>%
+                                                     format(., nsmall = 2)),
                                           "\nSensitivity/TPR:  ",
-                                          toString(round(as.numeric(confusion_matrix$byClass[, 1]), 2)),
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 1]), 2) %>%
+                                                     format(., nsmall = 2)),
                                           "\nSpecificity/TNR:  ",
-                                          toString(round(as.numeric(confusion_matrix$byClass[, 2]), 2))))
+                                          toString(round(as.numeric(confusion_matrix$byClass[, 2]), 2) %>%
+                                                     format(., nsmall = 2)))) +
+          ggplot2::theme(legend.text = ggplot2::element_text(size = 6))
         ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/ROC.png"),
                         width = 9.92, height = 5.3)  # 4.67
       })
@@ -606,7 +620,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
         ggplot2::geom_point() +
         ggplot2::geom_line() +
         ggplot2::annotate(geom = "text", x = temp$y, y = temp$model,
-                          label = paste0("lift =\n", round(temp$lift_factor, 1)),
+                          label = paste0("lift =\n", round(temp$lift_factor, 1) %>%
+                                           format(., nsmall = 1)),
                           hjust = "center", vjust = "top", size = 3) +
         # ggplot2::geom_label(data = temp,
         #                     ggplot2::aes(x = y, y = model, label = round(lift_factor, 1)))
