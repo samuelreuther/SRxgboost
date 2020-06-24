@@ -118,6 +118,12 @@ SRxgboost_plots <- function(lauf, rank = 1,
     train_pr_oof <- as.data.frame(cbind(y = y[eval_index],
                                         pr = OOFforecast[, ncol(OOFforecast)]))
   }
+  # for "multi:softprob": add probabilities
+  if (objective == "multilabel" & ncol(OOFforecast) > 2) {
+    train_pr_oof <- bind_cols(train_pr_oof,
+                              OOFforecast[, 2:(ncol(OOFforecast) - 1)] %>%
+                                stats::setNames(paste0("X", 0:(ncol(.) - 1))))
+  }
   assign('train_pr_oof', train_pr_oof, envir = .GlobalEnv)
   if (file.exists(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))) {
     y_test <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))
@@ -408,6 +414,13 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                   train_pr_oof$pr,
                                   levels = levels(factor(train_pr_oof$y)),
                                   direction = "<")
+      # additionally compute ROC-curve for "multi:softprob"
+      # WARNING: AUC is better/correcter with "multi:softprob" !!!
+      if (ncol(train_pr_oof) > 2) {
+        ROC_prob <- pROC::multiclass.roc(train_pr_oof$y,
+                                         train_pr_oof[, 3:ncol(train_pr_oof)] %>%
+                                           setNames(0:(ncol(.) - 1)))
+      }
       #
       # calculate ROC-curve binary
       auc_bin <- data.frame()
@@ -444,20 +457,38 @@ SRxgboost_plots <- function(lauf, rank = 1,
       #
       # get binary ROC curves
       ROC_bin <- data.frame()
-      for (i in 1:length(ROC[['rocs']])) {
-        suppressMessages({
-          ROC_bin <- dplyr::bind_rows(ROC_bin,
-                                      data.frame(binary_ROC = toString(ROC[['rocs']][[i]][["levels"]]),
-                                                 binary_AUC = as.numeric(pROC::auc(ROC[["rocs"]][[i]][["response"]],
-                                                                                   ROC[["rocs"]][[i]][["predictor"]],
-                                                                                   direction = "<")),
-                                                 thresholds = ROC[['rocs']][[i]][["thresholds"]],
-                                                 tpr = ROC[['rocs']][[i]][["sensitivities"]],
-                                                 fpr = 1 - ROC[['rocs']][[i]][["specificities"]],
-                                                 no = length(ROC[['rocs']][[i]][["response"]]),
-                                                 no_y_1 = length(ROC[['rocs']][[i]][["controls"]]),
-                                                 stringsAsFactors = FALSE))
-        })
+      if (exists("ROC_prob")) {
+        for (i in 1:length(ROC_prob[['rocs']])) {
+          suppressMessages({
+            ROC_bin <- dplyr::bind_rows(ROC_bin,
+                                        data.frame(binary_ROC = toString(ROC_prob[['rocs']][[i]][[1]][["levels"]]),
+                                                   binary_AUC = as.numeric(pROC::auc(ROC_prob[["rocs"]][[i]][[1]][["response"]],
+                                                                                     ifelse(ROC_prob[["rocs"]][[i]][[1]][["predictor"]] > 0.5, 1, 0))),
+                                                   thresholds = ROC_prob[['rocs']][[i]][[1]][["thresholds"]],
+                                                   tpr = ROC_prob[['rocs']][[i]][[1]][["sensitivities"]],
+                                                   fpr = 1 - ROC_prob[['rocs']][[i]][[1]][["specificities"]],
+                                                   no = length(ROC_prob[['rocs']][[i]][[1]][["response"]]),
+                                                   no_y_1 = length(ROC_prob[['rocs']][[i]][[1]][["controls"]]),
+                                                   stringsAsFactors = FALSE))
+          })
+        }
+      } else {
+        # WARNING: depends on ROC with "multi:softmax" which is worse than "multi:softprob"
+        for (i in 1:length(ROC[['rocs']])) {
+          suppressMessages({
+            ROC_bin <- dplyr::bind_rows(ROC_bin,
+                                        data.frame(binary_ROC = toString(ROC[['rocs']][[i]][["levels"]]),
+                                                   binary_AUC = as.numeric(pROC::auc(ROC[["rocs"]][[i]][["response"]],
+                                                                                     ROC[["rocs"]][[i]][["predictor"]],
+                                                                                     direction = "<")),
+                                                   thresholds = ROC[['rocs']][[i]][["thresholds"]],
+                                                   tpr = ROC[['rocs']][[i]][["sensitivities"]],
+                                                   fpr = 1 - ROC[['rocs']][[i]][["specificities"]],
+                                                   no = length(ROC[['rocs']][[i]][["response"]]),
+                                                   no_y_1 = length(ROC[['rocs']][[i]][["controls"]]),
+                                                   stringsAsFactors = FALSE))
+          })
+        }
       }; rm(i)
       ROC_bin <- ROC_bin %>%
         dplyr::mutate(binary = paste0(binary_ROC, " (AUC = ", round(binary_AUC, 2), ")"))
@@ -475,7 +506,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
           ggplot2::labs(title = "ROC",
                         x = "Rate of false positives", y = "Rate of true positives",
                         subtitle = paste0("AUC:                  ",
-                                          round(as.numeric(ROC$auc), 3),
+                                          round(ifelse(exists("ROC_prob"),
+                                                              as.numeric(ROC_prob$auc),
+                                                              as.numeric(ROC$auc)), 3),
                                           # "\nMCC:                  ",
                                           # paste0(round(mcc$mcc, 3),
                                           #        " (cutoff = ",
