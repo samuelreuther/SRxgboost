@@ -120,9 +120,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
   }
   # for "multi:softprob": add probabilities
   if (objective == "multilabel" & ncol(OOFforecast) > 2) {
-    train_pr_oof <- bind_cols(train_pr_oof,
-                              OOFforecast[, 2:(ncol(OOFforecast) - 1)] %>%
-                                stats::setNames(paste0("X", 0:(ncol(.) - 1))))
+    train_pr_oof <- dplyr::bind_cols(train_pr_oof,
+                                     OOFforecast[, 2:(ncol(OOFforecast) - 1)] %>%
+                                       stats::setNames(paste0("X", 0:(ncol(.) - 1))))
   }
   assign('train_pr_oof', train_pr_oof, envir = .GlobalEnv)
   if (file.exists(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))) {
