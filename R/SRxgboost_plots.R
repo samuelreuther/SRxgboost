@@ -418,15 +418,19 @@ SRxgboost_plots <- function(lauf, rank = 1,
       # https://www.datascienceblog.net/post/machine-learning/performance-measures-multi-class-problems/
       #
       # calculate ROC-curve
-      ROC <- pROC::multiclass.roc(train_pr_oof$y,
-                                  train_pr_oof$pr,
-                                  levels = levels(factor(train_pr_oof$y))) # direction = "<"
+      suppressMessages(
+        ROC <- pROC::multiclass.roc(train_pr_oof$y,
+                                    train_pr_oof$pr,
+                                    levels = levels(factor(train_pr_oof$y))) # direction = "<"
+      )
       # additionally compute ROC-curve for "multi:softprob"
       # WARNING: AUC is better/correcter with "multi:softprob" !!!
       if (ncol(train_pr_oof) > 2) {
-        ROC_prob <- pROC::multiclass.roc(train_pr_oof$y,
-                                         train_pr_oof[, 3:ncol(train_pr_oof)] %>%
-                                           setNames(0:(ncol(.) - 1)))
+        suppressMessages(
+          ROC_prob <- pROC::multiclass.roc(train_pr_oof$y,
+                                           train_pr_oof[, 3:ncol(train_pr_oof)] %>%
+                                             setNames(0:(ncol(.) - 1)))
+        )
       }
       #
       # calculate ROC-curve binary (NOT USED FOR NOW)
