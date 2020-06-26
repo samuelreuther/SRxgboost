@@ -623,13 +623,13 @@ test_that("multilabel classification wprec / no_folds: runtime[2]", {
 })
 # weighted_precision
 test_that("multilabel classification wprec / no_folds: SummaryCV$eval_1fold[1]", {
-  expect_true(round(SummaryCV$eval_1fold[1], 2) <= 0.74)
+  expect_true(round(SummaryCV$eval_1fold[1], 2) >= 0.77)
 })
 test_that("multilabel classification wprec / no_folds: SummaryCV$train[1]", {
-  expect_true(round(SummaryCV$train[1], 2) >= 0.92)
+  expect_true(round(SummaryCV$train[1], 2) >= 0.99)
 })
 test_that("multilabel classification wprec / no_folds: SummaryCV$test[1]", {
-  expect_true(round(SummaryCV$test[1], 2) <= 0.78)
+  expect_true(round(SummaryCV$test[1], 2) >= 0.82)
 })
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast

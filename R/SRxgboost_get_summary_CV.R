@@ -29,7 +29,8 @@ SRxgboost_get_summary_CV <- function(lauf,
   #
   # Maximise metric
   metrics_maximize <- ifelse(SummaryCV$metric[1] %in% c("auc", "qwk_score", "f1_score",
-                                                        "mcc_score", "mAUC"), TRUE, FALSE)
+                                                        "mcc_score", "mAUC", "weighted_precision"),
+                             TRUE, FALSE)
   #
   if (sum(is.na(SummaryCV$test)) == nrow(SummaryCV)) {
     relevant <- "eval_1fold"
