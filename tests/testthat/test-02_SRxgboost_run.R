@@ -496,79 +496,6 @@ assign('train', train, envir = .GlobalEnv)
 
 
 
-# Multilabel Classification: no_folds softmax -----------------------------
-#
-lauf <- "mclass_no_folds_softmax.csv"
-assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
-# prepare data and test
-SRxgboost_data_prep(yname = "type",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "multilabel")
-# run models
-SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "mAUC", runs = 2,
-              nfold = 5)
-# plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
-# load OOFforecast and TESTforecast
-SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf)
-#
-#
-#
-## tests
-#
-# no. of files
-test_that("classification / no_folds: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
-})
-test_that("classification / no_folds: files in path_output/lauf/All Models", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
-})
-test_that("classification / no_folds: files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
-               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
-                 dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 16)
-})
-# test_that("classification / no_folds: files in path_output/lauf/Best Model", {
-#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
-# })
-test_that("classification / no_folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
-})
-# runtime
-test_that("classification / no_folds: runtime[1]", {
-  expect_true(SummaryCV$runtime[1] < 0.4)
-})
-test_that("classification / no_folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[2] < 0.1)
-})
-# mAUC
-test_that("classification / no_folds: SummaryCV$eval_1fold[1]", {
-  expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.74)
-})
-test_that("classification / no_folds: SummaryCV$train[1]", {
-  expect_equal(round(SummaryCV$train[1], 2), 0.99)
-})
-test_that("classification / no_folds: SummaryCV$test[1]", {
-  expect_equal(round(SummaryCV$test[1], 2), 0.78)
-})
-#
-# no. ob objects in memory: check OOFforecast and TESTforecast
-test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 35)
-})
-#
-#
-## clean up
-#
-SRxgboost_cleanup()
-
-
-
-
 # Multilabel Classification: no_folds softprob ----------------------------
 #
 lauf <- "mclass_no_folds_softprob.csv"
@@ -592,46 +519,195 @@ SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf)
 ## tests
 #
 # no. of files
-test_that("classification / no_folds: files in path_output/lauf", {
+test_that("multilabel classification / no_folds: files in path_output/lauf", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
-test_that("classification / no_folds: files in path_output/lauf/All Models", {
+test_that("multilabel classification / no_folds: files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
-test_that("classification / no_folds: files in path_output/lauf/Best Model", {
+test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
                                        "/Best Model/0 Variable importance.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
                  nrow() * 2 + 16)
 })
-# test_that("classification / no_folds: files in path_output/lauf/Best Model", {
+# test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
-test_that("classification / no_folds: files in path_output/lauf/Data", {
+test_that("multilabel classification / no_folds: files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
 })
 # runtime
-test_that("classification / no_folds: runtime[1]", {
+test_that("multilabel classification / no_folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 0.8)
 })
-test_that("classification / no_folds: runtime[2]", {
+test_that("multilabel classification / no_folds: runtime[2]", {
   expect_true(SummaryCV$runtime[2] < 0.1)
 })
 # mAUC
-test_that("classification / no_folds: SummaryCV$eval_1fold[1]", {
+test_that("multilabel classification / no_folds: SummaryCV$eval_1fold[1]", {
   expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.74)
 })
-test_that("classification / no_folds: SummaryCV$train[1]", {
+test_that("multilabel classification / no_folds: SummaryCV$train[1]", {
   expect_equal(round(SummaryCV$train[1], 2), 0.99)
 })
-test_that("classification / no_folds: SummaryCV$test[1]", {
+test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
   expect_equal(round(SummaryCV$test[1], 2), 0.78)
 })
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
   expect_equal(nrow(SRfunctions::SR_memory_usage()), 35)
+})
+#
+#
+## clean up
+#
+SRxgboost_cleanup()
+
+
+
+
+# Multilabel Classification: no_folds softprob weighted_precision ---------
+#
+lauf <- "mclass_no_folds_softprob_wprec.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat(lauf, "\n")
+# prepare data and test
+weights <-
+  (prop.table(table(train$type)) + 0.15) /   # laplace / additive smoothing
+  (prop.table(table(train$type[train$huml > 20])) + 0.15)
+assign('weights', weights, envir = .GlobalEnv)
+SRxgboost_data_prep(yname = "type",
+                    data_train = train,
+                    no_folds = 5,
+                    objective = "multilabel",
+                    weights = weights)
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "weighted_precision", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+#
+#
+#
+## tests
+#
+# no. of files
+test_that("multilabel classification wprec / no_folds: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+})
+test_that("multilabel classification wprec / no_folds: files in path_output/lauf/All Models", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
+})
+test_that("multilabel classification wprec / no_folds: files in path_output/lauf/Best Model", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.05) %>%
+                 nrow() * 2 + 16)
+})
+# test_that("multilabel classification wprec / no_folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
+test_that("multilabel classification wprec / no_folds: files in path_output/lauf/Data", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
+})
+# runtime
+test_that("multilabel classification wprec / no_folds: runtime[1]", {
+  expect_true(SummaryCV$runtime[1] < 0.8)
+})
+test_that("multilabel classification wprec / no_folds: runtime[2]", {
+  expect_true(SummaryCV$runtime[2] < 0.1)
+})
+# weighted_precision
+test_that("multilabel classification wprec / no_folds: SummaryCV$eval_1fold[1]", {
+  expect_true(round(SummaryCV$eval_1fold[1], 2) <= 0.74)
+})
+test_that("multilabel classification wprec / no_folds: SummaryCV$train[1]", {
+  expect_true(round(SummaryCV$train[1], 2) >= 0.92)
+})
+test_that("multilabel classification wprec / no_folds: SummaryCV$test[1]", {
+  expect_true(round(SummaryCV$test[1], 2) <= 0.78)
+})
+#
+# no. ob objects in memory: check OOFforecast and TESTforecast
+test_that("multilabel classification wprec / no_folds, no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
+})
+#
+#
+## clean up
+#
+SRxgboost_cleanup(); rm(weights)
+
+
+
+
+# Multilabel Classification: no_folds softmax -----------------------------
+#
+lauf <- "mclass_no_folds_softmax.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat(lauf, "\n")
+# prepare data and test
+SRxgboost_data_prep(yname = "type",
+                    data_train = train,
+                    no_folds = 5,
+                    objective = "multilabel")
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "mAUC", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+# load OOFforecast and TESTforecast
+SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf)
+#
+#
+#
+## tests
+#
+# no. of files
+test_that("multilabel classification / no_folds: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+})
+test_that("multilabel classification / no_folds: files in path_output/lauf/All Models", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
+})
+test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.05) %>%
+                 nrow() * 2 + 16)
+})
+# test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
+test_that("multilabel classification / no_folds: files in path_output/lauf/Data", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 18)
+})
+# runtime
+test_that("multilabel classification / no_folds: runtime[1]", {
+  expect_true(SummaryCV$runtime[1] < 0.4)
+})
+test_that("multilabel classification / no_folds: runtime[2]", {
+  expect_true(SummaryCV$runtime[2] < 0.1)
+})
+# mAUC
+test_that("multilabel classification / no_folds: SummaryCV$eval_1fold[1]", {
+  expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.74)
+})
+test_that("multilabel classification / no_folds: SummaryCV$train[1]", {
+  expect_equal(round(SummaryCV$train[1], 2), 0.99)
+})
+test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
+  expect_equal(round(SummaryCV$test[1], 2), 0.78)
+})
+#
+# no. ob objects in memory: check OOFforecast and TESTforecast
+test_that("multilabel classification / no_folds, no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
 })
 #
 #

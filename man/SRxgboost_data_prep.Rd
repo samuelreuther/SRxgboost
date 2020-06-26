@@ -12,6 +12,7 @@ SRxgboost_data_prep(
   folds = NULL,
   eval_index = NULL,
   objective = NULL,
+  weights = NULL,
   label_encoding = TRUE,
   check_covariate_drift = FALSE
 )
@@ -30,6 +31,8 @@ SRxgboost_data_prep(
 \item{eval_index}{vector}
 
 \item{objective}{character}
+
+\item{weights}{table of weights (multilabel classification with "weighted_precision" only)}
 
 \item{label_encoding}{boolean}
 

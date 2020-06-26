@@ -12,6 +12,7 @@
 #' @param folds list, output from xxx
 #' @param eval_index vector
 #' @param objective character
+#' @param weights table of weights (multilabel classification with "weighted_precision" only)
 #' @param label_encoding boolean
 #' @param check_covariate_drift boolean
 #'
@@ -23,6 +24,7 @@ SRxgboost_data_prep <- function(yname,
                                 data_test = NULL,
                                 no_folds = NULL, folds = NULL, eval_index = NULL,
                                 objective = NULL,
+                                weights = NULL,
                                 label_encoding = TRUE,
                                 check_covariate_drift = FALSE) {
   ### checks
@@ -293,26 +295,53 @@ SRxgboost_data_prep <- function(yname,
   ### turn train and test into matrices for dummy variables
   options(na.action = 'na.pass')  # global option
   #
-  train_mat <- Matrix::sparse.model.matrix(y~. - 1,
-                                           data = datenModell)
-  d_train <- xgboost::xgb.DMatrix(data = train_mat,
-                                  label = y)
-  #
-  test_mat <- Matrix::sparse.model.matrix(~. - 1,
-                                          data = datenModelltest)
-  d_test <- xgboost::xgb.DMatrix(data = test_mat)
-  #
-  train_eval_mat <- cbind(y_train_eval, train_eval)
-  train_eval_mat <- Matrix::sparse.model.matrix(y_train_eval~. - 1,
-                                                data = train_eval_mat)
-  d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat,
-                                       label = y_train_eval)
-  #
-  test_eval_mat <- cbind(y_test_eval, test_eval)
-  test_eval_mat <- Matrix::sparse.model.matrix(y_test_eval~. - 1,
-                                               data = test_eval_mat)
-  d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat,
-                                      label = y_test_eval)
+  if (is.null(weights)) {
+    train_mat <- Matrix::sparse.model.matrix(y~. - 1,
+                                             data = datenModell)
+    d_train <- xgboost::xgb.DMatrix(data = train_mat,
+                                    label = y)
+    #
+    test_mat <- Matrix::sparse.model.matrix(~. - 1,
+                                            data = datenModelltest)
+    d_test <- xgboost::xgb.DMatrix(data = test_mat)
+    #
+    train_eval_mat <- cbind(y_train_eval, train_eval)
+    train_eval_mat <- Matrix::sparse.model.matrix(y_train_eval~. - 1,
+                                                  data = train_eval_mat)
+    d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat,
+                                         label = y_train_eval)
+    #
+    test_eval_mat <- cbind(y_test_eval, test_eval)
+    test_eval_mat <- Matrix::sparse.model.matrix(y_test_eval~. - 1,
+                                                 data = test_eval_mat)
+    d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat,
+                                        label = y_test_eval)
+  } else {
+    # add weight
+    train_mat <- Matrix::sparse.model.matrix(y~. - 1,
+                                             data = datenModell)
+    d_train <- xgboost::xgb.DMatrix(data = train_mat,
+                                    label = y,
+                                    weight = weights[y + 1])
+    #
+    test_mat <- Matrix::sparse.model.matrix(~. - 1,
+                                            data = datenModelltest)
+    d_test <- xgboost::xgb.DMatrix(data = test_mat)
+    #
+    train_eval_mat <- cbind(y_train_eval, train_eval)
+    train_eval_mat <- Matrix::sparse.model.matrix(y_train_eval~. - 1,
+                                                  data = train_eval_mat)
+    d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat,
+                                         label = y_train_eval,
+                                         weight = weights[y_train_eval + 1])
+    #
+    test_eval_mat <- cbind(y_test_eval, test_eval)
+    test_eval_mat <- Matrix::sparse.model.matrix(y_test_eval~. - 1,
+                                                 data = test_eval_mat)
+    d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat,
+                                        label = y_test_eval,
+                                        weight = weights[y_test_eval + 1])
+  }
   #
   #
   #
