@@ -191,9 +191,9 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     } else {
       # Random Search for Modell-Parameter
       set.seed(Sys.time())
-      depth <- round(stats::runif(1, 2, 15), 0)
-      min_child_weight <- round(stats::rexp(1, rate = 0.1), 0)  # 0.1 => 20  0.2 => 12  0.3 => 10  0.7 => 4
-      gamma <- round(stats::rexp(1, rate = 0.5), 1)             # 0.3 => 7   0.5 => 5   0.7 => 3   1.0 => 2.5
+      depth <- round(stats::runif(1, 2, 12), 0)
+      min_child_weight <- round(stats::rexp(1, rate = 0.09), 0)  # 0.1 => 20  0.2 => 12  0.3 => 10  0.7 => 4
+      gamma <- round(stats::rexp(1, rate = 0.3), 1)              # 0.3 => 7   0.5 => 5   0.7 => 3   1.0 => 2.5
       subsample <- sample(c(seq(0.2, 0.45, 0.05),
                             seq(0.5, 0.68, 0.02),
                             seq(0.7, 0.99, 0.01),
@@ -305,7 +305,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # w <- as.numeric(prop.table(table(y_train_eval)))
       weighted_precision <- function(pred, d_train) {
         labels = xgboost::getinfo(d_train, "label")
-        # w <- prop.table(table(y_train_eval))[d_train]
+        # w <- xgboost_weights[d_train]
         w = xgboost::getinfo(d_train, "weight")
         pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
         class = apply(pred, MARGIN = 1, which.max) - 1
