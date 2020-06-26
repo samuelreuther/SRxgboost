@@ -853,7 +853,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                            min.rating = min(y), max.rating = max(y))
     if (metric %in% c("f1_score")) benchmark <- Metrics::f1(y, mean(y))
     if (metric %in% c("mcc_score")) benchmark <- 0
-    if (metric %in% c("weighted_precision")) benchmark <- 1 - max(prop.table(table(y)))
+    if (metric %in% c("weighted_precision")) benchmark <- max(prop.table(table(y)))
     #
     # Grafic output of runs
     suppressWarnings(
