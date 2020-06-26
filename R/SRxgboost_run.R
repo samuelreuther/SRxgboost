@@ -253,8 +253,9 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score",
                         "weighted_precision", "mAUC")
     # Maximise metric
-    metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score",
-                                             "mcc_score", "mAUC"), TRUE, FALSE)
+    metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score", "mcc_score",
+                                             "mAUC", "weighted_precision"),
+                               TRUE, FALSE)
     # custom functions to be used by XGBOOST during optimization           TODO: check if d_train is correct!!!
     if (metric %in% custom_metrics) {
       rmsle <- function(preds, d_train) {
@@ -310,7 +311,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
         class = apply(pred, MARGIN = 1, which.max) - 1
         prec = stats::weighted.mean(class == labels, w)
-        return(list(metric="w_precision", value = prec))
+        return(list(metric = "w_precision", value = prec))
       }
       mAUC <- function(pred, d_train) {
         labels = xgboost::getinfo(d_train, "label")
