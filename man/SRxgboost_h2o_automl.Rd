@@ -21,7 +21,8 @@ SRxgboost_h2o_automl(
 
 \item{data_test}{data.frame}
 
-\item{metric}{character: "AUC", "RMSE", ...}
+\item{metric}{character: "AUTO", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "logloss",
+"lift_top_group", "misclassification", "mean_per_class_error"}
 
 \item{kfold}{integer}
 

@@ -8,7 +8,8 @@
 #' @param y character
 #' @param data_train data.frame
 #' @param data_test data.frame
-#' @param metric character: "AUC", "RMSE", ...
+#' @param metric character: "AUTO", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "logloss",
+#'                          "lift_top_group", "misclassification", "mean_per_class_error"
 #' @param kfold integer
 #' @param max_runtime_sec integer
 #' @param run_shap boolean
@@ -23,6 +24,13 @@ SRxgboost_h2o_automl <- function(y = NULL,
                                  kfold = 5,
                                  max_runtime_sec = 5 * 60,
                                  run_shap = FALSE) {
+  # check lauf ends with ".csv"
+  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  #
+  # create output dir
+  path_output_ <- paste0(path_output, gsub(".csv", "/", lauf))
+  if (!dir.exists(path_output_)) {dir.create(path_output_, showWarnings = FALSE, recursive = TRUE)}
+  #
   # start h2o
   # Error: cannot open the connection, Permission !!!
   Sys.setenv(https_proxy = "")
@@ -31,6 +39,11 @@ SRxgboost_h2o_automl <- function(y = NULL,
   Sys.setenv(https_proxy_user = "")
   n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
   h2o::h2o.init(nthreads = n_core, max_mem_size = '16g') # always verbose!
+  #
+  # set y as.factor for classification
+  if (length(unique(data_train[, y])) == 2 & class(data_train[, y]) != "factor") {
+    data_train[, y] <- as.factor(data_train[, y])
+  }
   #
   # define x, y and convert df to H2OFrame
   train_h2o <- h2o::as.h2o(data_train)
@@ -43,11 +56,6 @@ SRxgboost_h2o_automl <- function(y = NULL,
                                length(unique(data_train[, y])) >  2 ~ "RMSE")
   }
   #
-  # set y as.factor for classification
-  if (length(unique(data_train[, y])) == 2 & class(train_h2o[, y]) != "factor") {
-    train_h2o[, y] <- as.factor(train_h2o[, y])
-  }
-  #
   #
   #
   ### Automatic Machine Learning
@@ -57,37 +65,39 @@ SRxgboost_h2o_automl <- function(y = NULL,
                          nfolds = kfold,
                          max_runtime_secs = max_runtime_sec,
                          stopping_metric = metric,
+                         sort_metric = metric,
                          stopping_rounds = 20,
                          keep_cross_validation_predictions = TRUE,
                          keep_cross_validation_models = TRUE,
                          seed = 12345)
-  # check lauf ends with ".csv"
-  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
-  #
-  # create output dir
-  path_output_ <- paste0(path_output, gsub(".csv", "", lauf), "/h2o.automl/")
-  if (!dir.exists(path_output_)) {dir.create(path_output_, showWarnings = FALSE, recursive = TRUE)}
   #
   # Extract leaderboard and leader model
   lb <- aml@leaderboard; print(lb)
   saveRDS(as.data.frame(lb), paste0(path_output_, "leaderboard.rds"))
   lb_leader <- aml@leader; lb_leader
   saveRDS(lb_leader, paste0(path_output_, "leaderboard_leader.rds"))
+  h2o::h2o.saveModel(lb_leader, path = path_output_, force = TRUE)
+  # h2o::h2o.download_mojo(lb_leader, path = path_output_)
+  #
   lb %>%
     as.data.frame() %>%
-    utils::head(20) %>%
+    dplyr::slice(1:min(20, dplyr::n() - 5), (dplyr::n() - 4):dplyr::n()) %>%
     # dplyr::mutate(model_id = substr(model_id, 1, regexpr("_AutoML_", model_id) - 1) %>%
     #          gsub("_", " ", .)) %>%
-    dplyr::mutate(model_id = stats::reorder(model_id, auc)) %>%
+    dplyr::mutate(model_id = stats::reorder(model_id, rmse)) %>%
+    # dplyr::mutate(model_id = stats::reorder(model_id,
+    #                                         ifelse(lb_leader@parameters[["distribution"]],
+    #                                                rmse, auc))) %>%
     reshape2::melt(id = "model_id") %>%
-    dplyr::filter(variable %in% c("auc", "logloss", "mean_per_class_error", "rmse")) %>%
+    dplyr::filter(variable %in% c("auc", "logloss", "mean_per_class_error", "aucpr",
+                                  "rmse", "mae", "rmsle")) %>%
     dplyr::mutate(variable = gsub("mean_per_class_error", "mean per\nclass error", variable)) %>%
     ggplot2::ggplot(ggplot2::aes(x = model_id, y = value)) +
     ggplot2::geom_bar(stat = "identity") +
     ggplot2::geom_text(ggplot2::aes(label = round(value, 3)),
                        position = ggplot2::position_stack(vjust = 0.5)) +
-    ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(5)) +
-    ggplot2::facet_grid(.~variable, scales = "free", space = "free_x") +
+    # ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(5)) +
+    ggplot2::facet_grid(.~variable, scales = "free") +   # , space = "free_x"
     ggplot2::coord_flip()
   ggplot2::ggsave(paste0(path_output_, "leaderboard.png"), width = 9.92, height = 5.3)
   #
@@ -95,7 +105,7 @@ SRxgboost_h2o_automl <- function(y = NULL,
   #
   ### save some results of topmodel
   #
-  # save topmodel
+  # save topmodel (without StackedEnsemble)
   topmodel <- as.data.frame(aml@leaderboard$model_id) %>%
     dplyr::filter(!grepl("StackedEnsemble", model_id)) %>%
     dplyr::slice(1) %>%
@@ -121,24 +131,22 @@ SRxgboost_h2o_automl <- function(y = NULL,
   # partial dependence plots   TODO !!!
   # tbd
   #
-  # Shap values
-  if (run_shap) {
+  # Shap values (not supported for "multinomial" as of 2020-06-27)
+  if (run_shap & lb_leader@parameters[["distribution"]] != "multinomial") {
     shap_TRAIN <- as.data.frame(h2o::h2o.predict_contributions(model, train_h2o))
     saveRDS(shap_TRAIN, paste0(path_output_, "shap_TRAIN_topmodel.rds"))
     if (!is.null(data_test)) {
       shap_TEST <- as.data.frame(h2o::h2o.predict_contributions(model, test_h2o))
       saveRDS(shap_TEST, paste0(path_output_, "shap_TEST_topmodel.rds"))
     }
+    # plots   TODO !!!
+    # tbd
   }
   # save OOF CV train predictions
   pred_OOF <- as.data.frame(h2o::h2o.cross_validation_holdout_predictions(model))
   saveRDS(pred_OOF, paste0(path_output_, "predictions_OOF_topmodel.rds"))
   pred_TRAIN <- h2o::h2o.cross_validation_predictions(model)
   saveRDS(pred_TRAIN, paste0(path_output_, "predictions_TRAIN_topmodel.rds"))
-  #
-  # Save Leader Model
-  h2o::h2o.saveModel(lb_leader, path = path_output_, force = TRUE)
-  # h2o::h2o.download_mojo(lb_leader, path = path_output_)
   #
   # save OOF predictions
   # pred_OOF <- as.data.frame(h2o::h2o.cross_validation_holdout_predictions(lb_leader))
@@ -155,7 +163,7 @@ SRxgboost_h2o_automl <- function(y = NULL,
   }
   #
   # clean up
-  rm(train_h2o, test_h2o, x, y, aml, lb, lb_leader, pred_TRAIN, pred_OOF, pred_TEST,
-     shap_TRAIN, shap_TEST, varimp, metric, topmodel, path_output_); invisible(gc())
+  suppressWarnings(rm(train_h2o, test_h2o, x, y, aml, lb, lb_leader, pred_TRAIN, pred_OOF, pred_TEST,
+     shap_TRAIN, shap_TEST, varimp, metric, topmodel, path_output_)); invisible(gc())
   h2o::h2o.shutdown(prompt = FALSE)
 }
