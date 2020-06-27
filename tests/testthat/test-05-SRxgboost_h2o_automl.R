@@ -36,63 +36,53 @@ assign('train', train, envir = .GlobalEnv)
 
 # Regression ---------------------------------------------------------------
 #
-## run models
-#
-lauf <- "regression_automl.csv"
-assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
-#
-SRxgboost_h2o_automl(y = "SalePrice",
-                    data_train = train,
-                    # data_test = NULL,
-                    metric = "RMSE",
-                    kfold = 5,
-                    max_runtime_sec = 30,
-                    run_shap = TRUE)
-#
-#
-## tests
-#
-# no. of files
-test_that("regression: files in path_output/lauf", {
+test_that("regression", {
+  skip('skip')
+  # run models
+  lauf <- "regression_automl.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  SRxgboost_h2o_automl(y = "SalePrice",
+                       data_train = train,
+                       # data_test = NULL,
+                       metric = "RMSE",
+                       kfold = 5,
+                       max_runtime_sec = 0.5 *60,
+                       run_shap = TRUE)
+  #
+  # tests
+  # no. of files
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 9)
+  #
+  # clean up
+  rm(lauf)
 })
-#
-#
-## clean up
-#
-rm(lauf)
 
 
 
 # Regression: train/test --------------------------------------------------
 #
-## run models
-#
-lauf <- "regression_train_test_automl.csv"
-assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
-#
-SRxgboost_h2o_automl(y = "SalePrice",
-                     data_train = train[1:999, ],
-                     data_test = train[1000:1460, ],
-                     metric = "RMSE",
-                     kfold = 5,
-                     max_runtime_sec = 30,
-                     run_shap = TRUE)
-#
-#
-## tests
-#
-# no. of files
-test_that("regression train/test: files in path_output/lauf", {
+test_that("regression train/test", {
+  skip('skip')
+  # run models
+  lauf <- "regression_train_test_automl.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  SRxgboost_h2o_automl(y = "SalePrice",
+                       data_train = train[1:999, ],
+                       data_test = train[1000:1460, ],
+                       metric = "RMSE",
+                       kfold = 5,
+                       max_runtime_sec = 0.5 *60,
+                       run_shap = TRUE)
+  #
+  # tests
+  # no. of files
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 12)
+  #
+  # clean up
+  rm(lauf)
 })
-#
-#
-## clean up
-#
-rm(lauf)
 
 
 
@@ -123,32 +113,27 @@ assign('train', train, envir = .GlobalEnv)
 
 # Classification ----------------------------------------------------------
 #
-## run models
-#
-lauf <- "classification_automl.csv"
-assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
-#
-SRxgboost_h2o_automl(y = "Churn",
-                     data_train = train,
-                     # data_test = NULL,
-                     metric = "AUC",
-                     kfold = 5,
-                     max_runtime_sec = 30,
-                     run_shap = TRUE)
-#
-#
-## tests
-#
-# no. of files
-test_that("classification: files in path_output/lauf", {
+test_that("classification", {
+  skip('skip')
+  # run models
+  lauf <- "classification_automl.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  SRxgboost_h2o_automl(y = "Churn",
+                       data_train = train,
+                       # data_test = NULL,
+                       metric = "AUC",
+                       kfold = 5,
+                       max_runtime_sec = 0.5 *60,
+                       run_shap = FALSE)   # (not supported for "multinomial" as of 2020-06-27)
+  #
+  # tests
+  # no. of files
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 9)
+  #
+  # clean up
+  rm(lauf)
 })
-#
-#
-## clean up
-#
-rm(lauf)
 
 
 
@@ -175,34 +160,29 @@ assign('train', train, envir = .GlobalEnv)
 
 
 
-# Multilabel Classification: no_folds softprob ----------------------------
+# Multilabel Classification -----------------------------------------------
 #
-lauf <- "multilabel_classification_automl.csv"
-assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
-#
-
-SRxgboost_h2o_automl(y = "type",
-                     data_train = train,
-                     # data_test = NULL,
-                     metric = "logloss",
-                     kfold = 5,
-                     max_runtime_sec = 30,
-                     run_shap = TRUE)
-
-#
-#
-## tests
-#
-# no. of files
-test_that("multilabel classification: files in path_output/lauf", {
+test_that("multilabel classification", {
+  skip('skip')
+  # run models
+  lauf <- "multilabel_classification_automl.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  SRxgboost_h2o_automl(y = "type",
+                       data_train = train,
+                       # data_test = NULL,
+                       metric = "logloss",
+                       kfold = 5,
+                       max_runtime_sec = 0.5 *60,
+                       run_shap = TRUE)
+  #
+  # tests
+  # no. of files
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+  #
+  # clean up
+  rm(lauf)
 })
-#
-#
-## clean up
-#
-rm(lauf)
 
 
 
