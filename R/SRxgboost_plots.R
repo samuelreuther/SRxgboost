@@ -429,7 +429,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         suppressMessages(
           ROC_prob <- pROC::multiclass.roc(train_pr_oof$y,
                                            train_pr_oof[, 3:ncol(train_pr_oof)] %>%
-                                             setNames(0:(ncol(.) - 1)))
+                                             stats::setNames(0:(ncol(.) - 1)))
         )
       }
       #
@@ -583,7 +583,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
         ggplot2::geom_point() +
         ggplot2::geom_line() +
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
-        ggplot2::labs(title = "Lift Chart", y = "y", x = "Sorted Prediction", colour = "")
+        ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+        ggplot2::labs(title = "Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
       ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
                              "Best Model/Lift Chart.png"),
                       width = 9.92, height = 5.3)  # 4.67

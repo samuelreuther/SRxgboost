@@ -8,8 +8,8 @@
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
 #'                            "f1_score", "mcc_score"
-#'   \item "multi:softprob": "merror", "mlogloss", "mAUC", ("weighted_precision" TODO!!!)
-#'   \item "multi:softmax": "merror", "mlogloss", "mAUC", ("weighted_precision" TODO!!!)
+#'   \item "multi:softprob": "merror", "mlogloss", "mAUC", "weighted_precision"
+#'   \item "multi:softmax": "merror", "mlogloss", "mAUC", "weighted_precision"
 #'   \item "rank:pairwise": "ndcg"
 #' }
 #'
@@ -256,7 +256,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score", "mcc_score",
                                              "mAUC", "weighted_precision"),
                                TRUE, FALSE)
-    # custom functions to be used by XGBOOST during optimization           TODO: check if d_train is correct!!!
+    # custom functions to be used by XGBOOST during optimization
     if (metric %in% custom_metrics) {
       rmsle <- function(preds, d_train) {
         labels <- xgboost::getinfo(d_train, "label")
@@ -297,13 +297,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
         return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
       }
-      # weighted_precision: requieres weights in xgb.DMatrix                    # TODO !!!
-      # weights = (survey_helvetia_segments_populations + laplace_smoothing) /
-      #   (prop.table(table(df_for_model$pred_class)) + laplace_smoothing)
-      # xval_data = xgb.DMatrix(data = add_noise(as.matrix(df_for_model_transformed)),
-      #                         label = df_for_model$pred_class - 1,
-      #                         weight = weights[df_for_model$pred_class])
-      # w <- as.numeric(prop.table(table(y_train_eval)))
+      # weighted_precision
       weighted_precision <- function(pred, d_train) {
         labels = xgboost::getinfo(d_train, "label")
         # w <- xgboost_weights[d_train]
@@ -1045,7 +1039,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         max <- max(c(SummaryCV_temp$test, SummaryCV_temp$eval_1fold), na.rm = TRUE)
         p <- ggplot2::ggplot(SummaryCV_temp, ggplot2::aes(x = test, y = eval_1fold)) +
           ggplot2::geom_point() +
-          ggplot2::geom_smooth(method = "loess", formula = "y ~ x", span = 1) +
+          ggplot2::geom_smooth(method = "lm", formula = "y ~ x") +
           ggplot2::scale_x_continuous(limits = c(min, max)) +
           ggplot2::scale_y_continuous(limits = c(min, max)) +
           ggplot2::geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed")

@@ -62,7 +62,7 @@ test_that("regression", {
 
 # Regression: train/test --------------------------------------------------
 #
-test_that("regression train/test", {
+test_that("regression train test", {
   skip('skip')
   # run models
   lauf <- "regression_train_test_automl.csv"

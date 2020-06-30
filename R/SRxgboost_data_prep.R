@@ -11,7 +11,7 @@
 #' @param no_folds integer
 #' @param folds list, output from xxx
 #' @param eval_index vector
-#' @param objective character
+#' @param objective character: one of "regression", "classification", "multilabel"
 #' @param weights table of weights (multilabel classification with "weighted_precision" only)
 #' @param label_encoding boolean
 #' @param check_covariate_drift boolean
