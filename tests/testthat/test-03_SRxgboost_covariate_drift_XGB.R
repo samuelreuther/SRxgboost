@@ -57,7 +57,7 @@ test_that("files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 })
 test_that("files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 20)
 })
 
 
