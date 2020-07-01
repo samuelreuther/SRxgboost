@@ -49,5 +49,6 @@ Imports:
     lubridate,
     pdp,
     ModelMetrics,
-    tibble
+    tibble,
+    nnet
 VignetteBuilder: knitr

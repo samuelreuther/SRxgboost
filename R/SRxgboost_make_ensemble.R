@@ -48,15 +48,162 @@ SRxgboost_make_ensemble <- function(lauf,
     OOFforecast$ensemble_median <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1, median)
     TESTforecast$ensemble_median <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1, median)
     #
-    # add y to forecasts and initialise metrics
+    # add y to forecasts
     OOFforecast <- dplyr::bind_cols(OOFforecast, y = y_OOF)
+    if (exists("y_test")) TESTforecast <- dplyr::bind_cols(TESTforecast, y = y_test)
+    #
+    # GLM-weighted mean (be aware of overfitting !!!)
+    glm <- stats::glm(y ~ ., data = OOFforecast %>% dplyr::select(., 2:(top_rank + 1), y),
+                      family = ifelse(objective == "regression", "gaussian", "binomial"))
+    weights <- data.frame(summary(glm)$coefficient) %>%
+      tibble::rownames_to_column(., var = "variable") %>%
+      dplyr::select(variable, estimate = Estimate) %>%
+      dplyr::filter(variable != "(Intercept)") %>%
+      dplyr::mutate(weight = round(abs(estimate) / sum(abs(estimate)), 4))
+    cat("GLM weights: ", weights$weight, "\n")
+    OOFforecast$ensemble_mean_glm <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
+                                        function(x) stats::weighted.mean(x, w = weights$weight))
+    TESTforecast$ensemble_mean_glm <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
+                                         function(x) stats::weighted.mean(x, w = weights$weight))
+    rm(glm, weights)
+    #
+    # accuracy/cor-weighted mean
+    if (objective == "regression") {
+      accuracy <- apply(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)), 2,
+                        function(x) Metrics::rmse(OOFforecast$y, x))
+      accuracy <- 2 - accuracy / accuracy[1]
+    } else {
+      accuracy <- apply(OOFforecast[, 2:(top_rank + 1)], 2,
+                        function(x) as.numeric(pROC::roc(response = OOFforecast$y,
+                                                         predictor = x, algorithm = 2,
+                                                         levels = c(0, 1),
+                                                         direction = "<")$auc))
+      accuracy <- 2 - accuracy / accuracy[1]
+    }
+    cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)))[1, ]
+    weights <- sapply(accuracy ^ 20 / cor ^ 6, function(x) min(c(x, 1)))
+    #
+    # weights <- sapply(accuracy ^ 10 / cor ^ 3, function(x) min(c(x, 1)))
+    weights <- round(weights / sum(weights), 4)
+    cat("accuracy/cor-weights: ", weights, "\n")
+    OOFforecast$ensemble_mean_cor <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
+                                            function(x) stats::weighted.mean(x, w = weights))
+    TESTforecast$ensemble_mean_cor <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
+                                             function(x) stats::weighted.mean(x, w = weights))
+    rm(accuracy, cor, weights)
+    #
+    # Train caret ensemble models   xgbTree works best, but check overfitting!!!
+    if (objective == "regression") {
+      train <- OOFforecast %>% dplyr::select(., 2:(top_rank + 1), y)
+      set.seed(12345)
+      trcontrol <- caret::trainControl(method = "cv", number = 5, search = "grid",
+                                       savePredictions = 'final')
+      #
+      # glm
+      set.seed(12345)
+      stack <- caret::train(y ~ ., method = "glm", data = train,
+                            trControl = trcontrol, tuneLength = 3) # ; stack
+      OOFforecast$ensemble_glm <- data.frame(stack$pred) %>%
+        dplyr::arrange(rowIndex) %>%
+        dplyr::pull(pred)
+      TESTforecast$ensemble_glm <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)])
+      rm(stack)
+      #
+      # ranger
+      set.seed(12345)
+      stack <- caret::train(y ~ ., method = "ranger", data = train,             # rf, ranger, extraTrees,
+                            trControl = trcontrol, tuneLength = 3) # ; stack
+      OOFforecast$ensemble_rf <- data.frame(stack$pred) %>%
+        dplyr::arrange(rowIndex) %>%
+        dplyr::pull(pred)
+      TESTforecast$ensemble_rf <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)])
+      rm(stack)
+      #
+      # xgb
+      gridxgb <- expand.grid(eta = c(0.1),
+                             nrounds = c(10, 30, 50, 100, 200),   # 10, 30, 100
+                             max_depth = 1:4,
+                             min_child_weight = c(1),
+                             colsample_bytree = c(0.8),   # 0.5, 0.75, 1
+                             gamma = 0,
+                             subsample = 1)
+      set.seed(12345)
+      stack <- caret::train(y ~ ., method = "xgbTree", data = train,
+                            tuneGrid = gridxgb, trControl = trcontrol) # ; stack
+      # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
+      #                       trControl = trcontrol, tuneLength = 10) # tuneLength not working !!!
+      OOFforecast$ensemble_xgb <- data.frame(stack$pred) %>%
+        dplyr::arrange(rowIndex) %>%
+        dplyr::pull(pred)
+      TESTforecast$ensemble_xgb <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)])
+      rm(stack)
+      rm(train, trcontrol)
+      set.seed(Sys.time())
+    } else {
+      # "classification"
+      train <- OOFforecast %>%
+        dplyr::select(., 2:(top_rank + 1), y) %>%
+        dplyr::mutate(y = factor(dplyr::if_else(y >= 0.5, "ja", "nein")))
+      set.seed(12345)
+      trcontrol <- caret::trainControl(method = "cv", number = 5, search = "grid",
+                                       savePredictions = 'final',
+                                       classProbs = T, summaryFunction = twoClassSummary)
+      #
+      # glm
+      set.seed(12345)
+      stack <- caret::train(y ~ ., method = "glm", data = train, metric = "ROC",
+                            trControl = trcontrol, tuneLength = 3) # ; stack
+      OOFforecast$ensemble_glm <- data.frame(stack$pred) %>%
+        dplyr::arrange(rowIndex) %>%
+        dplyr::pull(ja)
+      TESTforecast$ensemble_glm <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)],
+                                                  type = "prob")$ja
+      rm(stack)
+      #
+      # ranger
+      set.seed(12345)
+      stack <- caret::train(y ~ ., method = "ranger", data = train, metric = "ROC",  # rf, ranger, extraTrees,
+                            trControl = trcontrol, tuneLength = 3) # ; stack
+      OOFforecast$ensemble_rf <- data.frame(stack$pred) %>%
+        dplyr::arrange(rowIndex) %>%
+        dplyr::pull(ja)
+      TESTforecast$ensemble_rf <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)],
+                                                 type = "prob")$ja
+      rm(stack)
+      #
+      # xgb
+      gridxgb <- expand.grid(eta = c(0.1),
+                             nrounds = c(10, 30, 50, 100, 200),   # 10, 30, 100
+                             max_depth = 1:4,
+                             min_child_weight = c(1),
+                             colsample_bytree = c(0.8),   # 0.5, 0.75, 1
+                             gamma = 0,
+                             subsample = 1)
+      set.seed(12345)
+      stack <- caret::train(y ~ ., method = "xgbTree", data = train, metric = "ROC",
+                            tuneGrid = gridxgb, trControl = trcontrol) # ; stack
+      # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
+      #                       trControl = trcontrol, tuneLength = 10) # tuneLength not working !!!
+      OOFforecast$ensemble_xgb <- data.frame(stack$pred) %>%
+        dplyr::arrange(rowIndex) %>%
+        dplyr::pull(ja)
+      TESTforecast$ensemble_xgb <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)],
+                                                  type = "prob")$ja
+      rm(stack)
+      rm(train, trcontrol)
+      set.seed(Sys.time())
+    }
+    #
+    # reorder columns, so that y is last column
+    OOFforecast <- OOFforecast %>% dplyr::select(-y, dplyr::everything(), y)
+    if (exists("y_test")) {
+      TESTforecast <- TESTforecast %>% dplyr::select(-y, dplyr::everything(), y)
+    }
+    #
+    # initialise metrics
     OOF_metrics <- data.frame(row.names = names(OOFforecast)[2:(ncol(OOFforecast) - 1)]) %>%
       tibble::rownames_to_column(var = "model")
-    if (exists("y_test")) {
-      TESTforecast <- dplyr::bind_cols(TESTforecast, y = y_test)
-      TEST_metrics <- data.frame(row.names = names(TESTforecast)[2:(ncol(TESTforecast) - 1)]) %>%
-        tibble::rownames_to_column(var = "model")
-    }
+    if (exists("y_test")) TEST_metrics <- OOF_metrics
   } else {
     # "multilabel"
     if (ncol(OOFforecast) > top_rank + 1) {
@@ -71,7 +218,7 @@ SRxgboost_make_ensemble <- function(lauf,
         TESTforecast <- TESTforecast %>%
           dplyr::mutate(!!paste0("ensemble_mean", "_X", i - 1) :=
                           rowMeans(dplyr::select(., dplyr::ends_with(paste0("_X", i - 1)))))
-      }
+      }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_mean_class = apply(dplyr::select(OOFforecast,
                                                                 dplyr::starts_with("ensemble_mean_")),
@@ -79,7 +226,7 @@ SRxgboost_make_ensemble <- function(lauf,
       TESTforecast <- TESTforecast %>%
         dplyr::mutate(ensemble_mean_class = apply(dplyr::select(TESTforecast,
                                                                 dplyr::starts_with("ensemble_mean_")),
-                                                                MARGIN = 1, which.max) - 1)
+                                                  MARGIN = 1, which.max) - 1)
       #
       # median
       for (i in 2:(2 + classes - 1)) {
@@ -87,7 +234,7 @@ SRxgboost_make_ensemble <- function(lauf,
           apply(dplyr::select(OOFforecast, dplyr::ends_with(paste0("_X", i - 1))), 1, median)
         TESTforecast[, paste0("ensemble_median", "_X", i - 1)] <-
           apply(dplyr::select(TESTforecast, dplyr::ends_with(paste0("_X", i - 1))), 1, median)
-      }
+      }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_median_class =
                         apply(dplyr::select(OOFforecast,
@@ -99,17 +246,129 @@ SRxgboost_make_ensemble <- function(lauf,
                                             dplyr::starts_with("ensemble_median_")),
                               MARGIN = 1, which.max) - 1)
       #
-      # add y to forecasts and initialise metrics
+      # add y to forecasts
       OOFforecast <- dplyr::bind_cols(OOFforecast, y = y_OOF)
+      if (exists("y_test")) TESTforecast <- dplyr::bind_cols(TESTforecast, y = y_test)
+      #
+      browser()
+      # GLM-weighted mean (be aware of overfitting !!!)
+      glm <- OOFforecast %>%
+        dplyr::select(y, 1:(1 + top_rank * (classes + 1))) %>%
+        dplyr::select(y, dplyr::starts_with("class")) %>%
+        nnet::multinom(y ~ ., data = .)
+      weights <- data.frame(t(summary(glm)$coefficient)) %>%
+        tibble::rownames_to_column(var = "variable") %>%
+        dplyr::mutate(estimate = rowMeans(dplyr::select(., 2:ncol(.)))) %>%
+        dplyr::filter(variable != "(Intercept)") %>%
+        dplyr::mutate(weight = round(abs(estimate) / sum(abs(estimate)), 4))
+      cat("GLM weights: ", weights$weight, "\n")
+      for (i in 2:(2 + classes - 1)) {
+        OOFforecast[, paste0("ensemble_mean_glm", "_X", i - 1)] <-
+          apply(dplyr::select(OOFforecast[, 1:(1 + top_rank * (classes + 1))],
+                              dplyr::ends_with(paste0("_X", i - 1))), 1,
+                function(x) stats::weighted.mean(x, w = weights$weight))
+        TESTforecast[, paste0("ensemble_mean_glm", "_X", i - 1)] <-
+          apply(dplyr::select(TESTforecast[, 1:(1 + top_rank * (classes + 1))],
+                              dplyr::ends_with(paste0("_X", i - 1))), 1,
+                function(x) stats::weighted.mean(x, w = weights$weight))
+      }; rm(i)
+      OOFforecast <- OOFforecast %>%
+        dplyr::mutate(ensemble_mean_glm_class =
+                        apply(dplyr::select(OOFforecast,
+                                            dplyr::starts_with("ensemble_mean_glm_")),
+                              MARGIN = 1, which.max) - 1)
+      TESTforecast <- TESTforecast %>%
+        dplyr::mutate(ensemble_mean_glm_class =
+                        apply(dplyr::select(TESTforecast,
+                                            dplyr::starts_with("ensemble_mean_glm_")),
+                              MARGIN = 1, which.max) - 1)
+      rm(glm, weights)
+      #
+      # browser()
+      # # accuracy/cor-weighted mean
+      # if (objective == "regression") {
+      #   accuracy <- apply(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)), 2,
+      #                     function(x) Metrics::rmse(OOFforecast$y, x))
+      #   accuracy <- 2 - accuracy / accuracy[1]
+      # } else {
+      #   accuracy <- apply(OOFforecast[, 2:(top_rank + 1)], 2,
+      #                     function(x) as.numeric(pROC::roc(response = OOFforecast$y,
+      #                                                      predictor = x, algorithm = 2,
+      #                                                      levels = c(0, 1),
+      #                                                      direction = "<")$auc))
+      #   accuracy <- 2 - accuracy / accuracy[1]
+      # }
+      # cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)))[1, ]
+      # weights <- sapply(accuracy ^ 20 / cor ^ 6, function(x) min(c(x, 1)))
+      # # weights <- sapply(accuracy ^ 10 / cor ^ 3, function(x) min(c(x, 1)))
+      # weights <- round(weights / sum(weights), 4)
+      # cat("accuracy/cor-weights: ", weights, "\n")
+      # OOFforecast$ensemble_mean_cor <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
+      #                                        function(x) stats::weighted.mean(x, w = weights))
+      # TESTforecast$ensemble_mean_cor <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
+      #                                         function(x) stats::weighted.mean(x, w = weights))
+      # rm(accuracy, cor, weights)
+      # #
+      # # Train caret ensemble models   xgbTree works best, but check overfitting!!!
+      # train <- OOFforecast %>% dplyr::select(., 2:(top_rank + 1), y)
+      # set.seed(12345)
+      # trcontrol <- caret::trainControl(method = "cv", number = 5, search = "grid",
+      #                                  savePredictions = 'final')
+      # #
+      # # glm
+      # set.seed(12345)
+      # stack <- caret::train(y ~ ., method = "glm", data = train,
+      #                       trControl = trcontrol, tuneLength = 3) # ; stack
+      # OOFforecast$ensemble_glm <- data.frame(stack$pred) %>%
+      #   dplyr::arrange(rowIndex) %>%
+      #   dplyr::pull(pred)
+      # TESTforecast$ensemble_glm <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)])
+      # rm(stack)
+      # #
+      # # ranger
+      # set.seed(12345)
+      # stack <- caret::train(y ~ ., method = "ranger", data = train,             # rf, ranger, extraTrees,
+      #                       trControl = trcontrol, tuneLength = 3) # ; stack
+      # OOFforecast$ensemble_rf <- data.frame(stack$pred) %>%
+      #   dplyr::arrange(rowIndex) %>%
+      #   dplyr::pull(pred)
+      # TESTforecast$ensemble_rf <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)])
+      # rm(stack)
+      # #
+      # # xgb
+      # gridxgb <- expand.grid(eta = c(0.1),
+      #                        nrounds = c(10, 30, 50, 100, 200),   # 10, 30, 100
+      #                        max_depth = 1:4,
+      #                        min_child_weight = c(1),
+      #                        colsample_bytree = c(0.8),   # 0.5, 0.75, 1
+      #                        gamma = 0,
+      #                        subsample = 1)
+      # set.seed(12345)
+      # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
+      #                       tuneGrid = gridxgb, trControl = trcontrol) # ; stack
+      # # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
+      # #                       trControl = trcontrol, tuneLength = 10) # tuneLength not working !!!
+      # OOFforecast$ensemble_xgb <- data.frame(stack$pred) %>%
+      #   dplyr::arrange(rowIndex) %>%
+      #   dplyr::pull(pred)
+      # TESTforecast$ensemble_xgb <- stats::predict(stack, TESTforecast[, 2:(top_rank + 1)])
+      # rm(stack)
+      # rm(train, trcontrol)
+      # set.seed(Sys.time())
+      #
+      # reorder columns, so that y is last column
+      OOFforecast <- OOFforecast %>% dplyr::select(-y, dplyr::everything(), y)
+      if (exists("y_test")) {
+        TESTforecast <- TESTforecast %>% dplyr::select(-y, dplyr::everything(), y)
+      }
+      #
+      # initialise metrics
       OOF_metrics <- data.frame(row.names = names(OOFforecast)[2:(ncol(OOFforecast) - 1)] %>%
                                   gsub("_X.?$", "", .) %>%
                                   unique() %>%
                                   .[!grepl("class", .)]) %>%
         tibble::rownames_to_column(var = "model")
-      if (exists("y_test")) {
-        TESTforecast <- dplyr::bind_cols(TESTforecast, y = y_test)
-        TEST_metrics <- OOF_metrics
-      }
+      if (exists("y_test")) TEST_metrics <- OOF_metrics
     } else {
       # "multi:softmax"   TODO !!!
       browser()
@@ -129,12 +388,12 @@ SRxgboost_make_ensemble <- function(lauf,
     OOF_metrics$RMSE <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
                               function(x) Metrics::rmse(OOFforecast$y, x))
     OOF_metrics$MAE <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
-                              function(x) Metrics::mae(OOFforecast$y, x))
+                             function(x) Metrics::mae(OOFforecast$y, x))
     OOF_metrics$MAPE <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
                               function(x) sum(abs(x / OOFforecast$y - 1)) /
                                 length(OOFforecast$y))
     OOF_metrics$R2 <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
-                              function(x) stats::cor(OOFforecast$y, x)^2)
+                            function(x) stats::cor(OOFforecast$y, x)^2)
     OOF_metrics <- OOF_metrics %>%
       dplyr::arrange(-RMSE) %>%
       dplyr::mutate(model = factor(model, levels = .$model))
@@ -212,11 +471,11 @@ SRxgboost_make_ensemble <- function(lauf,
     #
     # Lift Chart
     OOFforecast$group <- cut(OOFforecast$ensemble_best,
-                              breaks = unique(stats::quantile(OOFforecast$ensemble_best,
-                                                              probs = seq(0, 1.01, by = 1/20),
-                                                              na.rm = TRUE)),
-                              ordered_result = TRUE, dig.lab = 10,
-                              include.lowest = TRUE, labels = FALSE)
+                             breaks = unique(stats::quantile(OOFforecast$ensemble_best,
+                                                             probs = seq(0, 1.01, by = 1/20),
+                                                             na.rm = TRUE)),
+                             ordered_result = TRUE, dig.lab = 10,
+                             include.lowest = TRUE, labels = FALSE)
     temp <- OOFforecast %>%
       dplyr::group_by(group) %>%
       dplyr::summarise(Actual = mean(y), Predicted = mean(ensemble_best))
@@ -239,14 +498,14 @@ SRxgboost_make_ensemble <- function(lauf,
     if (exists("y_test")) {
       # calculate metrics
       TEST_metrics$RMSE <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
-                                function(x) Metrics::rmse(TESTforecast$y, x))
+                                 function(x) Metrics::rmse(TESTforecast$y, x))
       TEST_metrics$MAE <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
-                               function(x) Metrics::mae(TESTforecast$y, x))
+                                function(x) Metrics::mae(TESTforecast$y, x))
       TEST_metrics$MAPE <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
-                                function(x) sum(abs(x / TESTforecast$y - 1)) /
-                                  length(TESTforecast$y))
+                                 function(x) sum(abs(x / TESTforecast$y - 1)) /
+                                   length(TESTforecast$y))
       TEST_metrics$R2 <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
-                              function(x) stats::cor(TESTforecast$y, x)^2)
+                               function(x) stats::cor(TESTforecast$y, x)^2)
       TEST_metrics <- TEST_metrics %>%
         dplyr::mutate(model = factor(model, levels = levels(OOF_metrics$model))) %>%
         dplyr::arrange(model)
@@ -304,11 +563,11 @@ SRxgboost_make_ensemble <- function(lauf,
       #
       # Lift Chart
       TESTforecast$group <- cut(TESTforecast$ensemble_best,
-                               breaks = unique(stats::quantile(TESTforecast$ensemble_best,
-                                                               probs = seq(0, 1.01, by = 1/20),
-                                                               na.rm = TRUE)),
-                               ordered_result = TRUE, dig.lab = 10,
-                               include.lowest = TRUE, labels = FALSE)
+                                breaks = unique(stats::quantile(TESTforecast$ensemble_best,
+                                                                probs = seq(0, 1.01, by = 1/20),
+                                                                na.rm = TRUE)),
+                                ordered_result = TRUE, dig.lab = 10,
+                                include.lowest = TRUE, labels = FALSE)
       temp <- TESTforecast %>%
         dplyr::group_by(group) %>%
         dplyr::summarise(Actual = mean(y), Predicted = mean(ensemble_best))
@@ -823,9 +1082,10 @@ SRxgboost_make_ensemble <- function(lauf,
     for (i in 1:(top_rank + 2)) {
       # suppressMessages(
       mAUC[[i]] <- pROC::multiclass.roc(OOFforecast$y,
-                                          OOFforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
-                                            stats::setNames(0:(classes - 1)))$auc %>%
-          as.numeric()
+                                        OOFforecast[, (i * (classes + 1) - (classes - 1)):(i * (classes + 1))] %>%
+                                          # OOFforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
+                                          stats::setNames(0:(classes - 1)))$auc %>%
+        as.numeric()
       # )
     }; rm(i)
     OOF_metrics$mAUC <- unlist(mAUC)
@@ -978,7 +1238,7 @@ SRxgboost_make_ensemble <- function(lauf,
     # print ROC-curve
     try({
       p <- ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr,
-                                            colour = stats::reorder(binary, -binary_AUC))) +
+                                                 colour = stats::reorder(binary, -binary_AUC))) +
         ggplot2::geom_line() +
         ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
                              linetype = "dashed") +
@@ -1074,7 +1334,8 @@ SRxgboost_make_ensemble <- function(lauf,
       for (i in 1:(top_rank + 2)) {
         # suppressMessages(
         mAUC[[i]] <- pROC::multiclass.roc(TESTforecast$y,
-                                          TESTforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
+                                          TESTforecast[, (i * (classes + 1) - (classes - 1)):(i * (classes + 1))] %>%
+                                            # TESTforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
                                             stats::setNames(0:(classes - 1)))$auc %>%
           as.numeric()
         # )
@@ -1199,7 +1460,7 @@ SRxgboost_make_ensemble <- function(lauf,
       # print ROC-curve
       try({
         p <- ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr,
-                                              colour = stats::reorder(binary, -binary_AUC))) +
+                                                   colour = stats::reorder(binary, -binary_AUC))) +
           ggplot2::geom_line() +
           ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
                                linetype = "dashed") +
