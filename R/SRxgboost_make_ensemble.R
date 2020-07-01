@@ -823,9 +823,10 @@ SRxgboost_make_ensemble <- function(lauf,
     for (i in 1:(top_rank + 2)) {
       # suppressMessages(
       mAUC[[i]] <- pROC::multiclass.roc(OOFforecast$y,
-                                          OOFforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
-                                            stats::setNames(0:(classes - 1)))$auc %>%
-          as.numeric()
+                                        OOFforecast[, (i * (classes + 1) - (classes - 1)):(i * (classes + 1))] %>%
+                                        # OOFforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
+                                          stats::setNames(0:(classes - 1)))$auc %>%
+        as.numeric()
       # )
     }; rm(i)
     OOF_metrics$mAUC <- unlist(mAUC)
@@ -1074,7 +1075,8 @@ SRxgboost_make_ensemble <- function(lauf,
       for (i in 1:(top_rank + 2)) {
         # suppressMessages(
         mAUC[[i]] <- pROC::multiclass.roc(TESTforecast$y,
-                                          TESTforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
+                                          TESTforecast[, (i * (classes + 1) - (classes - 1)):(i * (classes + 1))] %>%
+                                          # TESTforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
                                             stats::setNames(0:(classes - 1)))$auc %>%
           as.numeric()
         # )
