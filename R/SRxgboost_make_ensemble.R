@@ -61,9 +61,9 @@ SRxgboost_make_ensemble <- function(lauf,
       dplyr::filter(variable != "(Intercept)") %>%
       dplyr::mutate(weight = round(abs(estimate) / sum(abs(estimate)), 4))
     cat("GLM weights: ", weights$weight, "\n")
-    OOFforecast$ensemble_mean_glm <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
+    OOFforecast$ensemble_wmean_glm <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
                                         function(x) stats::weighted.mean(x, w = weights$weight))
-    TESTforecast$ensemble_mean_glm <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
+    TESTforecast$ensemble_wmean_glm <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
                                          function(x) stats::weighted.mean(x, w = weights$weight))
     rm(glm, weights)
     #
@@ -81,14 +81,16 @@ SRxgboost_make_ensemble <- function(lauf,
       accuracy <- 2 - accuracy / accuracy[1]
     }
     cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)))[1, ]
-    weights <- sapply(accuracy ^ 20 / cor ^ 6, function(x) min(c(x, 1)))
-    #
+    weights <- accuracy ^ 20 / cor ^ 6
+    # weights <- sapply(accuracy ^ 20 / cor ^ 6, function(x) min(c(x, 1)))
     # weights <- sapply(accuracy ^ 10 / cor ^ 3, function(x) min(c(x, 1)))
+    weights[1] <- max(weights)
     weights <- round(weights / sum(weights), 4)
-    cat("accuracy/cor-weights: ", weights, "\n")
-    OOFforecast$ensemble_mean_cor <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
+    cat("accuracy/cor-weights: ", weights, "\n",
+        "accuracy: ", round(accuracy, 2), "   cor: ", round(cor, 2), "\n")
+    OOFforecast$ensemble_wmean_cor <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
                                             function(x) stats::weighted.mean(x, w = weights))
-    TESTforecast$ensemble_mean_cor <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
+    TESTforecast$ensemble_wmean_cor <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
                                              function(x) stats::weighted.mean(x, w = weights))
     rm(accuracy, cor, weights)
     #
@@ -250,7 +252,6 @@ SRxgboost_make_ensemble <- function(lauf,
       OOFforecast <- dplyr::bind_cols(OOFforecast, y = y_OOF)
       if (exists("y_test")) TESTforecast <- dplyr::bind_cols(TESTforecast, y = y_test)
       #
-      browser()
       # GLM-weighted mean (be aware of overfitting !!!)
       glm <- OOFforecast %>%
         dplyr::select(y, 1:(1 + top_rank * (classes + 1))) %>%
@@ -263,52 +264,67 @@ SRxgboost_make_ensemble <- function(lauf,
         dplyr::mutate(weight = round(abs(estimate) / sum(abs(estimate)), 4))
       cat("GLM weights: ", weights$weight, "\n")
       for (i in 2:(2 + classes - 1)) {
-        OOFforecast[, paste0("ensemble_mean_glm", "_X", i - 1)] <-
+        OOFforecast[, paste0("ensemble_wmean_glm", "_X", i - 1)] <-
           apply(dplyr::select(OOFforecast[, 1:(1 + top_rank * (classes + 1))],
                               dplyr::ends_with(paste0("_X", i - 1))), 1,
                 function(x) stats::weighted.mean(x, w = weights$weight))
-        TESTforecast[, paste0("ensemble_mean_glm", "_X", i - 1)] <-
+        TESTforecast[, paste0("ensemble_wmean_glm", "_X", i - 1)] <-
           apply(dplyr::select(TESTforecast[, 1:(1 + top_rank * (classes + 1))],
                               dplyr::ends_with(paste0("_X", i - 1))), 1,
                 function(x) stats::weighted.mean(x, w = weights$weight))
       }; rm(i)
       OOFforecast <- OOFforecast %>%
-        dplyr::mutate(ensemble_mean_glm_class =
+        dplyr::mutate(ensemble_wmean_glm_class =
                         apply(dplyr::select(OOFforecast,
-                                            dplyr::starts_with("ensemble_mean_glm_")),
+                                            dplyr::starts_with("ensemble_wmean_glm_")),
                               MARGIN = 1, which.max) - 1)
       TESTforecast <- TESTforecast %>%
-        dplyr::mutate(ensemble_mean_glm_class =
+        dplyr::mutate(ensemble_wmean_glm_class =
                         apply(dplyr::select(TESTforecast,
-                                            dplyr::starts_with("ensemble_mean_glm_")),
+                                            dplyr::starts_with("ensemble_wmean_glm_")),
                               MARGIN = 1, which.max) - 1)
       rm(glm, weights)
       #
-      # browser()
-      # # accuracy/cor-weighted mean
-      # if (objective == "regression") {
-      #   accuracy <- apply(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)), 2,
-      #                     function(x) Metrics::rmse(OOFforecast$y, x))
-      #   accuracy <- 2 - accuracy / accuracy[1]
-      # } else {
-      #   accuracy <- apply(OOFforecast[, 2:(top_rank + 1)], 2,
-      #                     function(x) as.numeric(pROC::roc(response = OOFforecast$y,
-      #                                                      predictor = x, algorithm = 2,
-      #                                                      levels = c(0, 1),
-      #                                                      direction = "<")$auc))
-      #   accuracy <- 2 - accuracy / accuracy[1]
-      # }
-      # cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)))[1, ]
+      # accuracy/cor-weighted mean
+      accuracy <- apply(OOFforecast %>%
+                          dplyr::select(1:(1 + top_rank * (classes + 1))) %>%
+                          dplyr::select(dplyr::starts_with("class")), 2,
+                        function(x) caret::confusionMatrix(table(x, OOFforecast$y),
+                                                           positive = "1")$overall[1])
+      accuracy <- accuracy / accuracy[1]
+      cor <- cor(OOFforecast %>%
+                   dplyr::select(1:(1 + top_rank * (classes + 1))) %>%
+                   dplyr::select(dplyr::starts_with("class")))[1, ]
+      weights <- accuracy ^ 20 / cor ^ 6
       # weights <- sapply(accuracy ^ 20 / cor ^ 6, function(x) min(c(x, 1)))
-      # # weights <- sapply(accuracy ^ 10 / cor ^ 3, function(x) min(c(x, 1)))
-      # weights <- round(weights / sum(weights), 4)
-      # cat("accuracy/cor-weights: ", weights, "\n")
-      # OOFforecast$ensemble_mean_cor <- apply(dplyr::select(OOFforecast, 2:(top_rank + 1)), 1,
-      #                                        function(x) stats::weighted.mean(x, w = weights))
-      # TESTforecast$ensemble_mean_cor <- apply(dplyr::select(TESTforecast, 2:(top_rank + 1)), 1,
-      #                                         function(x) stats::weighted.mean(x, w = weights))
-      # rm(accuracy, cor, weights)
-      # #
+      # weights <- sapply(accuracy ^ 10 / cor ^ 3, function(x) min(c(x, 1)))
+      weights[1] <- max(weights)
+      weights <- round(weights / sum(weights), 4)
+      cat("accuracy/cor-weights: ", weights, "\n",
+          "accuracy: ", round(accuracy, 2), "   cor: ", round(cor, 2), "\n")
+      for (i in 2:(2 + classes - 1)) {
+        OOFforecast[, paste0("ensemble_wmean_cor", "_X", i - 1)] <-
+          apply(dplyr::select(OOFforecast[, 1:(1 + top_rank * (classes + 1))],
+                              dplyr::ends_with(paste0("_X", i - 1))), 1,
+                function(x) stats::weighted.mean(x, w = weights))
+        TESTforecast[, paste0("ensemble_wmean_cor", "_X", i - 1)] <-
+          apply(dplyr::select(TESTforecast[, 1:(1 + top_rank * (classes + 1))],
+                              dplyr::ends_with(paste0("_X", i - 1))), 1,
+                function(x) stats::weighted.mean(x, w = weights))
+      }; rm(i)
+      OOFforecast <- OOFforecast %>%
+        dplyr::mutate(ensemble_wmean_cor_class =
+                        apply(dplyr::select(OOFforecast,
+                                            dplyr::starts_with("ensemble_wmean_cor_")),
+                              MARGIN = 1, which.max) - 1)
+      TESTforecast <- TESTforecast %>%
+        dplyr::mutate(ensemble_wmean_cor_class =
+                        apply(dplyr::select(TESTforecast,
+                                            dplyr::starts_with("ensemble_wmean_cor_")),
+                              MARGIN = 1, which.max) - 1)
+      rm(accuracy, cor, weights)
+      #
+      # browser()
       # # Train caret ensemble models   xgbTree works best, but check overfitting!!!
       # train <- OOFforecast %>% dplyr::select(., 2:(top_rank + 1), y)
       # set.seed(12345)
@@ -1079,7 +1095,7 @@ SRxgboost_make_ensemble <- function(lauf,
     #
     # calculate metrics
     mAUC <- list()
-    for (i in 1:(top_rank + 2)) {
+    for (i in 1:nrow(OOF_metrics)) {
       # suppressMessages(
       mAUC[[i]] <- pROC::multiclass.roc(OOFforecast$y,
                                         OOFforecast[, (i * (classes + 1) - (classes - 1)):(i * (classes + 1))] %>%
@@ -1331,7 +1347,7 @@ SRxgboost_make_ensemble <- function(lauf,
     if (exists("y_test")) {
       # calculate metrics
       mAUC <- list()
-      for (i in 1:(top_rank + 2)) {
+      for (i in 1:(nrow(OOF_metrics))) {
         # suppressMessages(
         mAUC[[i]] <- pROC::multiclass.roc(TESTforecast$y,
                                           TESTforecast[, (i * (classes + 1) - (classes - 1)):(i * (classes + 1))] %>%
@@ -1552,3 +1568,4 @@ SRxgboost_make_ensemble <- function(lauf,
   # return NULL
   return(invisible(NULL))
 }
+
