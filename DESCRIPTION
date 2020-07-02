@@ -1,6 +1,6 @@
 Package: SRxgboost
 Title: What the Package Does (One Line, Title Case)
-Version: 0.3.0
+Version: 0.3.1
 Authors@R: 
     person(given = "First",
            family = "Last",
