@@ -6,7 +6,7 @@
 #' @param top_rank integer
 #'
 #' @return forecast and model metrics for ensemble (OOF and TEST if available)
-#'         as rds-file and as data.frame in memory
+#'         as rds-file and as data.frame in memory.
 #'
 #' @export
 SRxgboost_make_ensemble <- function(lauf,
@@ -1351,7 +1351,7 @@ SRxgboost_make_ensemble <- function(lauf,
         # suppressMessages(
         mAUC[[i]] <- pROC::multiclass.roc(TESTforecast$y,
                                           TESTforecast[, (i * (classes + 1) - (classes - 1)):(i * (classes + 1))] %>%
-                                            # TESTforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
+                                          # TESTforecast[, (i * (classes + 1) - 5):(i * (classes + 1))] %>%
                                             stats::setNames(0:(classes - 1)))$auc %>%
           as.numeric()
         # )
