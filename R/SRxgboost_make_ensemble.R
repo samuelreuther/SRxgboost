@@ -42,7 +42,7 @@ SRxgboost_make_ensemble <- function(name,
       TESTforecast_temp <- TESTforecast %>%
         stats::setNames(c("id", paste0(gsub(".csv", "", lauf[i]), "__", names(.)[2:ncol(.)])))
       y_OOF_temp <- y_OOF
-      y_test_temp <- y_test
+      if (exists("y_test")) y_test_temp <- y_test
     } else {
       OOFforecast_temp <-
         dplyr::left_join(OOFforecast_temp,
@@ -61,8 +61,10 @@ SRxgboost_make_ensemble <- function(name,
   OOFforecast <- OOFforecast_temp
   TESTforecast <- TESTforecast_temp
   y_OOF <- y_OOF_temp
-  y_test <- y_test_temp
-  rm(OOFforecast_temp, TESTforecast_temp, y_OOF_temp, y_test_temp); invisible(gc())
+  if (exists("y_test")) y_test <- y_test_temp
+  rm(OOFforecast_temp, TESTforecast_temp, y_OOF_temp)
+  if (exists("y_test")) rm(y_test_temp)
+  invisible(gc())
   #
   # check number of columns returend and adapt top_rank
   if (ncol(OOFforecast) != top_rank + 1) top_rank <- ncol(OOFforecast) - 1
