@@ -117,7 +117,8 @@ SRxgboost_make_ensemble <- function(name,
                                                          direction = "<")$auc))
       accuracy <- 2 - accuracy / max(accuracy)
     }
-    cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)))[which.max(accuracy), ]
+    cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)),
+               use = "pairwise.complete.obs")[which.max(accuracy), ]
     weights <- accuracy ^ 20 / cor ^ 6
     weights[which.max(accuracy)] <- max(weights)
     weights <- round(weights / sum(weights), 4)
@@ -258,13 +259,15 @@ SRxgboost_make_ensemble <- function(name,
                           rowMeans(dplyr::select(., dplyr::ends_with(paste0("_X", i - 1)))))
       }; rm(i)
       OOFforecast <- OOFforecast %>%
-        dplyr::mutate(ensemble_mean_class = apply(dplyr::select(OOFforecast,
-                                                                dplyr::starts_with("ensemble_mean_")),
-                                                  MARGIN = 1, which.max) - 1)
+        dplyr::mutate(ensemble_mean_class =
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_mean_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
-        dplyr::mutate(ensemble_mean_class = apply(dplyr::select(TESTforecast,
-                                                                dplyr::starts_with("ensemble_mean_")),
-                                                  MARGIN = 1, which.max) - 1)
+        dplyr::mutate(ensemble_mean_class =
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_mean_")),
+                                         MARGIN = 1, which.max)) - 1)
       #
       # median
       for (i in 2:(2 + classes - 1)) {
@@ -275,14 +278,14 @@ SRxgboost_make_ensemble <- function(name,
       }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_median_class =
-                        apply(dplyr::select(OOFforecast,
-                                            dplyr::starts_with("ensemble_median_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_median_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
         dplyr::mutate(ensemble_median_class =
-                        apply(dplyr::select(TESTforecast,
-                                            dplyr::starts_with("ensemble_median_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_median_")),
+                                         MARGIN = 1, which.max)) - 1)
       #
       # add y to forecasts
       OOFforecast <- dplyr::bind_cols(OOFforecast, y = y_OOF)
@@ -311,14 +314,14 @@ SRxgboost_make_ensemble <- function(name,
       }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_wmean_glm_class =
-                        apply(dplyr::select(OOFforecast,
-                                            dplyr::starts_with("ensemble_wmean_glm_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_wmean_glm_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
         dplyr::mutate(ensemble_wmean_glm_class =
-                        apply(dplyr::select(TESTforecast,
-                                            dplyr::starts_with("ensemble_wmean_glm_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_wmean_glm_")),
+                                         MARGIN = 1, which.max)) - 1)
       rm(glm, weights)
       #
       # accuracy/cor-weighted mean
@@ -330,7 +333,8 @@ SRxgboost_make_ensemble <- function(name,
       accuracy <- accuracy / max(accuracy)
       cor <- cor(OOFforecast %>%
                    dplyr::select(1:(1 + top_rank * (classes + 1))) %>%
-                   dplyr::select(dplyr::contains("__class")))[which.max(accuracy), ]
+                   dplyr::select(dplyr::contains("__class")),
+                 use = "pairwise.complete.obs")[which.max(accuracy), ]
       weights <- accuracy ^ 20 / cor ^ 6
       weights[which.max(accuracy)] <- max(weights)
       weights <- round(weights / sum(weights), 4)
@@ -348,14 +352,14 @@ SRxgboost_make_ensemble <- function(name,
       }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_wmean_cor_class =
-                        apply(dplyr::select(OOFforecast,
-                                            dplyr::starts_with("ensemble_wmean_cor_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_wmean_cor_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
         dplyr::mutate(ensemble_wmean_cor_class =
-                        apply(dplyr::select(TESTforecast,
-                                            dplyr::starts_with("ensemble_wmean_cor_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_wmean_cor_")),
+                                         MARGIN = 1, which.max)) - 1)
       rm(accuracy, cor, weights)
       #
       # browser()
@@ -443,7 +447,8 @@ SRxgboost_make_ensemble <- function(name,
                               function(x) sum(abs(x / OOFforecast$y - 1)) /
                                 length(OOFforecast$y))
     OOF_metrics$R2 <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
-                            function(x) stats::cor(OOFforecast$y, x)^2)
+                            function(x) stats::cor(OOFforecast$y, x,
+                                                   use = "pairwise.complete.obs")^2)
     OOF_metrics <- OOF_metrics %>%
       dplyr::arrange(-RMSE) %>%
       dplyr::mutate(model = factor(model, levels = .$model))
@@ -505,7 +510,8 @@ SRxgboost_make_ensemble <- function(name,
                                         format(., nsmall = 3),
                                       "\nR2:          ",
                                       round(stats::cor(OOFforecast$y,
-                                                       OOFforecast$ensemble_best)^2, 3) %>%
+                                                       OOFforecast$ensemble_best,
+                                                       use = "pairwise.complete.obs")^2, 3) %>%
                                         format(., nsmall = 3))) # ,
     # "\nAUC:       ", round(pROC::auc(OOFforecast$y,
     #                                  OOFforecast$ensemble_best), 3)))
@@ -549,7 +555,8 @@ SRxgboost_make_ensemble <- function(name,
                                  function(x) sum(abs(x / TESTforecast$y - 1)) /
                                    length(TESTforecast$y))
       TEST_metrics$R2 <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
-                               function(x) stats::cor(TESTforecast$y, x)^2)
+                               function(x) stats::cor(TESTforecast$y, x,
+                                                      use = "pairwise.complete.obs")^2)
       TEST_metrics <- TEST_metrics %>%
         dplyr::mutate(model = factor(model, levels = levels(OOF_metrics$model))) %>%
         dplyr::arrange(model)
@@ -593,7 +600,8 @@ SRxgboost_make_ensemble <- function(name,
                                           format(., nsmall = 3),
                                         "\nR2:          ",
                                         round(stats::cor(TESTforecast$y,
-                                                         TESTforecast$ensemble_best)^2, 3) %>%
+                                                         TESTforecast$ensemble_best,
+                                                         use = "pairwise.complete.obs")^2, 3) %>%
                                           format(., nsmall = 3))) # ,
       # "\nAUC:       ", round(pROC::auc(TESTforecast$y,
       #                                  TESTforecast$ensemble_best), 3)))
