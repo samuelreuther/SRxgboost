@@ -2,37 +2,68 @@
 #'
 #' Make an ensemble model and predictions from previous runs.
 #'
-#' @param lauf character
-#' @param top_rank integer
+#' @param name character: folder name for results
+#' @param lauf character: 1 or several "lauf"-names of previous runs, e.g. c("lauf1", "lauf2")
+#' @param top_rank integer: 1 integer for each lauf, e.g. c(3, 5)
 #'
 #' @return forecast and model metrics for ensemble (OOF and TEST if available)
 #'         as rds-file and as data.frame in memory.
 #'
 #' @export
-SRxgboost_make_ensemble <- function(lauf,
+SRxgboost_make_ensemble <- function(name,
+                                    lauf,
                                     top_rank = 3) {
-  # check lauf ends with ".csv"
+  # check if lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
+  # check if name does not end with ".csv"
+  if (grepl('.csv$', name)) name <- gsub(".csv", "", name)
+  #
   # delete old plots
-  if (dir.exists(paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/"))) {
-    unlink(paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/*"),
-           recursive = TRUE)
+  if (dir.exists(paste0(path_output, name))) {
+    unlink(paste0(path_output, name, "/*"), recursive = TRUE)
   }
   #
   # create Ensemble folder
-  dir.create(paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/"),
-             showWarnings = FALSE)
+  dir.create(paste0(path_output, name), showWarnings = FALSE)
   #
   #
   #
   ### load results of runs
   #
-  SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf,
-                                         top_rank = top_rank)
+  for (i in seq_along(lauf)) {
+    SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf[i],
+                                           top_rank = top_rank[i])
+    if (i == 1) {
+      OOFforecast_temp <- OOFforecast %>%
+        stats::setNames(c("id", paste0(gsub(".csv", "", lauf[i]), "__", names(.)[2:ncol(.)])))
+      TESTforecast_temp <- TESTforecast %>%
+        stats::setNames(c("id", paste0(gsub(".csv", "", lauf[i]), "__", names(.)[2:ncol(.)])))
+      y_OOF_temp <- y_OOF
+      y_test_temp <- y_test
+    } else {
+      OOFforecast_temp <-
+        dplyr::left_join(OOFforecast_temp,
+                         OOFforecast %>%
+                           stats::setNames(c("id", paste0(gsub(".csv", "", lauf[i]),
+                                                          "__", names(.)[2:ncol(.)]))),
+                         by = "id")
+      TESTforecast_temp <-
+        dplyr::left_join(TESTforecast_temp,
+                         TESTforecast %>%
+                           stats::setNames(c("id", paste0(gsub(".csv", "", lauf[i]),
+                                                          "__", names(.)[2:ncol(.)]))),
+                         by = "id")
+    }
+  }; rm(i)
+  OOFforecast <- OOFforecast_temp
+  TESTforecast <- TESTforecast_temp
+  y_OOF <- y_OOF_temp
+  y_test <- y_test_temp
+  rm(OOFforecast_temp, TESTforecast_temp, y_OOF_temp, y_test_temp); invisible(gc())
   #
   # check number of columns returend and adapt top_rank
-  if (ncol(OOFforecast) < top_rank + 1) top_rank <- ncol(OOFforecast) - 1
+  if (ncol(OOFforecast) != top_rank + 1) top_rank <- ncol(OOFforecast) - 1
   #
   #
   #
@@ -68,23 +99,22 @@ SRxgboost_make_ensemble <- function(lauf,
     rm(glm, weights)
     #
     # accuracy/cor-weighted mean
+    browser()
     if (objective == "regression") {
       accuracy <- apply(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)), 2,
                         function(x) Metrics::rmse(OOFforecast$y, x))
-      accuracy <- 2 - accuracy / accuracy[1]
+      accuracy <- 2 - accuracy / min(accuracy)
     } else {
       accuracy <- apply(OOFforecast[, 2:(top_rank + 1)], 2,
                         function(x) as.numeric(pROC::roc(response = OOFforecast$y,
                                                          predictor = x, algorithm = 2,
                                                          levels = c(0, 1),
                                                          direction = "<")$auc))
-      accuracy <- 2 - accuracy / accuracy[1]
+      accuracy <- 2 - accuracy / max(accuracy)
     }
-    cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)))[1, ]
+    cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)))[which.max(accuracy), ]
     weights <- accuracy ^ 20 / cor ^ 6
-    # weights <- sapply(accuracy ^ 20 / cor ^ 6, function(x) min(c(x, 1)))
-    # weights <- sapply(accuracy ^ 10 / cor ^ 3, function(x) min(c(x, 1)))
-    weights[1] <- max(weights)
+    weights[which.max(accuracy)] <- max(weights)
     weights <- round(weights / sum(weights), 4)
     cat("accuracy/cor-weights: ", weights, "\n",
         "accuracy: ", round(accuracy, 2), "   cor: ", round(cor, 2), "\n")
@@ -291,14 +321,12 @@ SRxgboost_make_ensemble <- function(lauf,
                           dplyr::select(dplyr::starts_with("class")), 2,
                         function(x) caret::confusionMatrix(table(x, OOFforecast$y),
                                                            positive = "1")$overall[1])
-      accuracy <- accuracy / accuracy[1]
+      accuracy <- accuracy / max(accuracy)
       cor <- cor(OOFforecast %>%
                    dplyr::select(1:(1 + top_rank * (classes + 1))) %>%
-                   dplyr::select(dplyr::starts_with("class")))[1, ]
+                   dplyr::select(dplyr::starts_with("class")))[which.max(accuracy), ]
       weights <- accuracy ^ 20 / cor ^ 6
-      # weights <- sapply(accuracy ^ 20 / cor ^ 6, function(x) min(c(x, 1)))
-      # weights <- sapply(accuracy ^ 10 / cor ^ 3, function(x) min(c(x, 1)))
-      weights[1] <- max(weights)
+      weights[which.max(accuracy)] <- max(weights)
       weights <- round(weights / sum(weights), 4)
       cat("accuracy/cor-weights: ", weights, "\n",
           "accuracy: ", round(accuracy, 2), "   cor: ", round(cor, 2), "\n")
@@ -413,8 +441,7 @@ SRxgboost_make_ensemble <- function(lauf,
     OOF_metrics <- OOF_metrics %>%
       dplyr::arrange(-RMSE) %>%
       dplyr::mutate(model = factor(model, levels = .$model))
-    saveRDS(OOF_metrics,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOF_metrics.rds"))
+    saveRDS(OOF_metrics, paste0(path_output, name, "/OOF_metrics.rds"))
     assign('OOF_metrics', OOF_metrics, envir = .GlobalEnv)
     #
     # add column with best ensemble forecasts in OOF
@@ -426,15 +453,13 @@ SRxgboost_make_ensemble <- function(lauf,
       as.character()
     OOFforecast <- OOFforecast %>%
       dplyr::mutate(ensemble_best = .[, best_ensemble_OOF])
-    saveRDS(OOFforecast,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOFforecast.rds"))
+    saveRDS(OOFforecast, paste0(path_output, name, "/OOFforecast.rds"))
     assign('OOFforecast', OOFforecast, envir = .GlobalEnv)
     #
     # add column with best ensemble forecasts in TEST
     TESTforecast <- TESTforecast %>%
       dplyr::mutate(ensemble_best = .[, best_ensemble_OOF])
-    saveRDS(TESTforecast,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TESTforecast.rds"))
+    saveRDS(TESTforecast, paste0(path_output, name, "/TESTforecast.rds"))
     assign('TESTforecast', TESTforecast, envir = .GlobalEnv)
     #
     # plot comparison of model metrics
@@ -449,8 +474,7 @@ SRxgboost_make_ensemble <- function(lauf,
       ggplot2::guides(fill = FALSE) +
       ggplot2::coord_flip()
     print(p)
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Comparison of model metrics.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Comparison of model metrics.png"),
                     plot = p, width = 9.92, height = 5.3)  # 4.67
     rm(p)
     #
@@ -480,8 +504,7 @@ SRxgboost_make_ensemble <- function(lauf,
     # "\nAUC:       ", round(pROC::auc(OOFforecast$y,
     #                                  OOFforecast$ensemble_best), 3)))
     print(p)
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Accuracy y vs. model prediction.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Accuracy y vs. model prediction.png"),
                     plot = p, width = 9.92, height = 5.3)  # 4.67
     rm(p)
     #
@@ -503,8 +526,7 @@ SRxgboost_make_ensemble <- function(lauf,
       ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
       ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
       ggplot2::labs(title = "OOF Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Lift Chart.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Lift Chart.png"),
                     width = 9.92, height = 5.3)  # 4.67
     rm(temp)
     #
@@ -525,8 +547,7 @@ SRxgboost_make_ensemble <- function(lauf,
       TEST_metrics <- TEST_metrics %>%
         dplyr::mutate(model = factor(model, levels = levels(OOF_metrics$model))) %>%
         dplyr::arrange(model)
-      saveRDS(TEST_metrics,
-              paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TEST_metrics.rds"))
+      saveRDS(TEST_metrics, paste0(path_output, name, "/TEST_metrics.rds"))
       assign('TEST_metrics', TEST_metrics, envir = .GlobalEnv)
       #
       # plot comparison of model metrics
@@ -541,8 +562,7 @@ SRxgboost_make_ensemble <- function(lauf,
         ggplot2::guides(fill = FALSE) +
         ggplot2::coord_flip()
       print(p)
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Comparison of model metrics.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Comparison of model metrics.png"),
                       plot = p, width = 9.92, height = 5.3)  # 4.67
       rm(p)
       #
@@ -572,8 +592,7 @@ SRxgboost_make_ensemble <- function(lauf,
       # "\nAUC:       ", round(pROC::auc(TESTforecast$y,
       #                                  TESTforecast$ensemble_best), 3)))
       print(p)
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Accuracy y vs. model prediction.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Accuracy y vs. model prediction.png"),
                       plot = p, width = 9.92, height = 5.3)  # 4.67
       rm(p)
       #
@@ -595,8 +614,7 @@ SRxgboost_make_ensemble <- function(lauf,
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
         ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
         ggplot2::labs(title = "TEST Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Lift Chart.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Lift Chart.png"),
                       width = 9.92, height = 5.3)  # 4.67
       rm(temp)
     }
@@ -646,8 +664,7 @@ SRxgboost_make_ensemble <- function(lauf,
     OOF_metrics <- OOF_metrics %>%
       dplyr::arrange(AUC) %>%
       dplyr::mutate(model = factor(model, levels = .$model))
-    saveRDS(OOF_metrics,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOF_metrics.rds"))
+    saveRDS(OOF_metrics, paste0(path_output, name, "/OOF_metrics.rds"))
     assign('OOF_metrics', OOF_metrics, envir = .GlobalEnv)
     #
     # add column with best ensemble forecasts in OOF
@@ -659,15 +676,13 @@ SRxgboost_make_ensemble <- function(lauf,
       as.character()
     OOFforecast <- OOFforecast %>%
       dplyr::mutate(ensemble_best = .[, best_ensemble_OOF])
-    saveRDS(OOFforecast,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOFforecast.rds"))
+    saveRDS(OOFforecast, paste0(path_output, name, "/OOFforecast.rds"))
     assign('OOFforecast', OOFforecast, envir = .GlobalEnv)
     #
     # add column with best ensemble forecasts in TEST
     TESTforecast <- TESTforecast %>%
       dplyr::mutate(ensemble_best = .[, best_ensemble_OOF])
-    saveRDS(TESTforecast,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TESTforecast.rds"))
+    saveRDS(TESTforecast, paste0(path_output, name, "/TESTforecast.rds"))
     assign('TESTforecast', TESTforecast, envir = .GlobalEnv)
     #
     # plot comparison of model metrics
@@ -682,8 +697,7 @@ SRxgboost_make_ensemble <- function(lauf,
       ggplot2::guides(fill = FALSE) +
       ggplot2::coord_flip()
     print(p)
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Comparison of model metrics.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Comparison of model metrics.png"),
                     plot = p, width = 9.92, height = 5.3)  # 4.67
     rm(p)
     #
@@ -732,8 +746,7 @@ SRxgboost_make_ensemble <- function(lauf,
       ggplot2::labs(title = "OOF Accuracy and cut off", x = "Threshold",
                     y = "Accuracy", colour = "") +
       ggplot2::theme(legend.position = "top")
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Accuracy and Cut off.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Accuracy and Cut off.png"),
                     width = 9.92, height = 5.3)
     #
     # Cut off and Costs
@@ -768,13 +781,11 @@ SRxgboost_make_ensemble <- function(lauf,
       ggplot2::labs(title = "OOF Cut off and costs", x = "Threshold",
                     y = "Costs", colour = "") +
       ggplot2::theme(legend.position = "top")
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Cut off and Costs.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Cut off and Costs.png"),
                     width = 9.92, height = 5.3)
     #
     # save ROC data
-    utils::write.table(temp, paste0(path_output, gsub(".csv", "/", lauf),
-                                    "Ensemble/OOF Cut off, accuracy and costs.csv"),
+    utils::write.table(temp, paste0(path_output, name, "/OOF Cut off, accuracy and costs.csv"),
                        row.names = FALSE, sep = ";")
     #
     # confusion matrix
@@ -784,8 +795,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                      OOFforecast$y),
                                positive = "1")
       print(confusion_matrix)
-      sink(paste0(path_output, gsub(".csv", "/", lauf),
-                  "Ensemble/OOF Confusion matrix.txt"), append = FALSE)
+      sink(paste0(path_output, name, "/OOF Confusion matrix.txt"), append = FALSE)
       print(confusion_matrix)
       sink()
       # plot confusion matrix
@@ -795,8 +805,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                                levels = c("0", "1")))
       # )
       # suppressWarnings(SRfunctions::SR_mosaicplot(df = OOFforecast, cutoff = cut_off_a))
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/OOF Confusion Matrix.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/OOF Confusion Matrix.png"),
                       width = 9.92, height = 5.3)  # 4.67
     }
     #
@@ -841,7 +850,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                         round(as.numeric(confusion_matrix$byClass[2]), 3) %>%
                                           format(., nsmall = 3)))
       print(p)
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOF ROC.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/OOF ROC.png"),
                       plot = p, width = 9.92, height = 5.3)  # 4.67
     })
     rm(temp)
@@ -873,8 +882,7 @@ SRxgboost_make_ensemble <- function(lauf,
     #              label = paste0("cut off a = ", cut_off_a)) +
     #     labs(title = "Class distributions", x = "Probability (y = 1)", y = "Count", fill = "y")
     # }
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Class distributions.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Class distributions.png"),
                     width = 9.92, height = 5.3)
     #
     # Lift Chart
@@ -895,8 +903,7 @@ SRxgboost_make_ensemble <- function(lauf,
       ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
       ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
       ggplot2::labs(title = "OOF Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Lift Chart.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Lift Chart.png"),
                     width = 9.92, height = 5.3)  # 4.67
     rm(temp)
     #
@@ -923,8 +930,7 @@ SRxgboost_make_ensemble <- function(lauf,
       TEST_metrics <- TEST_metrics %>%
         dplyr::mutate(model = factor(model, levels = levels(OOF_metrics$model))) %>%
         dplyr::arrange(model)
-      saveRDS(TEST_metrics,
-              paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TEST_metrics.rds"))
+      saveRDS(TEST_metrics, paste0(path_output, name, "/TEST_metrics.rds"))
       assign('TEST_metrics', TEST_metrics, envir = .GlobalEnv)
       #
       # plot comparison of model metrics
@@ -939,8 +945,7 @@ SRxgboost_make_ensemble <- function(lauf,
         ggplot2::guides(fill = FALSE) +
         ggplot2::coord_flip()
       print(p)
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Comparison of model metrics.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Comparison of model metrics.png"),
                       plot = p, width = 9.92, height = 5.3)  # 4.67
       rm(p)
       #
@@ -963,8 +968,7 @@ SRxgboost_make_ensemble <- function(lauf,
       temp <- temp %>% dplyr::filter(!threshold %in% c(-Inf, Inf))   # remove -Inf, Inf thresholds NEW !!!
       #
       # save ROC data
-      utils::write.table(temp, paste0(path_output, gsub(".csv", "/", lauf),
-                                      "Ensemble/TEST Cut off, accuracy and costs.csv"),
+      utils::write.table(temp, paste0(path_output, name, "/TEST Cut off, accuracy and costs.csv"),
                          row.names = FALSE, sep = ";")
       #
       # confusion matrix
@@ -974,8 +978,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                        TESTforecast$y),
                                  positive = "1")
         print(confusion_matrix)
-        sink(paste0(path_output, gsub(".csv", "/", lauf),
-                    "Ensemble/TEST Confusion matrix.txt"), append = FALSE)
+        sink(paste0(path_output, name, "/TEST Confusion matrix.txt"), append = FALSE)
         print(confusion_matrix)
         sink()
         # plot confusion matrix
@@ -985,8 +988,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                                  levels = c("0", "1")))
         # )
         # suppressWarnings(SRfunctions::SR_mosaicplot(df = TESTforecast, cutoff = cut_off_a))
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                               "Ensemble/TEST Confusion Matrix.png"),
+        ggplot2::ggsave(paste0(path_output, name, "/TEST Confusion Matrix.png"),
                         width = 9.92, height = 5.3)  # 4.67
       }
       #
@@ -1031,7 +1033,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                           round(as.numeric(confusion_matrix$byClass[2]), 3) %>%
                                             format(., nsmall = 3)))
         print(p)
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TEST ROC.png"),
+        ggplot2::ggsave(paste0(path_output, name, "/TEST ROC.png"),
                         plot = p, width = 9.92, height = 5.3)  # 4.67
       })
       rm(temp)
@@ -1063,8 +1065,7 @@ SRxgboost_make_ensemble <- function(lauf,
       #              label = paste0("cut off a = ", cut_off_a)) +
       #     labs(title = "Class distributions", x = "Probability (y = 1)", y = "Count", fill = "y")
       # }
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Class distributions.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Class distributions.png"),
                       width = 9.92, height = 5.3)
       #
       # Lift Chart
@@ -1085,8 +1086,7 @@ SRxgboost_make_ensemble <- function(lauf,
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
         ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
         ggplot2::labs(title = "TEST Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Lift Chart.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Lift Chart.png"),
                       width = 9.92, height = 5.3)  # 4.67
       rm(temp)
     }
@@ -1120,8 +1120,7 @@ SRxgboost_make_ensemble <- function(lauf,
     OOF_metrics <- OOF_metrics %>%
       dplyr::arrange(mAUC) %>%
       dplyr::mutate(model = factor(model, levels = .$model))
-    saveRDS(OOF_metrics,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOF_metrics.rds"))
+    saveRDS(OOF_metrics, paste0(path_output, name, "/OOF_metrics.rds"))
     assign('OOF_metrics', OOF_metrics, envir = .GlobalEnv)
     #
     # add column with best ensemble forecasts in OOF
@@ -1138,8 +1137,7 @@ SRxgboost_make_ensemble <- function(lauf,
           stats::setNames(paste0("ensemble_best",
                                  substr(names(.), nchar(names(.)) - 2, nchar(names(.))))) %>%
           dplyr::rename(ensemble_best_class = ensemble_bestass))
-    saveRDS(OOFforecast,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOFforecast.rds"))
+    saveRDS(OOFforecast, paste0(path_output, name, "/OOFforecast.rds"))
     assign('OOFforecast', OOFforecast, envir = .GlobalEnv)
     #
     # add column with best ensemble forecasts in TEST
@@ -1150,8 +1148,7 @@ SRxgboost_make_ensemble <- function(lauf,
           stats::setNames(paste0("ensemble_best",
                                  substr(names(.), nchar(names(.)) - 2, nchar(names(.))))) %>%
           dplyr::rename(ensemble_best_class = ensemble_bestass))
-    saveRDS(TESTforecast,
-            paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TESTforecast.rds"))
+    saveRDS(TESTforecast, paste0(path_output, name, "/TESTforecast.rds"))
     assign('TESTforecast', TESTforecast, envir = .GlobalEnv)
     #
     # plot comparison of model metrics
@@ -1166,8 +1163,7 @@ SRxgboost_make_ensemble <- function(lauf,
       ggplot2::guides(fill = FALSE) +
       ggplot2::coord_flip()
     print(p)
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Comparison of model metrics.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Comparison of model metrics.png"),
                     plot = p, width = 9.92, height = 5.3)  # 4.67
     rm(p)
     #
@@ -1193,8 +1189,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                                       levels = levels(factor(OOFforecast$y))),
                                                factor(OOFforecast$y))
     print(confusion_matrix)
-    sink(paste0(path_output, gsub(".csv", "/", lauf),
-                "Ensemble/OOF Confusion matrix.txt"), append = FALSE)
+    sink(paste0(path_output, name, "/OOF Confusion matrix.txt"), append = FALSE)
     print(confusion_matrix)
     print(confusion_matrix[["byClass"]])
     sink()
@@ -1202,8 +1197,7 @@ SRxgboost_make_ensemble <- function(lauf,
     SRfunctions::SR_mosaicplot(var1 = factor(OOFforecast$y),
                                var2 = factor(OOFforecast$ensemble_best_class,
                                              levels = levels(factor(OOFforecast$y))))
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Confusion Matrix.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Confusion Matrix.png"),
                     width = 9.92, height = 5.3)  # 4.67
     #
     # calculate mcc
@@ -1287,7 +1281,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                                    format(., nsmall = 2)))) +
         ggplot2::theme(legend.text = ggplot2::element_text(size = 6))
       print(p)
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/OOF ROC.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/OOF ROC.png"),
                       plot = p, width = 9.92, height = 5.3)  # 4.67
     })
     #
@@ -1336,8 +1330,7 @@ SRxgboost_make_ensemble <- function(lauf,
       #                     ggplot2::aes(x = y, y = model, label = round(lift_factor, 1)))
       ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6), limits = c(0, 1)) +
       ggplot2::labs(title = "OOF Lift Chart", y = "Precision", x = "Class", colour = "")
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Ensemble/OOF Lift Chart.png"),
+    ggplot2::ggsave(paste0(path_output, name, "/OOF Lift Chart.png"),
                     width = 9.92, height = 5.3)  # 4.67
     rm(temp)
     #
@@ -1372,8 +1365,7 @@ SRxgboost_make_ensemble <- function(lauf,
       TEST_metrics <- TEST_metrics %>%
         dplyr::mutate(model = factor(model, levels = levels(OOF_metrics$model))) %>%
         dplyr::arrange(model)
-      saveRDS(TEST_metrics,
-              paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TEST_metrics.rds"))
+      saveRDS(TEST_metrics, paste0(path_output, name, "/TEST_metrics.rds"))
       assign('TEST_metrics', TEST_metrics, envir = .GlobalEnv)
       #
       # plot comparison of model metrics
@@ -1388,8 +1380,7 @@ SRxgboost_make_ensemble <- function(lauf,
         ggplot2::guides(fill = FALSE) +
         ggplot2::coord_flip()
       print(p)
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Comparison of model metrics.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Comparison of model metrics.png"),
                       plot = p, width = 9.92, height = 5.3)  # 4.67
       rm(p)
       #
@@ -1415,8 +1406,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                                         levels = levels(factor(TESTforecast$y))),
                                                  factor(TESTforecast$y))
       print(confusion_matrix)
-      sink(paste0(path_output, gsub(".csv", "/", lauf),
-                  "Ensemble/TEST Confusion matrix.txt"), append = FALSE)
+      sink(paste0(path_output, name, "/TEST Confusion matrix.txt"), append = FALSE)
       print(confusion_matrix)
       print(confusion_matrix[["byClass"]])
       sink()
@@ -1424,8 +1414,7 @@ SRxgboost_make_ensemble <- function(lauf,
       SRfunctions::SR_mosaicplot(var1 = factor(TESTforecast$y),
                                  var2 = factor(TESTforecast$ensemble_best_class,
                                                levels = levels(factor(TESTforecast$y))))
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Confusion Matrix.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Confusion Matrix.png"),
                       width = 9.92, height = 5.3)  # 4.67
       #
       # calculate mcc
@@ -1509,7 +1498,7 @@ SRxgboost_make_ensemble <- function(lauf,
                                                      format(., nsmall = 2)))) +
           ggplot2::theme(legend.text = ggplot2::element_text(size = 6))
         print(p)
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Ensemble/TEST ROC.png"),
+        ggplot2::ggsave(paste0(path_output, name, "/TEST ROC.png"),
                         plot = p, width = 9.92, height = 5.3)  # 4.67
       })
       #
@@ -1558,8 +1547,7 @@ SRxgboost_make_ensemble <- function(lauf,
         #                     ggplot2::aes(x = y, y = model, label = round(lift_factor, 1)))
         ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6), limits = c(0, 1)) +
         ggplot2::labs(title = "TEST Lift Chart", y = "Precision", x = "Class", colour = "")
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Ensemble/TEST Lift Chart.png"),
+      ggplot2::ggsave(paste0(path_output, name, "/TEST Lift Chart.png"),
                       width = 9.92, height = 5.3)  # 4.67
       rm(temp)
     }

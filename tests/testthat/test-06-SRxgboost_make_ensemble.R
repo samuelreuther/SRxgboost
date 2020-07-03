@@ -103,6 +103,69 @@ test_that("regression train test", {
 
 
 
+# Regression: 2 runs ------------------------------------------------------
+#
+test_that("regression train test", {
+  skip('skip')
+  #
+  ## lauf 1
+  # initialisation
+  lauf <- "regression_train_test_1.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  train_ <- train %>% select(1:60, SalePrice)
+  id_unique_train <- house$Id[seq(1, 1460, 2)]
+  id_unique_test <- house$Id[seq(2, 1460, 2)]
+  # prepare data and test
+  SRxgboost_data_prep(yname = "SalePrice",
+                      data_train = train_[seq(1, 1460, 2), ],
+                      data_test = train_[seq(2, 1460, 2), ],
+                      no_folds = 5,
+                      objective = "regression")
+  # run models
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
+                nfold = 5)
+  # clean up
+  SRxgboost_cleanup(); rm(train_)
+  #
+  ## lauf 2
+  # initialisation
+  lauf <- "regression_train_test_2.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  train_ <- train %>% select(21:79, SalePrice)
+  id_unique_train <- house$Id[seq(1, 1460, 2)]
+  id_unique_test <- house$Id[seq(2, 1460, 2)]
+  # prepare data and test
+  SRxgboost_data_prep(yname = "SalePrice",
+                      data_train = train[seq(1, 1460, 2), ],
+                      data_test = train[seq(2, 1460, 2), ],
+                      no_folds = 5,
+                      objective = "regression")
+  # run models
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
+                nfold = 5)
+  #
+  # make ensemble
+  SRxgboost_make_ensemble(name = "regression_train_test_1_2_ensemble",
+                          lauf = c("regression_train_test_1.csv",
+                                   "regression_train_test_2.csv"),
+                          top_rank = c(3, 4))
+  #
+  # tests
+  # no. of files
+  testthat::expect_equal(length(list.files(
+    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 10)
+  #
+  # clean up
+  suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
+                      y_OOF, y_TEST, SummaryCV_META, train_))
+  SRxgboost_cleanup()
+})
+
+
+
+
 # Regression: clean up ----------------------------------------------------
 #
 rm(house, train, id_unique_train, id_unique_test)

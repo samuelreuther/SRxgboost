@@ -4,16 +4,18 @@
 \alias{SRxgboost_make_ensemble}
 \title{SRxgboost_make_ensemble}
 \usage{
-SRxgboost_make_ensemble(lauf, top_rank = 3)
+SRxgboost_make_ensemble(name, lauf, top_rank = 3)
 }
 \arguments{
-\item{lauf}{character}
+\item{name}{character: folder name for results}
 
-\item{top_rank}{integer}
+\item{lauf}{character: 1 or several "lauf"-names of previous runs, e.g. c("lauf1", "lauf2")}
+
+\item{top_rank}{integer: 1 integer for each lauf, e.g. c(3, 5)}
 }
 \value{
 forecast and model metrics for ensemble (OOF and TEST if available)
-        as rds-file and as data.frame in memory
+        as rds-file and as data.frame in memory.
 }
 \description{
 Make an ensemble model and predictions from previous runs.
