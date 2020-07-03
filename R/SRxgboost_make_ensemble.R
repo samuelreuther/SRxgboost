@@ -258,13 +258,15 @@ SRxgboost_make_ensemble <- function(name,
                           rowMeans(dplyr::select(., dplyr::ends_with(paste0("_X", i - 1)))))
       }; rm(i)
       OOFforecast <- OOFforecast %>%
-        dplyr::mutate(ensemble_mean_class = apply(dplyr::select(OOFforecast,
-                                                                dplyr::starts_with("ensemble_mean_")),
-                                                  MARGIN = 1, which.max) - 1)
+        dplyr::mutate(ensemble_mean_class =
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_mean_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
-        dplyr::mutate(ensemble_mean_class = apply(dplyr::select(TESTforecast,
-                                                                dplyr::starts_with("ensemble_mean_")),
-                                                  MARGIN = 1, which.max) - 1)
+        dplyr::mutate(ensemble_mean_class =
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_mean_")),
+                                         MARGIN = 1, which.max)) - 1)
       #
       # median
       for (i in 2:(2 + classes - 1)) {
@@ -275,14 +277,14 @@ SRxgboost_make_ensemble <- function(name,
       }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_median_class =
-                        apply(dplyr::select(OOFforecast,
-                                            dplyr::starts_with("ensemble_median_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_median_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
         dplyr::mutate(ensemble_median_class =
-                        apply(dplyr::select(TESTforecast,
-                                            dplyr::starts_with("ensemble_median_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_median_")),
+                                         MARGIN = 1, which.max)) - 1)
       #
       # add y to forecasts
       OOFforecast <- dplyr::bind_cols(OOFforecast, y = y_OOF)
@@ -311,14 +313,14 @@ SRxgboost_make_ensemble <- function(name,
       }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_wmean_glm_class =
-                        apply(dplyr::select(OOFforecast,
-                                            dplyr::starts_with("ensemble_wmean_glm_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_wmean_glm_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
         dplyr::mutate(ensemble_wmean_glm_class =
-                        apply(dplyr::select(TESTforecast,
-                                            dplyr::starts_with("ensemble_wmean_glm_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_wmean_glm_")),
+                                         MARGIN = 1, which.max)) - 1)
       rm(glm, weights)
       #
       # accuracy/cor-weighted mean
@@ -348,14 +350,14 @@ SRxgboost_make_ensemble <- function(name,
       }; rm(i)
       OOFforecast <- OOFforecast %>%
         dplyr::mutate(ensemble_wmean_cor_class =
-                        apply(dplyr::select(OOFforecast,
-                                            dplyr::starts_with("ensemble_wmean_cor_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(OOFforecast,
+                                                       dplyr::starts_with("ensemble_wmean_cor_")),
+                                         MARGIN = 1, which.max)) - 1)
       TESTforecast <- TESTforecast %>%
         dplyr::mutate(ensemble_wmean_cor_class =
-                        apply(dplyr::select(TESTforecast,
-                                            dplyr::starts_with("ensemble_wmean_cor_")),
-                              MARGIN = 1, which.max) - 1)
+                        as.numeric(apply(dplyr::select(TESTforecast,
+                                                       dplyr::starts_with("ensemble_wmean_cor_")),
+                                         MARGIN = 1, which.max)) - 1)
       rm(accuracy, cor, weights)
       #
       # browser()
