@@ -14,10 +14,12 @@ SRxgboost_make_ensemble <- function(name,
                                     lauf,
                                     top_rank = 3) {
   # check if lauf ends with ".csv"
-  if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  for (i in seq_along(lauf)) {
+    if (!grepl('.csv$', lauf[i])) lauf[i] <- paste0(lauf[i], ".csv")
+  }; rm(i)
   #
   # check if name does not end with ".csv"
-  if (grepl('.csv$', name)) name <- gsub(".csv", "", name)
+  if (grepl('.csv$', name)) name <- gsub(".csv$", "", name)
   #
   # delete old plots
   if (dir.exists(paste0(path_output, name))) {
