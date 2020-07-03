@@ -245,7 +245,8 @@ SRxgboost_make_ensemble <- function(name,
     # "multilabel"
     if (ncol(OOFforecast) > top_rank + 1) {
       # "multi:softprob"
-      classes <- grep("class", names(OOFforecast))[1] - 2
+      classes <- (ncol(OOFforecast) - 1) / top_rank - 1
+      # classes <- grep("class", names(OOFforecast))[1] - 2
       #
       # mean
       for (i in 2:(2 + classes - 1)) {
@@ -290,7 +291,7 @@ SRxgboost_make_ensemble <- function(name,
       # GLM-weighted mean (be aware of overfitting !!!)
       glm <- OOFforecast %>%
         dplyr::select(y, 1:(1 + top_rank * (classes + 1))) %>%
-        dplyr::select(y, dplyr::starts_with("class")) %>%
+        dplyr::select(y, dplyr::contains("__class")) %>%
         nnet::multinom(y ~ ., data = .)
       weights <- data.frame(t(summary(glm)$coefficient)) %>%
         tibble::rownames_to_column(var = "variable") %>%
@@ -323,13 +324,13 @@ SRxgboost_make_ensemble <- function(name,
       # accuracy/cor-weighted mean
       accuracy <- apply(OOFforecast %>%
                           dplyr::select(1:(1 + top_rank * (classes + 1))) %>%
-                          dplyr::select(dplyr::starts_with("class")), 2,
+                          dplyr::select(dplyr::contains("__class")), 2,
                         function(x) caret::confusionMatrix(table(x, OOFforecast$y),
                                                            positive = "1")$overall[1])
       accuracy <- accuracy / max(accuracy)
       cor <- cor(OOFforecast %>%
                    dplyr::select(1:(1 + top_rank * (classes + 1))) %>%
-                   dplyr::select(dplyr::starts_with("class")))[which.max(accuracy), ]
+                   dplyr::select(dplyr::contains("__class")))[which.max(accuracy), ]
       weights <- accuracy ^ 20 / cor ^ 6
       weights[which.max(accuracy)] <- max(weights)
       weights <- round(weights / sum(weights), 4)
@@ -415,7 +416,7 @@ SRxgboost_make_ensemble <- function(name,
       OOF_metrics <- data.frame(row.names = names(OOFforecast)[2:(ncol(OOFforecast) - 1)] %>%
                                   gsub("_X.?$", "", .) %>%
                                   unique() %>%
-                                  .[!grepl("class", .)]) %>%
+                                  .[!grepl("_class", .)]) %>%
         tibble::rownames_to_column(var = "model")
       if (exists("y_test")) TEST_metrics <- OOF_metrics
     } else {
@@ -1113,7 +1114,7 @@ SRxgboost_make_ensemble <- function(name,
     rm(mAUC)
     #
     OOFforecast_temp <- OOFforecast %>%
-      dplyr::select(dplyr::contains("class"), y) %>%
+      dplyr::select(dplyr::contains("_class"), y) %>%
       dplyr::mutate(y = factor(y)) %>%
       dplyr::mutate_all(~factor(., levels = levels(y)))
     OOF_metrics$Accuracy <-
@@ -1358,7 +1359,7 @@ SRxgboost_make_ensemble <- function(name,
       rm(mAUC)
       #
       TESTforecast_temp <- TESTforecast %>%
-        dplyr::select(dplyr::contains("class"), y) %>%
+        dplyr::select(dplyr::contains("_class"), y) %>%
         dplyr::mutate(y = factor(y)) %>%
         dplyr::mutate_all(~factor(., levels = levels(y)))
       TEST_metrics$Accuracy <-

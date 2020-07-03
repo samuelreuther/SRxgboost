@@ -352,6 +352,67 @@ test_that("multilabel classification train test", {
 
 
 
+# Multilabel Classification: 2 runs -----------------------------------
+#
+test_that("multilabel classification train test", {
+  skip('skip')
+  #
+  ## lauf 1
+  # initialisation
+  lauf <- "mclass_softprob_train_test_1.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  train_ <- train %>% select(1:8, type)
+  id_unique_train <- birds$id[seq(1, 420, 2)]
+  id_unique_test <- birds$id[seq(2, 420, 2)]
+  # prepare data and test
+  SRxgboost_data_prep(yname = "type",
+                      data_train = train_[seq(1, 420, 2), ],
+                      data_test = train_[seq(2, 420, 2), ],
+                      no_folds = 5,
+                      objective = "multilabel")
+  # run models
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 50,
+                nfold = 5)
+  #
+  ## lauf 2
+  # initialisation
+  lauf <- "mclass_softprob_train_test_2.csv"
+  assign('lauf', lauf, envir = .GlobalEnv)
+  cat(lauf, "\n")
+  train_ <- train %>% select(4:10, type)
+  id_unique_train <- birds$id[seq(1, 420, 2)]
+  id_unique_test <- birds$id[seq(2, 420, 2)]
+  # prepare data and test
+  SRxgboost_data_prep(yname = "type",
+                      data_train = train_[seq(1, 420, 2), ],
+                      data_test = train_[seq(2, 420, 2), ],
+                      no_folds = 5,
+                      objective = "multilabel")
+  # run models
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 50,
+                nfold = 5)
+  #
+  # make ensemble
+  SRxgboost_make_ensemble(name = "mclass_softprob_train_test_1_2_ensemble",
+                          lauf = c("mclass_softprob_train_test_1.csv",
+                                   "mclass_softprob_train_test_2.csv"),
+                          top_rank = c(3, 4))
+  #
+  # tests
+  # no. of files
+  testthat::expect_equal(length(list.files(
+    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 14)
+  #
+  # clean up
+  suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
+                      y_OOF, y_TEST, SummaryCV_META))
+  SRxgboost_cleanup()
+})
+
+
+
+
 # Multilabel Classification: clean up ----------------------------------------------------
 #
 rm(birds, train, id_unique_train, id_unique_test)
