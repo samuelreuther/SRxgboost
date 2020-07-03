@@ -66,8 +66,10 @@ SRxgboost_make_ensemble <- function(name,
   if (exists("y_test")) rm(y_test_temp)
   invisible(gc())
   #
-  # check number of columns returend and adapt top_rank
-  if (ncol(OOFforecast) != top_rank + 1) top_rank <- ncol(OOFforecast) - 1
+  # check number of columns returned and adapt top_rank
+  top_rank <- sum(top_rank)                                                # recalculate in case of several runs
+  if (ncol(OOFforecast) < top_rank + 1) top_rank <- ncol(OOFforecast) - 1  # less models than top_rank
+  # if (ncol(OOFforecast) > top_rank + 1) top_rank <- ncol(OOFforecast) - 1  # "multi:softprob" models
   #
   #
   #
