@@ -99,7 +99,6 @@ SRxgboost_make_ensemble <- function(name,
     rm(glm, weights)
     #
     # accuracy/cor-weighted mean
-    browser()
     if (objective == "regression") {
       accuracy <- apply(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)), 2,
                         function(x) Metrics::rmse(OOFforecast$y, x))
