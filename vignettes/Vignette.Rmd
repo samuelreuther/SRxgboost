@@ -18,8 +18,8 @@ knitr::opts_chunk$set(
 ### Installation
 
 ```{r setup}
-# library(SRxgboost)
 # devtools::install_github("samuelreuther/SRxgboost")
+library(SRxgboost)
 ```
 
 

@@ -1,5 +1,5 @@
 Package: SRxgboost
-Title: What the Package Does (One Line, Title Case)
+Title: Helper and meta-functions for modelling with XGBOOST
 Version: 0.3.2
 Authors@R: 
     person(given = "First",
