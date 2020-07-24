@@ -1,6 +1,7 @@
 #' SRxgboost_make_ensemble
 #'
-#' Make an ensemble model and predictions from previous runs.
+#' Tries out several ensemble models from previous runs and generates predictions
+#' for the best ensemble.
 #'
 #' @param name character: folder name for results
 #' @param lauf character: 1 or several "lauf"-names of previous runs, e.g. c("lauf1", "lauf2")

@@ -113,6 +113,35 @@ SRxgboost_cleanup()
 
 
 
+# Regression: train/test no_folds -----------------------------------------
+#
+lauf <- "regression_train_test_no_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+id_unique_train <- train$Id[seq(1, 1460, 2)]
+id_unique_test <- train$Id[seq(2, 1460, 2)]
+# prepare data and test
+test_that("regression / no_folds", {
+  expect_equal(class(SRxgboost_data_prep(yname = "SalePrice",
+                                         data_train = train[seq(1, 1460, 2), ],
+                                         data_test = train[seq(2, 1460, 2), ],
+                                         no_folds = 5,
+                                         objective = "regression")),
+               "NULL")})
+# no. ob objects in memory
+test_that("regression / train/test no_folds: no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+})
+# no_folds
+test_that("regression / train/test no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
+  expect_equal(round(nrow(datenModell_eval) / nrow(datenModell), 1), 1/5)
+})
+#
+# clean up
+suppressWarnings(rm(id_unique_test)); SRxgboost_cleanup()
+
+
+
+
 # Regression: clean up ----------------------------------------------------
 #
 rm(house, train, id_unique_train)
@@ -216,6 +245,34 @@ test_that("classification / folds: length(folds[[1]])", {
 })
 # clean up
 SRxgboost_cleanup()
+
+
+
+
+# Classification: train/test no_folds -------------------------------------
+#
+lauf <- "class_no_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+id_unique_train <- train$customerID[seq(1, 7043, 2)]
+id_unique_test <- train$customerID[seq(2, 7043, 2)]
+# prepare data and test
+test_that("classification / train/test no_folds", {
+  expect_equal(class(SRxgboost_data_prep(yname = "Churn",
+                                         data_train = train[seq(1, 7043, 2), ],
+                                         data_test = train[seq(2, 7043, 2), ],
+                                         no_folds = 5,
+                                         objective = "classification")),
+               "NULL")})
+# no. ob objects in memory
+test_that("classification / train/test no_folds, no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
+})
+# no_folds
+test_that("classification / train/test no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
+  expect_equal(round(nrow(datenModell_eval) / nrow(datenModell), 1), 1/5)
+})
+# clean up
+suppressWarnings(rm(id_unique_test)); SRxgboost_cleanup()
 
 
 
@@ -324,6 +381,34 @@ test_that("multilabel classification / folds: length(folds[[1]])", {
 })
 # clean up
 SRxgboost_cleanup()
+
+
+
+
+# Multilabel Classification: train/test no_folds --------------------------
+#
+lauf <- "mclass_no_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+id_unique_train <- train$id[seq(1, 420, 2)]
+id_unique_test <- train$id[seq(2, 420, 2)]
+# prepare data and test
+test_that("multilabel classification / train/test no_folds", {
+  expect_equal(class(SRxgboost_data_prep(yname = "type",
+                                         data_train = train[seq(1, 420, 2), ],
+                                         data_test = train[seq(2, 420, 2), ],
+                                         no_folds = 5,
+                                         objective = "multilabel")),
+               "NULL")})
+# no. ob objects in memory
+test_that("multilabel classification / train/test no_folds, no. ob objects in memory", {
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 26)
+})
+# no_folds
+test_that("multilabel classification / train/test no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
+  expect_equal(round(nrow(datenModell_eval) / nrow(datenModell), 1), 1/5)
+})
+# clean up
+suppressWarnings(rm(id_unique_test)); SRxgboost_cleanup()
 
 
 
