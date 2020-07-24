@@ -116,7 +116,7 @@ SRxgboost_make_ensemble <- function(name,
                                                          predictor = x, algorithm = 2,
                                                          levels = c(0, 1),
                                                          direction = "<")$auc))
-      accuracy <- 2 - accuracy / max(accuracy)
+      accuracy <- accuracy / max(accuracy)
     }
     cor <- cor(OOFforecast %>% dplyr::select(., 2:(top_rank + 1)),
                use = "pairwise.complete.obs")[which.max(accuracy), ]
