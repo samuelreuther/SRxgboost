@@ -123,13 +123,14 @@ id_unique_test <- train$Id[seq(2, 1460, 2)]
 test_that("regression / no_folds", {
   expect_equal(class(SRxgboost_data_prep(yname = "SalePrice",
                                          data_train = train[seq(1, 1460, 2), ],
-                                         data_test = train[seq(2, 1460, 2), ],
+                                         data_test = train[seq(2, 1460, 2), ] %>%
+                                           select(-SalePrice, -Street),
                                          no_folds = 5,
                                          objective = "regression")),
                "NULL")})
 # no. ob objects in memory
 test_that("regression / train/test no_folds: no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
 })
 # no_folds
 test_that("regression / train/test no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
@@ -292,7 +293,7 @@ assign('birds', birds, envir = .GlobalEnv)
 id_unique_train <- birds$id
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- birds %>%
-  dplyr::mutate(type = as.numeric(type) - 1) %>%
+  dplyr::mutate(type = as.numeric(as.factor(type)) - 1) %>%
   dplyr::select(-id)
 assign('train', train, envir = .GlobalEnv)
 

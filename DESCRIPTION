@@ -17,7 +17,7 @@ Suggests:
     knitr,
     rmarkdown
 Language: en-US
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Imports: 
     magrittr,
     ROCR,
@@ -50,5 +50,6 @@ Imports:
     pdp,
     ModelMetrics,
     tibble,
-    nnet
+    nnet,
+    e1071
 VignetteBuilder: knitr

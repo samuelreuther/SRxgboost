@@ -489,7 +489,7 @@ assign('birds', birds, envir = .GlobalEnv)
 id_unique_train <- birds$id
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- birds %>%
-  dplyr::mutate(type = as.numeric(type) - 1) %>%
+  dplyr::mutate(type = as.numeric(as.factor(type)) - 1) %>%
   dplyr::select(-id)
 assign('train', train, envir = .GlobalEnv)
 

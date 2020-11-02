@@ -122,6 +122,8 @@ SRxgboost_data_prep <- function(yname,
         stop("XGB_data_prep: y_test must contain only numbers from 0 to 9!")
       }
     }
+  } else {
+    stop("XGB_data_prep: objective must be one of: 'regression', 'classification', 'multilabel'!")
   }
   #
   #
@@ -189,6 +191,7 @@ SRxgboost_data_prep <- function(yname,
                      dplyr::select(dplyr::one_of(names(datenModell))))
   # if train has more columns (because of NAs)!
   missings <- setdiff(names(datenModell), names(datenModelltest))               # Find names of missing columns
+  missings <- missings[yname != missings]
   if (length(missings) > 0) {
     datenModelltest[missings] <- 0                                              # Add them, filled with '0's
     suppressWarnings(datenModelltest <- datenModelltest %>%

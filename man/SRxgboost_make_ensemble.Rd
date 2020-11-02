@@ -18,5 +18,6 @@ forecast and model metrics for ensemble (OOF and TEST if available)
         as rds-file and as data.frame in memory.
 }
 \description{
-Make an ensemble model and predictions from previous runs.
+Tries out several ensemble models from previous runs and generates predictions
+for the best ensemble.
 }
