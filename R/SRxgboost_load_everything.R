@@ -89,8 +89,10 @@ SRxgboost_load_everything <- function(lauf) {
   assign('test_mat', test_mat, envir = .GlobalEnv)
   assign('train_eval_mat', train_eval_mat, envir = .GlobalEnv)
   assign('test_eval_mat', test_eval_mat, envir = .GlobalEnv)
-  assign('eval_index', eval_index, envir = .GlobalEnv)
-  assign('no_folds', no_folds, envir = .GlobalEnv)
+  #
+  try(assign('no_folds', no_folds, envir = .GlobalEnv), TRUE)
+  try(assign('folds', folds, envir = .GlobalEnv), TRUE)
+  try(assign('eval_index', eval_index, envir = .GlobalEnv), TRUE)
   try(assign('factor_encoding', factor_encoding, envir = .GlobalEnv), TRUE)
   try(assign('id_unique_train', id_unique_train, envir = .GlobalEnv), TRUE)
   try(assign('id_unique_test', id_unique_test, envir = .GlobalEnv), TRUE)
