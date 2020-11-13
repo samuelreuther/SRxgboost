@@ -76,6 +76,7 @@ SRxgboost_load_everything <- function(lauf) {
   #
   assign('d_train_eval', d_train_eval, envir = .GlobalEnv)
   assign('d_test_eval', d_test_eval, envir = .GlobalEnv)
+  assign('objective', objective, envir = .GlobalEnv)
   assign('datenModell', datenModell, envir = .GlobalEnv)
   assign('datenModell_train', datenModell_train, envir = .GlobalEnv)
   assign('datenModell_eval', datenModell_eval, envir = .GlobalEnv)
