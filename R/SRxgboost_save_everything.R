@@ -15,7 +15,7 @@ SRxgboost_save_everything <- function(lauf) {
   #
   # create path
   path_temp <- paste0(path_output, gsub(".csv", "/", lauf), "Data/")
-  if (!dir.exists(path_temp)) dir.create(path_temp)
+  if (!dir.exists(path_temp)) dir.create(path_temp, recursive = TRUE)
   #
   # save as rds
   if (!file.exists(paste0(path_temp, "train.rds"))) {
