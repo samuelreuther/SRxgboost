@@ -472,6 +472,69 @@ SRxgboost_cleanup()
 
 
 
+# Classification: scale_pos_weight ----------------------------------------
+#
+## run models
+#
+lauf <- "class_scale_pos_weight.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat(lauf, "\n")
+# prepare data and test
+SRxgboost_data_prep(yname = "Churn",
+                    data_train = train,
+                    no_folds = 5,
+                    objective = "classification")
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
+              nfold = 5,
+              scale_pos_weight = sum(train$Churn == 0) / sum(train$Churn == 1))
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+#
+#
+## tests
+#
+# no. of files
+test_that("classification / eval_index: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
+})
+test_that("classification / eval_index: files in path_output/lauf/All Models", {
+  expect_true(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))) %in% c(8, 16))
+})
+test_that("classification / eval_index: files in path_output/lauf/Best Model", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
+               utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                       "/Best Model/0 Variable importance.csv")) %>%
+                 dplyr::filter(Gain >= 0.05) %>%
+                 nrow() * 2 + 18)
+})
+# test_that("classification / eval_index: files in path_output/lauf/Best Model", {
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
+# })
+test_that("classification / eval_index: files in path_output/lauf/Data", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 20)
+})
+# runtime
+test_that("classification / eval_index: runtime[1]", {
+  expect_true(SummaryCV$runtime[1] < 0.1)
+})
+test_that("classification / eval_index: runtime[2]", {
+  expect_true(SummaryCV$runtime[2] < 0.1)
+})
+# auc
+test_that("classification / eval_index: SummaryCV$eval_1fold[1]", {
+  expect_true(SummaryCV$eval_1fold[1] > 0.76)
+  # expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.77)
+})
+#
+#
+## clean up
+#
+SRxgboost_cleanup()
+
+
+
+
 # Classification: clean up ----------------------------------------------------
 #
 rm(churn, train, id_unique_train)

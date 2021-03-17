@@ -21,6 +21,9 @@
 #' @param nfold integer
 #' @param folds list, output of SRxgboost_create_folds()
 #' @param early_stopping_rounds integer
+#' @param scale_pos_weight numeric, control the balance of positive and negative
+#'                         cases in for unbalanced classification;
+#'                         typical value: sum(y == 0) / sum(y == 1)
 #' @param trees integer
 #' @param dart numeric
 #' @param tree_method character
@@ -41,9 +44,11 @@
 #' @export
 SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                           nfold = NULL, folds = NULL, early_stopping_rounds = 30,
-                          trees = 1, dart = 0, tree_method = "auto", verbose = 0,
-                          test_param = FALSE, shap = TRUE, continue_threshold = 0.1,
-                          run_final_model = TRUE, best_params = NULL, max_overfit = -1,
+                          scale_pos_weight = 1, trees = 1, dart = 0,
+                          tree_method = "auto", verbose = 0, test_param = FALSE,
+                          shap = TRUE, continue_threshold = 0.1,
+                          run_final_model = TRUE, best_params = NULL,
+                          max_overfit = -1,
                           feat_sel = FALSE, Feat_Sel = NULL, Feat_Sel_Vars = NULL,
                           Selected_Features = FALSE) {
   ### checks
@@ -363,6 +368,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 tree_method = tree_method, booster = booster,
                                 rate_drop = rate_drop, skip_drop = skip_drop,
                                 early_stopping_rounds = early_stopping_rounds,
+                                scale_pos_weight = scale_pos_weight,
                                 missing = NA, data = d_train_eval, nround = nround_test,
                                 verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
@@ -378,6 +384,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 tree_method = tree_method, booster = booster,
                                 rate_drop = rate_drop, skip_drop = skip_drop,
                                 early_stopping_rounds = early_stopping_rounds,
+                                scale_pos_weight = scale_pos_weight,
                                 missing = NA, data = d_train_eval, nround = nround_test,
                                 verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
@@ -643,6 +650,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                tree_method = tree_method, booster = booster,
                                rate_drop = rate_drop, skip_drop = skip_drop,
                                early_stopping_rounds = early_stopping_rounds,
+                               scale_pos_weight = scale_pos_weight,
                                missing = NA, data = d_train, nround = nround,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
@@ -657,6 +665,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                tree_method = tree_method, booster = booster,
                                rate_drop = rate_drop, skip_drop = skip_drop,
                                early_stopping_rounds = early_stopping_rounds,
+                               scale_pos_weight = scale_pos_weight,
                                missing = NA, data = d_train, nround = nround,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
@@ -731,6 +740,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 eval_metric = metric, eta = eta, max_depth = depth,
                                 min_child_weight = min_child_weight, gamma = gamma,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
+                                scale_pos_weight = scale_pos_weight,
                                 num_parallel_tree = trees,
                                 tree_method = tree_method, booster = booster,
                                 rate_drop = rate_drop, skip_drop = skip_drop,
@@ -742,6 +752,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 eta = eta, max_depth = depth,
                                 min_child_weight = min_child_weight, gamma = gamma,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
+                                scale_pos_weight = scale_pos_weight,
                                 num_parallel_tree = trees,
                                 tree_method = tree_method, booster = booster,
                                 rate_drop = rate_drop, skip_drop = skip_drop,

@@ -13,6 +13,7 @@ SRxgboost_run(
   nfold = NULL,
   folds = NULL,
   early_stopping_rounds = 30,
+  scale_pos_weight = 1,
   trees = 1,
   dart = 0,
   tree_method = "auto",
@@ -45,6 +46,10 @@ SRxgboost_run(
 \item{folds}{list, output of SRxgboost_create_folds()}
 
 \item{early_stopping_rounds}{integer}
+
+\item{scale_pos_weight}{numeric, control the balance of positive and negative
+cases in for unbalanced classification;
+typical value: sum(y == 0) / sum(y == 1)}
 
 \item{trees}{integer}
 
