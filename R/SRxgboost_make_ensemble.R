@@ -186,7 +186,8 @@ SRxgboost_make_ensemble <- function(name,
       set.seed(12345)
       trcontrol <- caret::trainControl(method = "cv", number = 5, search = "grid",
                                        savePredictions = 'final',
-                                       classProbs = T, summaryFunction = twoClassSummary)
+                                       classProbs = T)
+                                       # summaryFunction = twoClassSummary)
       #
       # glm
       set.seed(12345)
@@ -668,14 +669,16 @@ SRxgboost_make_ensemble <- function(name,
                                                               direction = "<")$auc))
     OOF_metrics$MCC <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
                              function(x) mcc_(x, OOFforecast$y)$mcc)
-    OOF_metrics$Accuracy <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
-                                  function(x) caret::confusionMatrix(table(
-                                    ifelse(x > 0.5, 1, 0), OOFforecast$y),
-                                    positive = "1")$overall[1])
-    OOF_metrics$Sensitivity_TPR <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
-                                         function(x) caret::confusionMatrix(table(
-                                           ifelse(x > 0.5, 1, 0), OOFforecast$y),
-                                           positive = "1")$byClass[1])
+    try({OOF_metrics$Accuracy <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
+                                       function(x) caret::confusionMatrix(table(
+                                         ifelse(x > 0.5, 1, 0), OOFforecast$y),
+                                         positive = "1")$overall[1])},
+        silent = TRUE)
+    try({OOF_metrics$Sensitivity_TPR <- apply(OOFforecast[, 2:(ncol(OOFforecast) - 1)], 2,
+                                              function(x) caret::confusionMatrix(table(
+                                                ifelse(x > 0.5, 1, 0), OOFforecast$y),
+                                                positive = "1")$byClass[1])},
+        silent = TRUE)
     OOF_metrics <- OOF_metrics %>%
       dplyr::arrange(AUC) %>%
       dplyr::mutate(model = factor(model, levels = .$model))
@@ -934,14 +937,16 @@ SRxgboost_make_ensemble <- function(name,
       TEST_metrics$MCC <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
                                 function(x) mcc_(x, TESTforecast$y,
                                                  cutoff = mcc$opt_cutoff)$mcc)
-      TEST_metrics$Accuracy <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
-                                     function(x) caret::confusionMatrix(table(
-                                       ifelse(x > cut_off_a, 1, 0), TESTforecast$y),
-                                       positive = "1")$overall[1])
-      TEST_metrics$Sensitivity_TPR <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
-                                            function(x) caret::confusionMatrix(table(
-                                              ifelse(x > cut_off_a, 1, 0), TESTforecast$y),
-                                              positive = "1")$byClass[1])
+      try({TEST_metrics$Accuracy <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
+                                          function(x) caret::confusionMatrix(table(
+                                            ifelse(x > cut_off_a, 1, 0), TESTforecast$y),
+                                            positive = "1")$overall[1])},
+          silent = TRUE)
+      try({TEST_metrics$Sensitivity_TPR <- apply(TESTforecast[, 2:(ncol(TESTforecast) - 2)], 2,
+                                                 function(x) caret::confusionMatrix(table(
+                                                   ifelse(x > cut_off_a, 1, 0), TESTforecast$y),
+                                                   positive = "1")$byClass[1])},
+          silent = TRUE)
       TEST_metrics <- TEST_metrics %>%
         dplyr::mutate(model = factor(model, levels = levels(OOF_metrics$model))) %>%
         dplyr::arrange(model)

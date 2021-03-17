@@ -48,10 +48,11 @@ test_that("regression", {
                       no_folds = 5,
                       objective = "regression")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse",
+                runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(lauf, top_rank = 3)
+  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+                          lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
@@ -84,10 +85,11 @@ test_that("regression train test", {
                       no_folds = 5,
                       objective = "regression")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse",
+                runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(lauf, top_rank = 3)
+  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+                          lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
@@ -123,8 +125,8 @@ test_that("regression train test", {
                       no_folds = 5,
                       objective = "regression")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse",
+                runs = 50, nfold = 5)
   # clean up
   SRxgboost_cleanup(); rm(train_)
   #
@@ -143,8 +145,8 @@ test_that("regression train test", {
                       no_folds = 5,
                       objective = "regression")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse",
+                runs = 50, nfold = 5)
   #
   # make ensemble
   SRxgboost_make_ensemble(name = "regression_train_test_1_2_ensemble",
@@ -204,10 +206,11 @@ test_that("classification", {
                       no_folds = 5,
                       objective = "classification")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc",
+                runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(lauf, top_rank = 3)
+  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+                          lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
@@ -240,10 +243,11 @@ test_that("classification train test", {
                       no_folds = 5,
                       objective = "classification")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc",
+                runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(lauf, top_rank = 3)
+  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+                          lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
@@ -297,10 +301,11 @@ test_that("multilabel classification", {
                       no_folds = 5,
                       objective = "multilabel")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC",
+                runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(lauf, top_rank = 3)
+  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+                          lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
@@ -333,10 +338,11 @@ test_that("multilabel classification train test", {
                       no_folds = 5,
                       objective = "multilabel")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC",
+                runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(lauf, top_rank = 3)
+  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+                          lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
@@ -372,8 +378,8 @@ test_that("multilabel classification train test", {
                       no_folds = 5,
                       objective = "multilabel")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC",
+                runs = 50, nfold = 5)
   #
   ## lauf 2
   # initialisation
@@ -390,8 +396,8 @@ test_that("multilabel classification train test", {
                       no_folds = 5,
                       objective = "multilabel")
   # run models
-  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 50,
-                nfold = 5)
+  SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC",
+                runs = 50, nfold = 5)
   #
   # make ensemble
   SRxgboost_make_ensemble(name = "mclass_softprob_train_test_1_2_ensemble",
