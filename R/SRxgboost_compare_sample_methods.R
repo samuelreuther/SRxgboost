@@ -43,7 +43,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
     cat(paste0("\n", "Run:   ", m, "\n"))
     #
     try({
-      browser()
+      # browser()
       # sample training data
       if (m == "unbalanced") {
         df_sampled <- df_train
