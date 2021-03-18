@@ -94,103 +94,74 @@ train %>% count(y) %>% mutate(n_percent = n/sum(n))
 dim(train)
 #
 #
-## compare sample methods
+## check sample methods
 #
-path_output <- "output_temp/"
-assign('path_output', path_output, envir = .GlobalEnv)
-comparison <- SRxgboost_compare_sample_methods(df_train = train,
-                                               # y_name = "Churn",              # TODO !!!
-                                               df_test = NULL,
-                                               folds = folds5, runs = 2,
-                                               sample_methods = c("ubOver", "ubUnder",
-                                                                  "ubSMOTE", "ubOSS",
-                                                                  "ubCNN", "ubENN",
-                                                                  "ubNCL", "ubTomek"))
+# https://cran.r-project.org/web/packages/unbalanced/unbalanced.pdf
 #
 #
-## tests
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubOver")
+test_that("ubOver", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
-test_that("files in path_output", {
-  expect_equal(length(list.files(paste0(path_output, "compare_sample_methods/"))), 11)
-})
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubUnder")
+test_that("ubUnder", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubUnder", perc = 30)
+test_that("ubUnder, perc = 30", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
-## clean up
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubSMOTE")
+test_that("ubSMOTE", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
-suppressWarnings(rm(folds5, no_folds, comparison, OOFforecast, SummaryCV_META,
-                    TESTforecast, y_OOF, id_unique_train, lauf))
-unlink(path_output, recursive = TRUE)
-
-
-
-
-# Classification: train / test --------------------------------------------
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubSMOTE",
+                                            percOver = 200, percUnder = 200, k = 5)
+test_that("ubSMOTE, percOver = 200, percUnder = 200", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
-# split train and test
-set.seed(12345)
-inTrain <- caret::createDataPartition(y = churn$y, p = 0.8, list = FALSE) %>% as.vector()
-set.seed(Sys.time())
-test <- churn[-inTrain, ]
-train <- churn[inTrain, ]
-assign('train', train, envir = .GlobalEnv)
-assign('test', test, envir = .GlobalEnv)
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubOSS")
+test_that("ubOSS", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
-# show stats of y
-train %>% count(y) %>% mutate(n_percent = n/sum(n))
-dim(train)
-test %>% count(y) %>% mutate(n_percent = n/sum(n))
-dim(test)
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubCNN")
+test_that("ubCNN", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
-# create folds
-no_folds <- 5
-train <- churn %>%
-  mutate(index = 1:nrow(.)) %>%
-  select(index, y, everything())
-folds5 <- SRxgboost_create_folds(df = train, foldcolumn = "index", k = no_folds)
-train <- train %>%
-  select(-index)
-assign('train', train, envir = .GlobalEnv)
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubENN")            # = unbalanced?
+test_that("ubENN", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubNCL")            # = unbalanced?
+test_that("ubNCL", {expect_equal(length(train_new), 2)})
+rm(train_new)
 #
-## compare sample methods
-#
-path_output <- "output_temp/"
-assign('path_output', path_output, envir = .GlobalEnv)
-comparison <- SRxgboost_compare_sample_methods(df_train = train,
-                                               # y_name = "Churn",              # TODO !!!
-                                               df_test = test,
-                                               folds = folds5, runs = 2,
-                                               sample_methods = c("ubOver", "ubUnder",
-                                                                  "ubSMOTE", "ubENN",
-                                                                  "ubNCL", "ubOSS",
-                                                                  "ubCNN", "ubTomek"))
-#
-#
-## tests
-#
-test_that("files in path_output", {
-  expect_equal(length(list.files(paste0(path_output, "compare_sample_methods/"))), 11)
-})
-#
-#
-## clean up
-#
-suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
-                    SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
-                    test_pr, lauf))
-unlink(path_output, recursive = TRUE)
+train_new <- SRxgboost_sample_training_data(df = train, folds = folds5,
+                                            sample_method = "ubTomek")
+test_that("ubTomek", {expect_equal(length(train_new), 2)})
+rm(train_new)
 
 
 
 
 # Classification: clean up ----------------------------------------------------
 #
-suppressWarnings(rm(churn, train, factor_encoding))
+suppressWarnings(rm(churn, train, factor_encoding, folds5, no_folds))
 
 
 
 
 # Clean up ----------------------------------------------------------------
 #
-suppressWarnings(rm(path_output, path_to_data, this_file))
+unlink(path_output, recursive = TRUE)
+rm(path_output, path_to_data, this_file)
 

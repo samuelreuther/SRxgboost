@@ -2,30 +2,12 @@
 #'
 #' Function to compare sample methods with XGBOOST-models.
 #'
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOver")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOver")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubUnder")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubSMOTE")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOSS")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubCNN")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubENN")   # error?
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubNCL")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubTomek")
-#' xx_ubUnder_perc50 <- SR_sample_training_data(df = df, folds = folds,
-#'                                             sample_method = "ubUnder", perc = 50)
-#' xx_ubUnder_perc40 <- SR_sample_training_data(df = df, folds = folds,
-#'                                              sample_method = "ubUnder", perc = 40)
-#' xx_ubSMOTE_po200_pu200_k5 <- SR_sample_training_data(df = df, folds = folds,
-#'                                                      sample_method = "ubSMOTE",
-#'                                                      percOver = 200, percUnder = 200, k = 5)
-#'
-#' https://cran.r-project.org/web/packages/unbalanced/unbalanced.pdf
-#'
 #' @param df_train data.frame
 #' @param df_test data.frame
-#' @param folds list, output from SRxgboost_sample_training_data
-#' @param runs integer
-#' @param sample_methods list
+#' @param folds list, output from SRxgboost_create_folds
+#' @param runs integer, number of xgboost runs
+#' @param sample_methods list, c("ubOver", "ubUnder", "ubSMOTE", "ubOSS", "ubCNN",
+#'                                "ubENN", "ubNCL", "ubTomek")
 #'
 #' @return lots of files and a graphic of method comparison
 #'
@@ -50,10 +32,10 @@ SRxgboost_compare_sample_methods <- function(df_train,
     # check if run exists already and print progress
     lauf <- paste0(m, ".csv")
     assign("lauf", lauf, envir = .GlobalEnv)
-    path_output <- paste0(path_output_backup, "compare sample methods/")
+    path_output <- paste0(path_output_backup, "compare_sample_methods/")
     assign("path_output", path_output, envir = .GlobalEnv)
     if (dir.exists(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))) {
-      rm(lauf, path_output)
+      suppressWarnings(rm(lauf, path_output))
       next()
     } else {
       dir.create(path_output, showWarnings = FALSE, recursive = TRUE)
@@ -61,6 +43,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
     cat(paste0("\n", "Run:   ", m, "\n"))
     #
     try({
+      browser()
       # sample training data
       if (m == "unbalanced") {
         df_sampled <- df_train
@@ -87,13 +70,14 @@ SRxgboost_compare_sample_methods <- function(df_train,
       SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.04)
       #
       # clean up
-      rm(return, df_sampled, folds_sampled, id_unique_train, OOFforecast, TESTforecast,
-         SummaryCV_META, test_pr, y_OOF)
+      suppressWarnings(rm(return, df_sampled, folds_sampled, id_unique_train,
+                          OOFforecast, TESTforecast, SummaryCV_META, test_pr, y_OOF))
       SRxgboost_cleanup()
     }, TRUE)
-  }; rm(m, lauf)
+  }; suppressWarnings(rm(m, lauf))
   #
-  # plot error comparison
+  ### plot error comparison
+  #
   files <- list.files(path_output, pattern = "Summary.csv", recursive = TRUE)
   comparison <- data.frame()
   for (i in files) {
@@ -103,7 +87,8 @@ SRxgboost_compare_sample_methods <- function(df_train,
                                      utils::head(1) %>%
                                      dplyr::mutate(Lauf = i %>%
                                                      gsub("/Summary.csv", "", .)))
-  }; rm(i, files)
+  }; suppressWarnings(rm(i, files))
+  #
   if (!file.exists(paste0(path_output, "unbalanced/Data/y_test.rds"))) {
     # plot train and CV results
     p <- comparison %>%
@@ -120,7 +105,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
       ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
       ggplot2::theme(legend.position = "top")
     print(p)
-    ggplot2::ggsave(paste0(path_output, "sample_comparison_of_methods.png"), p,
+    ggplot2::ggsave(paste0(path_output, "comparison.png"), p,
                     width = 9.92, height = 5.3)
   } else {
     # plot train, test and CV results                      WARNING !!! works only if runs = 2   TODO !!!
@@ -140,12 +125,16 @@ SRxgboost_compare_sample_methods <- function(df_train,
       auc_test$auc[grep(i, files)] <- round(as.numeric(pROC::auc(TESTforecast$y_test,
                                                                  TESTforecast[, ncol(TESTforecast)],
                                                                  levels = c(0, 1), direction = "<")), 3)
-    }; rm(i, files)
+    }; suppressWarnings(rm(i, files))
+    #
+    # add test error to comparison
+    comparison <- dplyr::left_join(comparison,
+                                   auc_test %>% dplyr::rename(test_data = auc),
+                                   by = "Lauf")
     #
     # plot
-    p <- dplyr::left_join(auc_test %>% dplyr::rename(test = auc),
-                     comparison %>% dplyr::select(Lauf, train, CV = test),
-                     by = "Lauf") %>%
+    p <- comparison %>%
+      dplyr::select(Lauf, train, CV = test, test = test_data) %>%
       dplyr::mutate(Lauf = factor(Lauf),
                     Lauf = stats::reorder(Lauf, -test)) %>%
       reshape2::melt(id = "Lauf") %>%
@@ -158,15 +147,18 @@ SRxgboost_compare_sample_methods <- function(df_train,
       ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
       ggplot2::theme(legend.position = "top")
     print(p)
-    ggplot2::ggsave(paste0(path_output, "sample_comparison_of_methods.png"), p,
+    ggplot2::ggsave(paste0(path_output, "comparison.png"), p,
                     width = 9.92, height = 5.3)
   }
+  #
+  # save comparison
+  saveRDS(comparison, paste0(path_output, "comparison.rds"))
   #
   #
   # reset path_output
   path_output <- path_output_backup
   assign("path_output", path_output, envir = .GlobalEnv)
-  rm(path_output_backup)
+  suppressWarnings(rm(path_output_backup))
   #
   # return comparison
   return(comparison)

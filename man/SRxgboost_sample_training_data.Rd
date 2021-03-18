@@ -8,8 +8,8 @@ SRxgboost_sample_training_data(
   df,
   folds,
   sample_method,
-  percOver = 200,
-  percUnder = 200,
+  percOver = 300,
+  percUnder = 150,
   k = 5,
   perc = 50,
   method = "percPos",
@@ -43,24 +43,5 @@ return sampled data and new folds
 }
 \description{
 Function to sample training data with different methods.
-}
-\details{
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOver")
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOver")
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubUnder")
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubSMOTE")
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOSS")
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubCNN")
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubENN")   # error?
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubNCL")
-df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubTomek")
-xx_ubUnder_perc50 <- SR_sample_training_data(df = df, folds = folds,
-                                            sample_method = "ubUnder", perc = 50)
-xx_ubUnder_perc40 <- SR_sample_training_data(df = df, folds = folds,
-                                             sample_method = "ubUnder", perc = 40)
-xx_ubSMOTE_po200_pu200_k5 <- SR_sample_training_data(df = df, folds = folds,
-                                                     sample_method = "ubSMOTE",
-                                                     percOver = 200, percUnder = 200, k = 5)
-
 https://cran.r-project.org/web/packages/unbalanced/unbalanced.pdf
 }

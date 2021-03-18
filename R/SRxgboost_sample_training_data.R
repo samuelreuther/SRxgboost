@@ -1,24 +1,6 @@
 #' SRxgboost_sample_training_data
 #'
 #' Function to sample training data with different methods.
-#'
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOver")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOver")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubUnder")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubSMOTE")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubOSS")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubCNN")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubENN")   # error?
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubNCL")
-#' df_new <- SR_sample_training_data(df = df, folds = folds, sample_method = "ubTomek")
-#' xx_ubUnder_perc50 <- SR_sample_training_data(df = df, folds = folds,
-#'                                             sample_method = "ubUnder", perc = 50)
-#' xx_ubUnder_perc40 <- SR_sample_training_data(df = df, folds = folds,
-#'                                              sample_method = "ubUnder", perc = 40)
-#' xx_ubSMOTE_po200_pu200_k5 <- SR_sample_training_data(df = df, folds = folds,
-#'                                                      sample_method = "ubSMOTE",
-#'                                                      percOver = 200, percUnder = 200, k = 5)
-#'
 #' https://cran.r-project.org/web/packages/unbalanced/unbalanced.pdf
 #'
 #' @param df data.frame
@@ -38,13 +20,13 @@
 SRxgboost_sample_training_data <- function(df,
                                            folds,
                                            sample_method,        # ubOver, ubUnder, ubSMOTE, ubOSS, ubCNN, ubENN, ubNCL, ubTomek
-                                           percOver = 200,       # parameter used in ubSMOTE
-                                           percUnder = 200,      # parameter used in ubSMOTE
+                                           percOver = 300,       # parameter used in ubSMOTE
+                                           percUnder = 150,      # parameter used in ubSMOTE
                                            k = 5,                # parameter used in ubOver, ubSMOTE, ubCNN, ubENN, ubNCL
                                            perc = 50,            # parameter used in ubUnder
                                            method = "percPos",   # parameter used in ubUnder
                                            w = NULL,             # parameter used in ubUnder
-                                           verbose = TRUE){
+                                           verbose = TRUE) {
   ### create new training data with different sampling methods for each fold
   #
   # create new data.frame for sampled data
@@ -64,7 +46,8 @@ SRxgboost_sample_training_data <- function(df,
                                      type = sample_method,
                                      percOver = percOver,
                                      percUnder = percUnder,
-                                     k = dplyr::if_else(sample_method %in% c("ubCNN"), 1, k),   # strange error
+                                     k = ifelse(sample_method %in% c("ubCNN"),
+                                                1, k),   # strange error
                                      perc = perc,
                                      method = method,
                                      w = w,
@@ -83,8 +66,8 @@ SRxgboost_sample_training_data <- function(df,
     df_sampled <- dplyr::bind_rows(df_sampled, df_temp)
     #
     # clean up
-    rm(df_temp)
-  }; rm(i)
+    suppressWarnings(rm(df_temp))
+  }; suppressWarnings(rm(i))
   #
   # show results
   if (verbose) {
@@ -108,9 +91,9 @@ SRxgboost_sample_training_data <- function(df,
   folds_ <- vector("list", length(folds))
   for (i in 1:length(folds)) {
     folds_[[i]] <- df_sampled_$row_new[df_sampled_$fold == i]
-  }; rm(i)
+  }; suppressWarnings(rm(i))
   #
-  rm(rows_randomised)
+  suppressWarnings(rm(rows_randomised))
   #
   # return sampled data and new folds
   return(list(df_sampled_, folds_))
