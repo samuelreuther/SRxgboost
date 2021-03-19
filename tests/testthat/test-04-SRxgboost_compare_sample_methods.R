@@ -188,18 +188,89 @@ test_that("files in path_output", {
 suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
                     test_pr, lauf))
-unlink(path_output, recursive = TRUE)
+file.rename("output_temp/compare_sample_methods/",
+            "output_temp/compare_sample_methods_05p/")
 
 
 
 
 # Classification: train / test 2p -----------------------------------------
+# #
+# # create training data with y = 1 only 2%
+# churn$index <- 1:nrow(churn)
+# set.seed(12345)
+# train <- bind_rows(churn %>% filter(y == 1) %>% sample_n(50),
+#                    churn %>% filter(y == 0) %>% sample_n(2400)) %>%
+#   sample_n(nrow(.))
+# set.seed(Sys.time())
+# #
+# test <- churn %>%
+#   filter(!index %in% train$index) %>%
+#   select(-index)
+# churn <- churn %>% select(-index)
+# #
+# # # split train and test   OLD CODE
+# # set.seed(12345)
+# # inTrain <- caret::createDataPartition(y = churn$y, p = 0.8, list = FALSE) %>% as.vector()
+# # set.seed(Sys.time())
+# # test <- churn[-inTrain, ]
+# # train <- churn[inTrain, ]
+# #
+# # show stats of y
+# train %>% count(y) %>% mutate(n_percent = n/sum(n))
+# dim(train)
+# test %>% count(y) %>% mutate(n_percent = n/sum(n))
+# dim(test)
+# #
+# # create folds
+# no_folds <- 5
+# train <- train %>%
+#   mutate(index = 1:nrow(.), .before = 1)
+# folds5 <- SRxgboost_create_folds(df = train, foldcolumn = "index", k = no_folds)
+# train <- train %>% select(-index)
+# assign('train', train, envir = .GlobalEnv)
+# assign('test', test, envir = .GlobalEnv)
+# #
+# #
+# ## compare sample methods
+# #
+# path_output <- "output_temp/"
+# assign('path_output', path_output, envir = .GlobalEnv)
+# comparison <- SRxgboost_compare_sample_methods(df_train = train,
+#                                                # y_name = "Churn",              # TODO !!!
+#                                                df_test = test,
+#                                                folds = folds5, runs = 2,
+#                                                sample_methods = c("ubOver", "ubUnder",
+#                                                                   "ubSMOTE", "ubENN",
+#                                                                   "ubNCL", "ubOSS",
+#                                                                   "ubCNN", "ubTomek"))
+# #
+# #
+# ## tests
+# #
+# test_that("files in path_output", {
+#   expect_equal(length(list.files(paste0(path_output, "compare_sample_methods/"))), 11)
+# })
+# #
+# #
+# ## clean up
+# #
+# suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
+#                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
+#                     test_pr, lauf))
+# file.rename("output_temp/compare_sample_methods/",
+#             "output_temp/compare_sample_methods_02p/")
+
+
+
+
+# Classification: train / test 10p -----------------------------------------
 #
-# create training data with y = 1 only 5%
+# create training data with y = 1 only 10%
 churn$index <- 1:nrow(churn)
 set.seed(12345)
-train <- bind_rows(churn %>% filter(y == 1) %>% sample_n(50),
-                   churn %>% filter(y == 0) %>% sample_n(2400)) %>%
+train <- bind_rows(churn %>% filter(y == 1) %>% sample_n(400),
+                   churn %>% filter(y == 0) %>% sample_n(3600)) %>%
   sample_n(nrow(.))
 set.seed(Sys.time())
 #
@@ -257,12 +328,13 @@ test_that("files in path_output", {
 suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
                     test_pr, lauf))
-unlink(path_output, recursive = TRUE)
+file.rename("output_temp/compare_sample_methods/",
+            "output_temp/compare_sample_methods_10p/")
 
 
 
 
-# ubRacing ----------------------------------------------------------------
+# ubRacing NOT RUN --------------------------------------------------------
 #
 # library(randomForest)
 # debugonce("ubRacing")
@@ -339,4 +411,5 @@ suppressWarnings(rm(churn, train, factor_encoding))
 # Clean up ----------------------------------------------------------------
 #
 suppressWarnings(rm(path_output, path_to_data, this_file))
+unlink(path_output, recursive = TRUE)
 
