@@ -97,6 +97,10 @@ SRxgboost_sample_training_data <- function(df,
   #
   suppressWarnings(rm(rows_randomised))
   #
+  # remove added columns
+  df_sampled_ <- df_sampled_ %>%
+    select(-fold, -row, -row_new)
+  #
   # return sampled data and new folds
   return(list(df_sampled_, folds_))
 }
