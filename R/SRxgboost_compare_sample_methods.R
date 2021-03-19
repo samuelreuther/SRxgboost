@@ -64,7 +64,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
                     runs = runs, folds = folds_sampled, run_final_model = TRUE, max_overfit = -1)
       #
       # generate plots for best model
-      SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.04)
+      SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
       #
       # clean up
       saveRDS(return, paste0(path_output, m, "/Data/return.rds"))
@@ -137,7 +137,8 @@ SRxgboost_compare_sample_methods <- function(df_train,
       ggplot2::labs(y = "Anzahl Trainingsdaten", size = "Anteil y = 1",
                     title = "Vergleich der Trainingsdaten der einzelnen Sample Methoden") +
       ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
-                                  labels = scales::format_format(big.mark = "'")) +
+                                  labels = scales::format_format(big.mark = "'"),
+                                  limits = c(0, NA)) +
       ggplot2::scale_size_continuous(labels = scales::percent, limits = c(0, 0.5))
     print(p)
     ggplot2::ggsave(paste0(path_output, "comparison_training_data.png"), p,
@@ -201,7 +202,8 @@ SRxgboost_compare_sample_methods <- function(df_train,
       ggplot2::labs(y = "Anzahl Trainingsdaten", size = "Anteil y = 1",
                     title = "Vergleich der Trainingsdaten der einzelnen Sample Methoden") +
       ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
-                                  labels = scales::format_format(big.mark = "'")) +
+                                  labels = scales::format_format(big.mark = "'"),
+                                  limits = c(0, NA)) +
       ggplot2::scale_size_continuous(labels = scales::percent, limits = c(0, 0.5))
     print(p)
     ggplot2::ggsave(paste0(path_output, "comparison_training_data.png"), p,

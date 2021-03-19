@@ -23,11 +23,14 @@ SRxgboost_sample_training_data <- function(df,
                                            percOver = 300,       # parameter used in ubSMOTE
                                            percUnder = 150,      # parameter used in ubSMOTE
                                            k = 5,                # parameter used in ubOver, ubSMOTE, ubCNN, ubENN, ubNCL
-                                           perc = 50,            # parameter used in ubUnder
+                                           perc = 25,            # parameter used in ubUnder
                                            method = "percPos",   # parameter used in ubUnder
                                            w = NULL,             # parameter used in ubUnder
                                            verbose = TRUE) {
   ### create new training data with different sampling methods for each fold
+  #
+  # calculate percOver for ubSMOTE (achieve 50% with same n) => no improvement !!!
+  # percOver <- round(sum(df$y == 0) / sum(df$y == 1) / 2, 0) * 100
   #
   # create new data.frame for sampled data
   df_sampled <- data.frame()
@@ -39,7 +42,6 @@ SRxgboost_sample_training_data <- function(df,
     # df_temp %>% dplyr::count(y) %>% dplyr::mutate(n_percent = n/sum(n))
     #
     # sample data
-    # only numeric features are allowed: ubENN, ubNCL, ubOSS, ubCNN, ubTomek    TODO !!!
     df_temp <- unbalanced::ubBalance(X = df_temp %>% dplyr::select(-y),
                                      Y = df_temp$y,
                                      positive = 1,
@@ -47,7 +49,7 @@ SRxgboost_sample_training_data <- function(df,
                                      percOver = percOver,
                                      percUnder = percUnder,
                                      k = ifelse(sample_method %in% c("ubCNN"),
-                                                1, k),   # strange error
+                                                2, k),   # strange error still 2021-03-19
                                      perc = perc,
                                      method = method,
                                      w = w,

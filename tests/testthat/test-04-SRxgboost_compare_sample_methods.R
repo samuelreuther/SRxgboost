@@ -126,14 +126,25 @@ unlink(path_output, recursive = TRUE)
 
 # Classification: train / test --------------------------------------------
 #
-# split train and test
+# create training data with y = 1 only 5%
+churn$index <- 1:nrow(churn)
 set.seed(12345)
-inTrain <- caret::createDataPartition(y = churn$y, p = 0.8, list = FALSE) %>% as.vector()
+train <- bind_rows(churn %>% filter(y == 1) %>% sample_n(200),
+                   churn %>% filter(y == 0) %>% sample_n(3800)) %>%
+  sample_n(nrow(.))
 set.seed(Sys.time())
-test <- churn[-inTrain, ]
-train <- churn[inTrain, ]
-assign('train', train, envir = .GlobalEnv)
-assign('test', test, envir = .GlobalEnv)
+#
+test <- churn %>%
+  filter(!index %in% train$index) %>%
+  select(-index)
+churn <- churn %>% select(-index)
+#
+# # split train and test   OLD CODE
+# set.seed(12345)
+# inTrain <- caret::createDataPartition(y = churn$y, p = 0.8, list = FALSE) %>% as.vector()
+# set.seed(Sys.time())
+# test <- churn[-inTrain, ]
+# train <- churn[inTrain, ]
 #
 # show stats of y
 train %>% count(y) %>% mutate(n_percent = n/sum(n))
@@ -143,13 +154,12 @@ dim(test)
 #
 # create folds
 no_folds <- 5
-train <- churn %>%
-  mutate(index = 1:nrow(.)) %>%
-  select(index, y, everything())
-folds5 <- SRxgboost_create_folds(df = train, foldcolumn = "index", k = no_folds)
 train <- train %>%
-  select(-index)
+  mutate(index = 1:nrow(.), .before = 1)
+folds5 <- SRxgboost_create_folds(df = train, foldcolumn = "index", k = no_folds)
+train <- train %>% select(-index)
 assign('train', train, envir = .GlobalEnv)
+assign('test', test, envir = .GlobalEnv)
 #
 #
 ## compare sample methods
@@ -179,6 +189,43 @@ suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
                     test_pr, lauf))
 unlink(path_output, recursive = TRUE)
+
+
+
+
+# xxx ---------------------------------------------------------------------
+
+
+library(randomForest)
+
+debugonce("ubRacing")
+results <- ubRacing(y~., train %>% mutate(y = as.factor(y)),
+                    algo = "randomForest", ntree = 5,
+                    nFold = 5, maxFold = 5, positive = 1, metric = "auc",
+                    ubConf = list(type = c("ubOver", "ubUnder", "ubSMOTE", "ubENN",
+                                           "ubNCL", "ubOSS", "ubTomek"), # "ubCNN"
+                                  percOver = 300, percUnder = 150, k = 5,
+                                  perc = 25, method = "percPos", w = NULL))
+
+
+
+# use Racing to select the best technique for an unbalanced dataset
+library(unbalanced)
+data(ubIonosphere)
+# configure sampling parameters
+ubConf <-
+# load the classification algorithm that you intend to use inside the Race
+# see 'mlr' package for supported algorithms
+library(randomForest)
+# use only 5 trees
+results <- ubRacing(Class ~., ubIonosphere, "randomForest", positive=1, ubConf=ubConf, ntree=5)
+# try with 500 trees
+# results <- ubRacing(Class ~., ubIonosphere, "randomForest", positive=1, ubConf=ubConf, ntree=500)
+# let's try with a different algorithm
+# library(e1071)
+# results <- ubRacing(Class ~., ubIonosphere, "svm", positive=1, ubConf=ubConf)
+# library(rpart)
+# results <- ubRacing(Class ~., ubIonosphere, "rpart", positive=1, ubConf=ubConf)
 
 
 
