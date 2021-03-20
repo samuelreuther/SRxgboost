@@ -190,6 +190,40 @@ suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
                     test_pr, lauf))
 file.rename("output_temp/compare_sample_methods/",
             "output_temp/compare_sample_methods_05p/")
+#
+#
+#
+# ### scale_pos_weight
+# #
+# id_unique_train <- 1:nrow(train)
+# id_unique_test <- 1:nrow(test)
+#
+# # data prep
+# lauf <- "p10_XGB1_scale_pos_weight9.csv"
+# no_folds <- 5
+# SRxgboost_data_prep(yname = "y", data_train = train, data_test = test,
+#                     no_folds = no_folds, objective = "classification",
+#                     check_covariate_drift = FALSE)
+#
+# # run xgboost
+# SRxgboost_run(nround = 10000, eta = 0.05, runs = 100,
+#               obj = "binary:logistic", metric = "auc", max_overfit = -1,
+#               scale_pos_weight = sum(train$y == 0) / sum(train$y == 1),
+#               continue_threshold = 0.1, nfold = no_folds, verbose = 0,
+#               test_param = FALSE, run_final_model = TRUE, best_params = NULL)
+#
+# # plot results of best model
+# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.03)
+#
+# # make ensemble
+# # debugonce("SRxgboost_make_ensemble")
+# SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+#                         lauf = lauf, top_rank = 3)
+#
+# # clean up
+# rm(df_temp, train, test, id_unique_train, id_unique_test, OOFforecast, TESTforecast,
+#    SummaryCV_META, test_pr, y_OOF)
+# SRxgboost_cleanup()
 
 
 
@@ -265,71 +299,71 @@ file.rename("output_temp/compare_sample_methods/",
 
 
 # Classification: train / test 10p -----------------------------------------
-#
-# create training data with y = 1 only 10%
-churn$index <- 1:nrow(churn)
-set.seed(12345)
-train <- bind_rows(churn %>% filter(y == 1) %>% sample_n(400),
-                   churn %>% filter(y == 0) %>% sample_n(3600)) %>%
-  sample_n(nrow(.))
-set.seed(Sys.time())
-#
-test <- churn %>%
-  filter(!index %in% train$index) %>%
-  select(-index)
-churn <- churn %>% select(-index)
-#
-# # split train and test   OLD CODE
+# #
+# # create training data with y = 1 only 10%
+# churn$index <- 1:nrow(churn)
 # set.seed(12345)
-# inTrain <- caret::createDataPartition(y = churn$y, p = 0.8, list = FALSE) %>% as.vector()
+# train <- bind_rows(churn %>% filter(y == 1) %>% sample_n(400),
+#                    churn %>% filter(y == 0) %>% sample_n(3600)) %>%
+#   sample_n(nrow(.))
 # set.seed(Sys.time())
-# test <- churn[-inTrain, ]
-# train <- churn[inTrain, ]
-#
-# show stats of y
-train %>% count(y) %>% mutate(n_percent = n/sum(n))
-dim(train)
-test %>% count(y) %>% mutate(n_percent = n/sum(n))
-dim(test)
-#
-# create folds
-no_folds <- 5
-train <- train %>%
-  mutate(index = 1:nrow(.), .before = 1)
-folds5 <- SRxgboost_create_folds(df = train, foldcolumn = "index", k = no_folds)
-train <- train %>% select(-index)
-assign('train', train, envir = .GlobalEnv)
-assign('test', test, envir = .GlobalEnv)
-#
-#
-## compare sample methods
-#
-path_output <- "output_temp/"
-assign('path_output', path_output, envir = .GlobalEnv)
-comparison <- SRxgboost_compare_sample_methods(df_train = train,
-                                               # y_name = "Churn",              # TODO !!!
-                                               df_test = test,
-                                               folds = folds5, runs = 2,
-                                               sample_methods = c("ubOver", "ubUnder",
-                                                                  "ubSMOTE", "ubENN",
-                                                                  "ubNCL", "ubOSS",
-                                                                  "ubCNN", "ubTomek"))
+# #
+# test <- churn %>%
+#   filter(!index %in% train$index) %>%
+#   select(-index)
+# churn <- churn %>% select(-index)
+# #
+# # # split train and test   OLD CODE
+# # set.seed(12345)
+# # inTrain <- caret::createDataPartition(y = churn$y, p = 0.8, list = FALSE) %>% as.vector()
+# # set.seed(Sys.time())
+# # test <- churn[-inTrain, ]
+# # train <- churn[inTrain, ]
+# #
+# # show stats of y
+# train %>% count(y) %>% mutate(n_percent = n/sum(n))
+# dim(train)
+# test %>% count(y) %>% mutate(n_percent = n/sum(n))
+# dim(test)
+# #
+# # create folds
+# no_folds <- 5
+# train <- train %>%
+#   mutate(index = 1:nrow(.), .before = 1)
+# folds5 <- SRxgboost_create_folds(df = train, foldcolumn = "index", k = no_folds)
+# train <- train %>% select(-index)
+# assign('train', train, envir = .GlobalEnv)
+# assign('test', test, envir = .GlobalEnv)
 #
 #
-## tests
-#
-test_that("files in path_output", {
-  expect_equal(length(list.files(paste0(path_output, "compare_sample_methods/"))), 11)
-})
-#
-#
-## clean up
-#
-suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
-                    SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
-                    test_pr, lauf))
-file.rename("output_temp/compare_sample_methods/",
-            "output_temp/compare_sample_methods_10p/")
+# ## compare sample methods
+# #
+# path_output <- "output_temp/"
+# assign('path_output', path_output, envir = .GlobalEnv)
+# comparison <- SRxgboost_compare_sample_methods(df_train = train,
+#                                                # y_name = "Churn",              # TODO !!!
+#                                                df_test = test,
+#                                                folds = folds5, runs = 2,
+#                                                sample_methods = c("ubOver", "ubUnder",
+#                                                                   "ubSMOTE", "ubENN",
+#                                                                   "ubNCL", "ubOSS",
+#                                                                   "ubCNN", "ubTomek"))
+# #
+# #
+# ## tests
+# #
+# test_that("files in path_output", {
+#   expect_equal(length(list.files(paste0(path_output, "compare_sample_methods/"))), 11)
+# })
+# #
+# #
+# ## clean up
+# #
+# suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
+#                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
+#                     test_pr, lauf))
+# file.rename("output_temp/compare_sample_methods/",
+#             "output_temp/compare_sample_methods_10p/")
 
 
 
