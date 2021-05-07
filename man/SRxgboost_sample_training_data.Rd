@@ -11,7 +11,7 @@ SRxgboost_sample_training_data(
   percOver = 300,
   percUnder = 150,
   k = 5,
-  perc = 50,
+  perc = 25,
   method = "percPos",
   w = NULL,
   verbose = TRUE

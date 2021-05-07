@@ -7,7 +7,7 @@
 #'   \item "reg:squarederror": "rmse", "auc", "rmsle", "mae", "mape"
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
-#'                            "f1_score", "mcc_score"
+#'                            "f1_score", "mcc_score", "prAUC"
 #'   \item "multi:softprob": "merror", "mlogloss", "mAUC", "weighted_precision"
 #'   \item "multi:softmax": "merror", "mlogloss", "mAUC", "weighted_precision"
 #'   \item "rank:pairwise": "ndcg"
@@ -256,10 +256,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     # Custom metrics
     custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score",
-                        "weighted_precision", "mAUC")
+                        "weighted_precision", "mAUC", "prAUC")
     # Maximise metric
     metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score", "mcc_score",
-                                             "mAUC", "weighted_precision"),
+                                             "mAUC", "weighted_precision", "prAUC"),
                                TRUE, FALSE)
     # custom functions to be used by XGBOOST during optimization
     if (metric %in% custom_metrics) {
@@ -291,7 +291,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         pred <- ROCR::prediction(pred, labels)
         f <- ROCR::performance(pred, "f")
         err <- max(f@y.values[[1]], na.rm = TRUE)
-        opt_cutoff = f@x.values[[1]][which.max(f@y.values[[1]])]
+        opt_cutoff <- f@x.values[[1]][which.max(f@y.values[[1]])]
         return(list(metric = "f1", value = err, opt_cutoff = opt_cutoff))
       }
       mcc_score <- function(pred, d_train) {
@@ -299,30 +299,57 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         pred <- ROCR::prediction(pred, labels)
         mcc <- ROCR::performance(pred, "mat")
         err <- max(mcc@y.values[[1]], na.rm = TRUE)
-        opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
+        opt_cutoff <- mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
         return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
       }
       # weighted_precision
       weighted_precision <- function(pred, d_train) {
-        labels = xgboost::getinfo(d_train, "label")
+        labels <- xgboost::getinfo(d_train, "label")
         # w <- xgboost_weights[d_train]
-        w = xgboost::getinfo(d_train, "weight")
-        pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
-        class = apply(pred, MARGIN = 1, which.max) - 1
-        prec = stats::weighted.mean(class == labels, w)
+        w <- xgboost::getinfo(d_train, "weight")
+        pred <- matrix(pred, ncol = params$num_class, byrow = TRUE)
+        class <- apply(pred, MARGIN = 1, which.max) - 1
+        prec <- stats::weighted.mean(class == labels, w)
         return(list(metric = "w_precision", value = prec))
       }
       mAUC <- function(pred, d_train) {
-        labels = xgboost::getinfo(d_train, "label")
+        labels <- xgboost::getinfo(d_train, "label")
         if (length(pred) / params$num_class == length(labels)) {
           # convert vector of class probabilites to matrix and determine class
-          pred = matrix(pred, ncol = params$num_class, byrow = TRUE)
+          pred <- matrix(pred, ncol = params$num_class, byrow = TRUE)
           pred <- apply(pred, MARGIN = 1, FUN = which.max)
         }
         err = as.numeric(pROC::multiclass.roc(labels, pred, direction = "<")$auc)
         # err = pROC::multiclass.roc(labels, data.frame(pred) %>% stats::setNames(0:(params$num_class - 1)))
         # https://www.datascienceblog.net/post/machine-learning/performance-measures-multi-class-problems/
         return(list(metric="mAUC", value = err))
+      }
+      prAUC <- function(pred, d_train) {
+        if (class(d_train) == "xgb.DMatrix")
+          labels <- xgboost::getinfo(d_train, "label")
+        #
+        # https://stats.stackexchange.com/questions/10501/calculating-aupr-in-r
+        # library(PRROC)
+        fg <- pred[labels == 1]
+        bg <- pred[labels == 0]
+        pr <- PRROC::pr.curve(scores.class0 = fg, scores.class1 = bg, curve = T)
+        prauc <- pr$auc.integral
+        # plot(pr)
+        #
+        # https://github.com/tidymodels/yardstick/issues/166
+        # yardstick::pr_auc(preds, truth = diabetes, .pred_pos)$.estimate
+        # MLmetrics::PRAUC(preds$.pred_pos, preds$diabetes)
+        #
+        # get precision and recall, but how to calculate auc correctly???
+        # ROC <- pROC::roc(response = labels,
+        #                  predictor = pred, algorithm = 2,
+        #                  levels = c(0, 1), direction = "<") %>%
+        #   pROC::coords(ret = "all", transpose = FALSE)
+        #
+        # p_load(PerfMeas)
+        # => should be faster, but problems with installation and documentation
+        #
+        return(list(metric="prAUC", value = prauc))
       }
     }
     #
@@ -859,6 +886,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     if (metric %in% c("f1_score")) benchmark <- Metrics::f1(y, mean(y))
     if (metric %in% c("mcc_score")) benchmark <- 0
     if (metric %in% c("weighted_precision")) benchmark <- max(prop.table(table(y)))
+    if (metric %in% c("prAUC")) benchmark <- as.numeric(prop.table(table(y))[2])
     #
     # Grafic output of runs
     suppressWarnings(

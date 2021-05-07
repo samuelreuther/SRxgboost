@@ -184,6 +184,30 @@ SRxgboost_plots <- function(lauf, rank = 1,
       opt_cutoff = mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
       return(list(mcc = err, opt_cutoff = opt_cutoff))
     }
+    prAUC <- function(pred, labels) {
+      # https://stats.stackexchange.com/questions/10501/calculating-aupr-in-r
+      # library(PRROC)
+      fg <- pred[labels == 1]
+      bg <- pred[labels == 0]
+      pr <- PRROC::pr.curve(scores.class0 = fg, scores.class1 = bg, curve = T)
+      prauc <- pr$auc.integral
+      # plot(pr)
+      #
+      # yardstick::pr_auc(preds, truth = diabetes, .pred_pos)$.estimate
+      #
+      # MLmetrics::PRAUC(preds$.pred_pos, preds$diabetes)
+      #
+      # get precision and recall, but how to calculate auc correctly???
+      # ROC <- pROC::roc(response = labels,
+      #                  predictor = pred, algorithm = 2,
+      #                  levels = c(0, 1), direction = "<") %>%
+      #   pROC::coords(ret = "all", transpose = FALSE)
+      #
+      # p_load(PerfMeas)
+      # => should be faster, but problems with installation and documentation
+      #
+      return(list(metric="prAUC", value = prauc))
+    }
     #
     #
     #
@@ -343,6 +367,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
         temp <- data.frame(tpr = ROC$sensitivities,
                            fpr = 1 - ROC$specificities)
         mcc <- mcc(train_pr_oof$pr, train_pr_oof$y)
+        prauc <- prAUC(pred = train_pr_oof$pr, labels = train_pr_oof$y)$value
+        prauc_benchmark <- as.numeric(prop.table(table(train_pr_oof$y))[2])
         ggplot2::ggplot(temp, ggplot2::aes(x = fpr, y = tpr)) +
           ggplot2::geom_line() +
           ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
@@ -364,6 +390,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
                         subtitle = paste0("AUC:                  ",
                                           round(as.numeric(ROC$auc), 3) %>%
                                             format(., nsmall = 3),
+                                          " / AUC PR: ",
+                                          format(round(prauc, 3), nsmall = 3),
+                                          " (benchmark = ",
+                                          format(round(prauc_benchmark, 3),
+                                                 nsmall = 3), ") ",
                                           "\nMCC:                  ",
                                           paste0(round(mcc$mcc, 3),
                                                  " (cutoff = ",

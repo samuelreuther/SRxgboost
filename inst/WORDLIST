@@ -9,7 +9,6 @@ auc
 automl
 cran
 csv
-df
 dmatrix
 evallist
 evals
@@ -29,11 +28,7 @@ multilabel
 ndcg
 num
 params
-perc
-percOver
-percUnder
-po
-pu
+prAUC
 qwk
 rds
 rmse

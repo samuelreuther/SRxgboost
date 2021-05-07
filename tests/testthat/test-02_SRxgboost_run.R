@@ -283,6 +283,8 @@ SRxgboost_data_prep(yname = "Churn",
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               nfold = 5)
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "prAUC", runs = 3,
+#               nfold = 5)
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
 #

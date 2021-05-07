@@ -51,5 +51,7 @@ Imports:
     ModelMetrics,
     tibble,
     nnet,
-    e1071
+    e1071,
+    PRROC,
+    ggrepel
 VignetteBuilder: knitr
