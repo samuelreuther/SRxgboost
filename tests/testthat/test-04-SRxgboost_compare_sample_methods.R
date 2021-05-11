@@ -179,7 +179,7 @@ comparison <- SRxgboost_compare_sample_methods(df_train = train,
 ## tests
 #
 test_that("files in path_output", {
-  expect_equal(length(list.files(paste0(path_output, "compare_sample_methods/"))), 11)
+  expect_equal(length(list.files(paste0(path_output, "compare_sample_methods/"))), 12)
 })
 #
 #

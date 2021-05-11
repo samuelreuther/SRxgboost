@@ -79,6 +79,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
   #
   comparison <- data.frame()
   for (i in c("unbalanced", sample_methods)) {
+    if (!file.exists(paste0(path_output, i, "/Data/return.rds"))) next()
     return <- readRDS(paste0(path_output, i, "/Data/return.rds"))
     df_temp <- utils::read.csv2(paste0(path_output, i, "/Summary.csv")) %>%
       dplyr::arrange(-test) %>%

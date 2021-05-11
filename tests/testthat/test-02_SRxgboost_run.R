@@ -498,23 +498,24 @@ SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
 #
 # no. of files
 test_that("classification / eval_index: files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 7)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
 test_that("classification / eval_index: files in path_output/lauf/All Models", {
-  expect_true(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))) %in% c(8, 16))
+  expect_true(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))) %in%
+                c(10, 20))
 })
 test_that("classification / eval_index: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
                                        "/Best Model/0 Variable importance.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 18)
+                 nrow() * 2 + 20)
 })
 # test_that("classification / eval_index: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("classification / eval_index: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 20)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
 })
 # runtime
 test_that("classification / eval_index: runtime[1]", {
