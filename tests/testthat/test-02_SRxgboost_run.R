@@ -10,7 +10,7 @@ assign('path_output', path_output, envir = .GlobalEnv)
 if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
   path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
 } else if (dir.exists("/data/shared/CH00RHU/")) {
-  path_to_data <- "/data/shared/CH00RHU/z-Sonstiges/99 ML Algorithm Benchmark/"
+  path_to_data <- "/data/shared/CH00RHU/z-Sonstige_Analysen/99_ML_Algorithm_Benchmark/"
 }
 assign('path_to_data', path_to_data, envir = .GlobalEnv)
 # get path and name of this file
@@ -313,7 +313,7 @@ test_that("classification / no_folds: files in path_output/lauf/Data", {
 })
 # runtime
 test_that("classification / no_folds: runtime[1]", {
-  expect_true(SummaryCV$runtime[1] < 0.2)
+  expect_true(SummaryCV$runtime[1] < 0.6)
 })
 test_that("classification / no_folds: runtime[2]", {
   expect_true(SummaryCV$runtime[2] < 0.1)
@@ -323,7 +323,7 @@ test_that("classification / no_folds: SummaryCV$eval_1fold[1]", {
   expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.84)
 })
 test_that("classification / no_folds: SummaryCV$train[1]", {
-  expect_equal(round(SummaryCV$train[1], 2), 0.92)
+  expect_equal(round(SummaryCV$train[1], 2), 0.91)
 })
 test_that("classification / no_folds: SummaryCV$test[1]", {
   expect_equal(round(SummaryCV$test[1], 2), 0.84)
@@ -450,10 +450,10 @@ test_that("classification / folds: files in path_output/lauf/Data", {
 })
 # runtime
 test_that("classification / folds: runtime[1]", {
-  expect_true(SummaryCV$runtime[1] < 0.2)
+  expect_true(SummaryCV$runtime[1] < 0.3)
 })
 test_that("classification / folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[2] < 0.1)
+  expect_true(SummaryCV$runtime[2] < 0.2)
 })
 # auc
 test_that("classification / folds: SummaryCV$eval_1fold[1]", {
@@ -519,7 +519,7 @@ test_that("classification / eval_index: files in path_output/lauf/Data", {
 })
 # runtime
 test_that("classification / eval_index: runtime[1]", {
-  expect_true(SummaryCV$runtime[1] < 0.1)
+  expect_true(SummaryCV$runtime[1] < 0.2)
 })
 test_that("classification / eval_index: runtime[2]", {
   expect_true(SummaryCV$runtime[2] < 0.1)
@@ -616,10 +616,10 @@ test_that("multilabel classification / no_folds: SummaryCV$eval_1fold[1]", {
   expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.74)
 })
 test_that("multilabel classification / no_folds: SummaryCV$train[1]", {
-  expect_equal(round(SummaryCV$train[1], 2), 0.99)
+  expect_equal(round(SummaryCV$train[1], 2), 1.00)
 })
 test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
-  expect_equal(round(SummaryCV$test[1], 2), 0.78)
+  expect_equal(round(SummaryCV$test[1], 2), 0.79)
 })
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
@@ -695,7 +695,7 @@ test_that("multilabel classification wprec / no_folds: SummaryCV$train[1]", {
   expect_true(round(SummaryCV$train[1], 2) >= 0.99)
 })
 test_that("multilabel classification wprec / no_folds: SummaryCV$test[1]", {
-  expect_true(round(SummaryCV$test[1], 2) >= 0.82)
+  expect_true(round(SummaryCV$test[1], 2) >= 0.79)
 })
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
@@ -755,7 +755,7 @@ test_that("multilabel classification / no_folds: files in path_output/lauf/Data"
 })
 # runtime
 test_that("multilabel classification / no_folds: runtime[1]", {
-  expect_true(SummaryCV$runtime[1] < 0.4)
+  expect_true(SummaryCV$runtime[1] < 0.9)
 })
 test_that("multilabel classification / no_folds: runtime[2]", {
   expect_true(SummaryCV$runtime[2] < 0.1)
@@ -765,10 +765,10 @@ test_that("multilabel classification / no_folds: SummaryCV$eval_1fold[1]", {
   expect_equal(round(SummaryCV$eval_1fold[1], 2), 0.74)
 })
 test_that("multilabel classification / no_folds: SummaryCV$train[1]", {
-  expect_equal(round(SummaryCV$train[1], 2), 0.99)
+  expect_equal(round(SummaryCV$train[1], 2), 1)
 })
 test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
-  expect_equal(round(SummaryCV$test[1], 2), 0.78)
+  expect_equal(round(SummaryCV$test[1], 2), 0.79)
 })
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast

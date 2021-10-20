@@ -10,7 +10,7 @@ assign('path_output', path_output, envir = .GlobalEnv)
 if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
   path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
 } else if (dir.exists("/data/shared/CH00RHU/")) {
-  path_to_data <- "/data/shared/CH00RHU/z-Sonstiges/99 ML Algorithm Benchmark/"
+  path_to_data <- "/data/shared/CH00RHU/z-Sonstige_Analysen/99_ML_Algorithm_Benchmark/"
 }
 assign('path_to_data', path_to_data, envir = .GlobalEnv)
 

@@ -25,7 +25,6 @@
 #'                         cases in for unbalanced classification;
 #'                         typical value: sum(y == 0) / sum(y == 1)
 #' @param trees integer
-#' @param dart numeric
 #' @param tree_method character
 #' @param verbose integer 0 to 3
 #' @param test_param boolean
@@ -44,7 +43,7 @@
 #' @export
 SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                           nfold = NULL, folds = NULL, early_stopping_rounds = 30,
-                          scale_pos_weight = 1, trees = 1, dart = 0,
+                          scale_pos_weight = 1, trees = 1,
                           tree_method = "auto", verbose = 0, test_param = FALSE,
                           shap = TRUE, continue_threshold = 0.1,
                           run_final_model = TRUE, best_params = NULL,
@@ -87,7 +86,6 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                             colsample_bytree = numeric(0), train = numeric(0),
                             test = numeric(0), runtime = numeric(0), eval_1fold = numeric(0),
                             train_sd = numeric(0), test_sd = numeric(0),
-                            rate_drop = numeric(0), skip_drop = numeric(0),
                             Feat_Sel = character(0), Feat_Sel_Vars = character(0),
                             metric = character(0))
     utils::write.table(SummaryCV, paste0(path_output, gsub(".csv", "/", lauf), "Summary.csv"),
@@ -170,9 +168,6 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       gamma <- 0                                         # (Default: 0)
       subsample <- 1                                     # (Default: 1)
       colsample_bytree <- 1                              # (Default: 1)
-      booster <- ifelse(dart < 1, "gbtree", "dart")      # (Default: "gbtree")
-      rate_drop <- ifelse(booster == "gbtree", 0, 0.1)   # (Default: 0)
-      skip_drop <- ifelse(booster == "gbtree", 0, 0.5)   # (Default: 0)
     } else if ((i == 2 & !is.null(best_params)) | feat_sel) {
       if (!feat_sel) {
         bp <- utils::read.table(paste0(path_output, gsub(".csv", "/", best_params),
@@ -190,9 +185,6 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       gamma <- bp$gamma[1]
       subsample <- bp$subsample[1]
       colsample_bytree <- bp$colsample_bytree[1]
-      booster <- ifelse(bp$rate_drop[1] == 0, "gbtree", "dart")
-      rate_drop <- bp$rate_drop[1]
-      skip_drop <- bp$skip_drop[1]
     } else {
       # Random Search for Modell-Parameter
       set.seed(Sys.time())
@@ -204,9 +196,6 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                             seq(0.7, 0.99, 0.01),
                             rep(1, 3)), 1)
       colsample_bytree <- round(stats::runif(1, 0.1, 1), 2)
-      booster <- sample(c("gbtree", "dart"), 1, prob = c(1 - dart, dart))
-      rate_drop <- ifelse(booster == "dart", sample(c(0.02, 0.05, 0.1, 0.2), 1), 0)
-      skip_drop <- ifelse(booster == "dart", sample(c(0.5), 1), 0)   # 0.7, 0.5, 0.3
     }
     # Exponential distribution:
     # rate = 0.01; n = 1000; hist(stats::rexp(n, rate = rate), 20)
@@ -221,11 +210,9 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     temp[4] <- gamma
     temp[5] <- subsample
     temp[6] <- colsample_bytree
-    temp[7] <- rate_drop
-    temp[8] <- skip_drop
     #
     # Goto next, if setup already exists (if TRUE go to next i)
-    if (length(which(duplicated(rbind(SummaryCV[, c(2,5:8,15:16)], temp[c(1,3:8)])))) != 0 &
+    if (length(which(duplicated(rbind(SummaryCV[, c(2,5:8,15:16)], temp[c(1,3:6)])))) != 0 &
         !feat_sel) next
     #
     # Clean cache and start measuring time for run(i)
@@ -239,9 +226,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                  " e=", ifelse(test_param, paste0(eta_test, "/", eta), eta),
                  " n=", ifelse(test_param, paste0(nround_test, "/", nround), nround),
                  " d=", depth, " mcw=", min_child_weight, " g=", gamma,
-                 " s=", subsample, " c=", colsample_bytree,
-                 dplyr::if_else(booster == "dart",
-                                paste0(" r_dr=", rate_drop, " s_dr=", skip_drop), "")))
+                 " s=", subsample, " c=", colsample_bytree))
     temp[1] <- as.character(start)
     temp[2] <- depth
     temp[3] <- eta_test
@@ -250,9 +235,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     temp[6] <- gamma
     temp[7] <- subsample
     temp[8] <- colsample_bytree
-    temp[c(9:18)] <- NA
-    temp[15] <- rate_drop
-    temp[16] <- skip_drop
+    temp[c(9:16)] <- NA
     #
     # Custom metrics
     custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score",
@@ -382,6 +365,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     try(rm(params), TRUE)
     if (obj %in% c("multi:softmax", "multi:softprob")) {
       params <- list(num_class = length(unique(y)))
+    } else if (obj %in% c("binary:logistic")) {
+      params <- list(scale_pos_weight = scale_pos_weight)
     } else {
       params <- list()
     }
@@ -392,11 +377,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 min_child_weight = min_child_weight, gamma = gamma,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
                                 num_parallel_tree = trees,
-                                tree_method = tree_method, booster = booster,
-                                rate_drop = rate_drop, skip_drop = skip_drop,
+                                tree_method = tree_method,
                                 early_stopping_rounds = early_stopping_rounds,
-                                scale_pos_weight = scale_pos_weight,
-                                missing = NA, data = d_train_eval, nround = nround_test,
+                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
+                                data = d_train_eval, nround = nround_test,
                                 verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                 watchlist = list(train = d_train_eval, eval = d_test_eval),
@@ -408,11 +392,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 min_child_weight = min_child_weight, gamma = gamma,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
                                 num_parallel_tree = trees,
-                                tree_method = tree_method, booster = booster,
-                                rate_drop = rate_drop, skip_drop = skip_drop,
+                                tree_method = tree_method,
                                 early_stopping_rounds = early_stopping_rounds,
-                                scale_pos_weight = scale_pos_weight,
-                                missing = NA, data = d_train_eval, nround = nround_test,
+                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
+                                data = d_train_eval, nround = nround_test,
                                 verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                 watchlist = list(train = d_train_eval, eval = d_test_eval),
@@ -674,11 +657,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                min_child_weight = min_child_weight, gamma = gamma,
                                subsample = subsample, colsample_bytree = colsample_bytree,
                                num_parallel_tree = trees, stratified = TRUE,
-                               tree_method = tree_method, booster = booster,
-                               rate_drop = rate_drop, skip_drop = skip_drop,
+                               tree_method = tree_method,
                                early_stopping_rounds = early_stopping_rounds,
-                               scale_pos_weight = scale_pos_weight,
-                               missing = NA, data = d_train, nround = nround,
+                               # scale_pos_weight = scale_pos_weight,           # warning 2021-10-19
+                               data = d_train, nround = nround,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                prediction = TRUE)
@@ -689,11 +671,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                min_child_weight = min_child_weight, gamma = gamma,
                                subsample = subsample, colsample_bytree = colsample_bytree,
                                num_parallel_tree = trees, stratified = TRUE,
-                               tree_method = tree_method, booster = booster,
-                               rate_drop = rate_drop, skip_drop = skip_drop,
+                               tree_method = tree_method,
                                early_stopping_rounds = early_stopping_rounds,
-                               scale_pos_weight = scale_pos_weight,
-                               missing = NA, data = d_train, nround = nround,
+                               # scale_pos_weight = scale_pos_weight,           # warning 2021-10-19
+                               data = d_train, nround = nround,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                prediction = TRUE)
@@ -767,11 +748,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 eval_metric = metric, eta = eta, max_depth = depth,
                                 min_child_weight = min_child_weight, gamma = gamma,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
-                                scale_pos_weight = scale_pos_weight,
+                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
                                 num_parallel_tree = trees,
-                                tree_method = tree_method, booster = booster,
-                                rate_drop = rate_drop, skip_drop = skip_drop,
-                                missing = NA, data = d_train, nround = temp[[4]], verbose = verbose,
+                                tree_method = tree_method,
+                                data = d_train, nround = temp[[4]], verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50))
       } else {
         bst <- xgboost::xgboost(objective = obj, params = params,
@@ -779,11 +759,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 eta = eta, max_depth = depth,
                                 min_child_weight = min_child_weight, gamma = gamma,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
-                                scale_pos_weight = scale_pos_weight,
+                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
                                 num_parallel_tree = trees,
-                                tree_method = tree_method, booster = booster,
-                                rate_drop = rate_drop, skip_drop = skip_drop,
-                                missing = NA, data = d_train, nround = temp[[4]], verbose = verbose,
+                                tree_method = tree_method,
+                                data = d_train, nround = temp[[4]], verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50))
       }
       invisible(gc())
@@ -822,13 +801,13 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     # Save results as SummaryCV
     temp[11] <- round(as.numeric(difftime(Sys.time(), start, units = "mins")), 3)
     if (feat_sel) {
-      temp[17] <- Feat_Sel
-      temp[18] <- paste(Feat_Sel_Vars, collapse = ", ")
+      temp[15] <- Feat_Sel
+      temp[16] <- paste(Feat_Sel_Vars, collapse = ", ")
     } # else {
     #   temp[15] <- NA
     #   temp[16] <- NA
     # }
-    temp[19] <- metric
+    temp[17] <- metric
     utils::write.table(temp, paste0(path_output, gsub(".csv", "/", lauf), "Summary.csv"),
                        row.names = FALSE, col.names = FALSE, append = TRUE, sep = ";", dec = ",")
     #

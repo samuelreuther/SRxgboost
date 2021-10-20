@@ -15,7 +15,6 @@ SRxgboost_run(
   early_stopping_rounds = 30,
   scale_pos_weight = 1,
   trees = 1,
-  dart = 0,
   tree_method = "auto",
   verbose = 0,
   test_param = FALSE,
@@ -52,8 +51,6 @@ cases in for unbalanced classification;
 typical value: sum(y == 0) / sum(y == 1)}
 
 \item{trees}{integer}
-
-\item{dart}{numeric}
 
 \item{tree_method}{character}
 
