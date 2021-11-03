@@ -53,7 +53,7 @@ SRxgboost_covariate_drift_XGB <- function(df1 = NULL,
   #
   # SRxgboost_run
   cat(paste0(Sys.time(), " XGBOOST Modelle für: Covariate Drift\n"))
-  SRxgboost_run(nround = 10000, eta = 0.1, dart = 0, continue_threshold = 0.1, runs = 2,
+  SRxgboost_run(nround = 10000, eta = 0.1, continue_threshold = 0.1, runs = 2,
                 obj = "binary:logistic", metric = "auc", max_overfit = -1,
                 nfold = no_folds, trees = 1, verbose = 0, test_param = FALSE,
                 run_final_model = TRUE, best_params = NULL)
