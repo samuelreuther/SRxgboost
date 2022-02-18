@@ -45,6 +45,8 @@ SRxgboost_save_everything <- function(lauf) {
     saveRDS(y, paste0(path_temp, "y.rds"))
     saveRDS(y_train_eval, paste0(path_temp, "y_train_eval.rds"))
     saveRDS(y_test_eval, paste0(path_temp, "y_test_eval.rds"))
+    saveRDS(index_train_eval, paste0(path_temp, "index_train_eval.rds"))
+    saveRDS(index_test_eval, paste0(path_temp, "index_test_eval.rds"))
     saveRDS(train_mat, paste0(path_temp, "train_mat.rds"))
     saveRDS(test_mat, paste0(path_temp, "test_mat.rds"))
     saveRDS(train_eval_mat, paste0(path_temp, "train_eval_mat.rds"))

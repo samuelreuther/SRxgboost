@@ -500,8 +500,9 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # save Shapley values
       if (shap) {
         shapley <- stats::predict(bst, d_test_eval, missing = NA, predcontrib = TRUE)
-        saveRDS(shapley, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                                gsub(":", ".", as.character(start)), "_Shap_train_eval.rds"))
+        saveRDS(shapley,
+                paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                       gsub(":", ".", as.character(start)), "_Shap_train_eval.rds"))
         # xgb.plot.shap(test_eval_mat, shap_contrib = shapley, features= "FSAlter",
         #               span_loess = 0.1)
         # xgb.plot.shap(test_eval_mat, shap_contrib = shapley, model = bst, top_n = 3,
@@ -510,17 +511,19 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         # get forecast values
         if (obj != "multi:softprob") {
           shap_pred <- stats::predict(bst, d_test_eval, missing = NA)
-          saveRDS(shap_pred, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                                    gsub(":", ".", as.character(start)),
-                                    "_Shap_prediction.rds"))
+          saveRDS(shap_pred,
+                  paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                         gsub(":", ".", as.character(start)),
+                         "_Shap_prediction.rds"))
         } else {
           # obj == "multi:softprob": calculate class out of class probabilities
           shap_pred <- stats::predict(bst, d_test_eval, missing = NA, reshape = TRUE)
           shap_pred <- data.frame(shap_pred,
                                   class = apply(shap_pred, MARGIN = 1, FUN = which.max))
-          saveRDS(shap_pred, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                                    gsub(":", ".", as.character(start)),
-                                    "_Shap_prediction.rds"))
+          saveRDS(shap_pred,
+                  paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                         gsub(":", ".", as.character(start)),
+                         "_Shap_prediction.rds"))
           shap_pred <- as.vector(shap_pred$class) - 1
         }
         #
@@ -534,40 +537,45 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
           # decode LabelEnc
           if (gsub("_LabelEnc", "", column) %in% factor_encoding$feature) {
             temp_data[, column] <- factor(temp_data[, column])
-            levels(temp_data[, column]) <- factor_encoding$levels[factor_encoding$feature ==
-                                                                    gsub("_LabelEnc", "", column)]
+            levels(temp_data[, column]) <-
+              factor_encoding$levels[factor_encoding$feature ==
+                                       gsub("_LabelEnc", "", column)]
           }
           # decode Date
-          if (sum(is.na(as.Date(as.character(temp_data[, column]), format = "%Y%m%d"))) == 0) {
-            temp_data[, column] <- as.Date(as.character(temp_data[, column]), format = "%Y%m%d")
+          if (sum(is.na(as.Date(as.character(temp_data[, column]),
+                                format = "%Y%m%d"))) == 0) {
+            temp_data[, column] <-
+              as.Date(as.character(temp_data[, column]), format = "%Y%m%d")
           }
         }; rm(column)
-        saveRDS(temp_data, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                                  gsub(":", ".", as.character(start)),
-                                  "_Shap_datenModell_eval.rds"))
+        saveRDS(temp_data,
+                paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                       gsub(":", ".", as.character(start)),
+                       "_Shap_datenModell_eval.rds"))
         #
         # get some high and low forecasts
         set.seed(12345)
         if (!grepl("multi", obj)) {
           if (length(shap_pred) >= 300) {
-            selection <- c(which(shap_pred == min(shap_pred))[1],
-                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.00) &
-                                              shap_pred <= stats::quantile(shap_pred, 0.01)), 1), TRUE),
-                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.04) &
-                                              shap_pred <= stats::quantile(shap_pred, 0.05)), 1), TRUE),
-                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.09) &
-                                              shap_pred <= stats::quantile(shap_pred, 0.10)), 1), TRUE),
-                           try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.19) &
-                                              shap_pred <= stats::quantile(shap_pred, 0.20)), 1), TRUE),
-                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.80) &
-                                              shap_pred <  stats::quantile(shap_pred, 0.81)), 1), TRUE),
-                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.90) &
-                                              shap_pred <  stats::quantile(shap_pred, 0.91)), 1), TRUE),
-                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.95) &
-                                              shap_pred <  stats::quantile(shap_pred, 0.96)), 1), TRUE),
-                           try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.99) &
-                                              shap_pred <  stats::quantile(shap_pred, 1.00)), 1), TRUE),
-                           which(shap_pred == max(shap_pred))[1])
+            selection <-
+              c(which(shap_pred == min(shap_pred))[1],
+                try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.00) &
+                                   shap_pred <= stats::quantile(shap_pred, 0.01)), 1), TRUE),
+                try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.04) &
+                                   shap_pred <= stats::quantile(shap_pred, 0.05)), 1), TRUE),
+                try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.09) &
+                                   shap_pred <= stats::quantile(shap_pred, 0.10)), 1), TRUE),
+                try(sample(which(shap_pred   >  stats::quantile(shap_pred, 0.19) &
+                                   shap_pred <= stats::quantile(shap_pred, 0.20)), 1), TRUE),
+                try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.80) &
+                                   shap_pred <  stats::quantile(shap_pred, 0.81)), 1), TRUE),
+                try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.90) &
+                                   shap_pred <  stats::quantile(shap_pred, 0.91)), 1), TRUE),
+                try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.95) &
+                                   shap_pred <  stats::quantile(shap_pred, 0.96)), 1), TRUE),
+                try(sample(which(shap_pred   >= stats::quantile(shap_pred, 0.99) &
+                                   shap_pred <  stats::quantile(shap_pred, 1.00)), 1), TRUE),
+                which(shap_pred == max(shap_pred))[1])
             selection <- selection[!grepl("Error", selection)]
           } else {
             # length(shap_pred) < 300
@@ -610,14 +618,16 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
             dplyr::select(-BIAS) %>%
             data.table::setnames(paste0(colnames(.), ": ",
                                         temp_data[row, colnames(.)] %>%
-                                          dplyr::mutate_if(lubridate::is.Date, as.character) %>%
+                                          dplyr::mutate_if(lubridate::is.Date,
+                                                           as.character) %>%
                                           reshape2::melt(id = NULL) %>%
                                           dplyr::pull(value))) %>%
             data.table::setnames(gsub("_LabelEnc", "", names(.))) %>%
             reshape2::melt(id = NULL) %>%
             dplyr::arrange(-abs(value)) %>%
             dplyr::slice(1:min(5, nrow(.))) %>%
-            ggplot2::ggplot(ggplot2::aes(x = stats::reorder(variable, abs(value)), y = value)) +
+            ggplot2::ggplot(ggplot2::aes(x = stats::reorder(variable, abs(value)),
+                                         y = value)) +
             ggplot2::geom_bar(stat = "identity") +
             ggplot2::labs(x = "", y = "",
                           subtitle = paste0("pred = ", round(shap_pred[row], 3),

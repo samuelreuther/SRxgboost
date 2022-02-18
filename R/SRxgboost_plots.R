@@ -92,6 +92,10 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 paste0(path_output, gsub(".csv", "/", lauf),
                        "Best Model/Shap_datenModell_eval.rds"),
                 overwrite = TRUE)
+      file.copy(gsub(".model", "_Shap_index_test_eval.rds", modelpath),
+                paste0(path_output, gsub(".csv", "/", lauf),
+                       "Best Model/Shap_index_test_eval.rds"),
+                overwrite = TRUE)
       file.copy(gsub(".model", "_Shap_plot.png", modelpath),
                 paste0(path_output, gsub(".csv", "/", lauf),
                        "Best Model/Shap_plot.png"),

@@ -226,6 +226,8 @@ SRxgboost_data_prep <- function(yname,
   # assign('inTrain', inTrain, envir = .GlobalEnv)
   train_eval <- datenModell[inTrain, ]
   test_eval <- datenModell[-inTrain, ]
+  index_train_eval <- id_unique_train[inTrain]
+  index_test_eval <- id_unique_train[-inTrain]
   if (objective == "regression") {
     y_train_eval <- train_eval[, yname]
     y_test_eval <- test_eval[, yname]
@@ -361,6 +363,8 @@ SRxgboost_data_prep <- function(yname,
   try(assign('y_test', y_test, envir = .GlobalEnv), TRUE)
   assign('y_train_eval', y_train_eval, envir = .GlobalEnv)
   assign('y_test_eval', y_test_eval, envir = .GlobalEnv)
+  assign('index_train_eval', index_train_eval, envir = .GlobalEnv)
+  assign('index_test_eval', index_test_eval, envir = .GlobalEnv)
   assign('train_mat', train_mat, envir = .GlobalEnv)
   assign('test_mat', test_mat, envir = .GlobalEnv)
   assign('train_eval_mat', train_eval_mat, envir = .GlobalEnv)

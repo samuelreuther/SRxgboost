@@ -38,6 +38,8 @@ SRxgboost_load_everything <- function(lauf) {
   y <- readRDS(paste0(path_temp, "y.rds"))
   y_train_eval <- readRDS(paste0(path_temp, "y_train_eval.rds"))
   y_test_eval <- readRDS(paste0(path_temp, "y_test_eval.rds"))
+  index_train_eval <- readRDS(paste0(path_temp, "index_train_eval.rds"))
+  index_test_eval <- readRDS(paste0(path_temp, "index_test_eval.rds"))
   train_mat <- readRDS(paste0(path_temp, "train_mat.rds"))
   test_mat <- readRDS(paste0(path_temp, "test_mat.rds"))
   train_eval_mat <- readRDS(paste0(path_temp, "train_eval_mat.rds"))
