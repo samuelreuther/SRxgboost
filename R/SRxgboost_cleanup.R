@@ -16,6 +16,8 @@ SRxgboost_cleanup <- function() {
            d_train_eval, test_eval_mat, test_mat, train_eval_mat, train_mat, y_test_eval,
            y_train_eval, factor_encoding, forecast_mat, d_forecast, datenModell_eval,
            datenModell_train, y_test, folds, y_train, y_train_all,
+           index_train_eval, index_test_eval,
+           y_OOF, OOFforecast, TESTforecast, SummaryCV_META,
            envir = .GlobalEnv), TRUE))
   invisible(gc())
 }

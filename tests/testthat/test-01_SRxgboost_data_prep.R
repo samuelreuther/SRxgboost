@@ -43,7 +43,7 @@ test_that("regression / no_folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("regression / no_folds: no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
 })
 # no_folds
 test_that("regression / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
@@ -71,7 +71,7 @@ test_that("regression / eval_index", {
                "NULL")})
 # no. ob objects in memory
 test_that("regression / eval_index: no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 26)
 })
 # eval_index
 test_that("regression / eval_index: length(id_unique_train[eval_index])", {
@@ -101,7 +101,7 @@ test_that("regression / folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("regression / folds: no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 26)
 })
 # eval_index
 test_that("regression / folds: length(folds[[1]])", {
@@ -130,7 +130,7 @@ test_that("regression / no_folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("regression / train/test no_folds: no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 23)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
 })
 # no_folds
 test_that("regression / train/test no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
@@ -180,7 +180,7 @@ test_that("classification / no_folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 24)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 26)
 })
 # no_folds
 test_that("classification / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
@@ -208,7 +208,7 @@ test_that("classification / eval_index", {
                "NULL")})
 # no. ob objects in memory
 test_that("classification / eval_index, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 27)
 })
 # eval_index
 test_that("classification / eval_index: length(id_unique_train[eval_index])", {
@@ -238,7 +238,7 @@ test_that("classification / folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("classification / folds: no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 27)
 })
 # folds
 test_that("classification / folds: length(folds[[1]])", {
@@ -266,7 +266,7 @@ test_that("classification / train/test no_folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("classification / train/test no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 27)
 })
 # no_folds
 test_that("classification / train/test no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
@@ -313,7 +313,7 @@ test_that("multilabel classification / no_folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 25)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 27)
 })
 # no_folds
 test_that("multilabel classification / no_folds: nrow(datenModell_eval) / nrow(datenModell)", {
@@ -344,7 +344,7 @@ test_that("multilabel classification / eval_index", {
                "NULL")})
 # no. ob objects in memory
 test_that("multilabel classification / eval_index, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 26)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 28)
 })
 # eval_index
 test_that("multilabel classification / eval_index: length(id_unique_train[eval_index])", {
@@ -374,7 +374,7 @@ test_that("multilabel classification / folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("multilabel classification / folds: no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 26)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 28)
 })
 # folds
 test_that("multilabel classification / folds: length(folds[[1]])", {
@@ -402,7 +402,7 @@ test_that("multilabel classification / train/test no_folds", {
                "NULL")})
 # no. ob objects in memory
 test_that("multilabel classification / train/test no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 26)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 28)
 })
 # no_folds
 test_that("multilabel classification / train/test no_folds: nrow(datenModell_eval) / nrow(datenModell)", {

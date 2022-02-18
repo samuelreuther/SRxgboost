@@ -73,7 +73,7 @@ test_that("regression / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("regression / no_folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 21)
 })
 # runtime
 test_that("regression / no_folds: runtime[1]", {
@@ -146,7 +146,7 @@ test_that("regression / eval_index: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 28)
 # })
 test_that("regression / eval_index: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 20)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 22)
 })
 # runtime
 test_that("regression / eval_index: runtime[1]", {
@@ -213,7 +213,7 @@ test_that("regression / folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("regression / folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 20)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 22)
 })
 # runtime
 test_that("regression / folds: runtime[1]", {
@@ -309,7 +309,7 @@ test_that("classification / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("classification / no_folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 21)
 })
 # runtime
 test_that("classification / no_folds: runtime[1]", {
@@ -379,7 +379,7 @@ test_that("classification / eval_index: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("classification / eval_index: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 20)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 22)
 })
 # runtime
 test_that("classification / eval_index: runtime[1]", {
@@ -446,7 +446,7 @@ test_that("classification / folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("classification / folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 20)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 22)
 })
 # runtime
 test_that("classification / folds: runtime[1]", {
@@ -515,7 +515,7 @@ test_that("classification / eval_index: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("classification / eval_index: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 21)
 })
 # runtime
 test_that("classification / eval_index: runtime[1]", {
@@ -602,7 +602,7 @@ test_that("multilabel classification / no_folds: files in path_output/lauf/Best 
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("multilabel classification / no_folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 21)
 })
 # runtime
 test_that("multilabel classification / no_folds: runtime[1]", {
@@ -624,7 +624,7 @@ test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 35)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 37)
 })
 #
 #
@@ -678,7 +678,7 @@ test_that("multilabel classification wprec / no_folds: files in path_output/lauf
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("multilabel classification wprec / no_folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 21)
 })
 # runtime
 test_that("multilabel classification wprec / no_folds: runtime[1]", {
@@ -700,7 +700,7 @@ test_that("multilabel classification wprec / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification wprec / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 38)
 })
 #
 #
@@ -751,7 +751,7 @@ test_that("multilabel classification / no_folds: files in path_output/lauf/Best 
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
 # })
 test_that("multilabel classification / no_folds: files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 19)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 21)
 })
 # runtime
 test_that("multilabel classification / no_folds: runtime[1]", {
@@ -773,7 +773,7 @@ test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 38)
 })
 #
 #
