@@ -244,6 +244,43 @@ SRxgboost_cleanup()
 
 
 
+# Regression: no_folds, feat_sel ------------------------------------------
+#
+# ## run models
+# #
+# # @param feat_sel boolean              Problem beim 1. run!
+# # @param Feat_Sel data.frame           ???
+# # @param Feat_Sel_Vars list            ???
+# # @param Selected_Features boolean     ???
+# #
+# lauf <- "regr_no_folds_feat_sel.csv"
+# assign('lauf', lauf, envir = .GlobalEnv)
+# cat(lauf, "\n")
+# # prepare data and test
+# SRxgboost_data_prep(yname = "SalePrice",
+#                     data_train = train,
+#                     no_folds = 5,
+#                     objective = "regression")
+#
+# # run models
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 6,
+#               nfold = 5,
+#               feat_sel = TRUE,
+#               # Feat_Sel = NULL,
+#               # Feat_Sel_Vars = list("MSSubClass", "MSZoning_LabelEnc", "LotFrontage"),
+#               Selected_Features = TRUE)
+#
+# # plot results of best model
+# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
+#
+# # XGBOOST_FEAT_SEL(Feat_Sel_Seq = c(seq(1, 0.2, -0.2), 0.1, 0.05, 0.03, 0.02, 0.01, 0.005),
+# #                  nround = 1000, eta = 0.3, obj = "reg:linear", metric = "rmse", runs = 1,
+# #                  nfold = no_folds, trees = 1, verbose = 0, test_param = T, save_model = F,
+# #                  run_kfold = T, save_test_forecast = F)
+
+
+
+
 # Regression: clean up ----------------------------------------------------
 #
 rm(house, train, id_unique_train)

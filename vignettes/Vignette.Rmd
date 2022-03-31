@@ -25,11 +25,14 @@ library(SRxgboost)
 
 ### TODOs
 
-- plot shapley contribution: more expressive graphic for multilabel classification
-- Enforcing Monotonic Constraints:
-  - https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html
-  - params_constrained = params.copy()
-  - params_constrained['monotone_constraints'] = "(1,-1)"
-  - (1,-1,0): increasing/decreasing constraint, no constraint on the third
-  - model_with_constraints = xgb.train(params_constrained, d_train, 
-                                       num_boost_round = 1000, evals = evallist)
+- Feature Selection: not working right now  
+- plot shapley contribution: more expressive graphic for multilabel classification  
+- Enforcing Monotonic Constraints:  
+  - https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html  
+  - params_constrained = params.copy()  
+  - params_constrained['monotone_constraints'] = "(1,-1)"  
+  - (1,-1,0): increasing/decreasing constraint, no constraint on the third  
+  - model_with_constraints = xgb.train(params_constrained, d_train,  
+                                       num_boost_round = 1000, evals = evallist)  
+  
+  
