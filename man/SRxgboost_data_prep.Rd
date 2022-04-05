@@ -14,6 +14,7 @@ SRxgboost_data_prep(
   objective = NULL,
   weights = NULL,
   label_encoding = TRUE,
+  add_random_variables = FALSE,
   check_covariate_drift = FALSE
 )
 }
