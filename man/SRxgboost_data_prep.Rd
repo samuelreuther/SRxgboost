@@ -14,6 +14,7 @@ SRxgboost_data_prep(
   objective = NULL,
   weights = NULL,
   label_encoding = TRUE,
+  add_random_variables = FALSE,
   check_covariate_drift = FALSE
 )
 }
@@ -35,6 +36,8 @@ SRxgboost_data_prep(
 \item{weights}{table of weights (multilabel classification with "weighted_precision" only)}
 
 \item{label_encoding}{boolean}
+
+\item{add_random_variables}{boolean}
 
 \item{check_covariate_drift}{boolean}
 }

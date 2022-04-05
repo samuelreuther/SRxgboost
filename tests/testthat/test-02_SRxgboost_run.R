@@ -21,7 +21,7 @@ assign('this_file', this_file, envir = .GlobalEnv)
 
 
 
-# Regression: read data --------------------------------------------------------------
+# Regression: read data ---------------------------------------------------
 #
 house <- utils::read.csv(paste0(path_to_data,
                                 "Regression/Kaggle - house prices/data/train.csv"))
@@ -40,7 +40,7 @@ assign('train', train, envir = .GlobalEnv)
 #
 lauf <- "regr_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # prepare data and test
 SRxgboost_data_prep(yname = "SalePrice",
                     data_train = train,
@@ -110,7 +110,7 @@ SRxgboost_cleanup()
 #
 lauf <- "regr_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # create eval_index
 eval_index <- which(train$MSSubClass > 90)
 assign('eval_index', eval_index, envir = .GlobalEnv)
@@ -175,7 +175,7 @@ SRxgboost_cleanup()
 #
 lauf <- "regr_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # create folds
 train$group <- rep(1:(nrow(train) / 10), each = 10)
 folds <- SRxgboost_create_folds(df = train, foldcolumn = "group", k = 5)
@@ -244,6 +244,71 @@ SRxgboost_cleanup()
 
 
 
+# Regression: no_folds, sel_vars ------------------------------------------
+#
+## run model with all variables and 'add_random_variables = TRUE' to determine
+## the most important variables
+#
+lauf <- "regr_no_folds_all.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat("\n", lauf, "\n")
+# prepare data and test
+SRxgboost_data_prep(yname = "SalePrice",
+                    data_train = train,
+                    no_folds = 5,
+                    objective = "regression",
+                    add_random_variables = TRUE)
+# run model
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
+# clean up
+SRxgboost_cleanup()
+
+
+## select relevant variables
+#
+sel_vars <- SRxgboost_select_variables(lauf_all_variables = "regr_no_folds_all.csv",
+                                       threshold_cor = 0.8)
+
+
+## run final model with selected variables
+#
+lauf <- "regr_no_folds_sel.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# prepare data and test
+SRxgboost_data_prep(yname = "SalePrice",
+                    data_train = train %>%
+                      select(SalePrice,
+                             all_of(sel_vars$Feature[sel_vars$Select])),
+                    no_folds = 5,
+                    objective = "regression")
+# run model
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
+
+
+## tests
+#
+test_that("regression / sel_vars", {
+  expect_equal(class(sel_vars), "data.frame")
+})
+#
+test_that("regression / sel_vars: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+})
+
+
+## clean up
+#
+rm(sel_vars); SRxgboost_cleanup()
+
+
+
+
 # Regression: no_folds, feat_sel ------------------------------------------
 #
 # ## run models
@@ -255,28 +320,40 @@ SRxgboost_cleanup()
 # #
 # lauf <- "regr_no_folds_feat_sel.csv"
 # assign('lauf', lauf, envir = .GlobalEnv)
-# cat(lauf, "\n")
-# # prepare data and test
+# cat("\n", lauf, "\n")
+#
+#
+# ## prepare data and test
+# #
 # SRxgboost_data_prep(yname = "SalePrice",
 #                     data_train = train,
 #                     no_folds = 5,
 #                     objective = "regression")
 #
-# # run models
-# SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 6,
+#
+# ## run models to determine most important variables
+# #
+# SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
 #               nfold = 5,
 #               feat_sel = TRUE,
 #               # Feat_Sel = NULL,
 #               # Feat_Sel_Vars = list("MSSubClass", "MSZoning_LabelEnc", "LotFrontage"),
 #               Selected_Features = TRUE)
-#
-# # plot results of best model
-# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
-#
+# #
 # # XGBOOST_FEAT_SEL(Feat_Sel_Seq = c(seq(1, 0.2, -0.2), 0.1, 0.05, 0.03, 0.02, 0.01, 0.005),
 # #                  nround = 1000, eta = 0.3, obj = "reg:linear", metric = "rmse", runs = 1,
 # #                  nfold = no_folds, trees = 1, verbose = 0, test_param = T, save_model = F,
 # #                  run_kfold = T, save_test_forecast = F)
+#
+#
+# ## plot results of best model
+# #
+# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
+#
+#
+# ## clean up
+# #
+# SRxgboost_cleanup()
 
 
 
@@ -311,7 +388,7 @@ assign('train', train, envir = .GlobalEnv)
 #
 lauf <- "class_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # prepare data and test
 SRxgboost_data_prep(yname = "Churn",
                     data_train = train,
@@ -380,7 +457,7 @@ SRxgboost_cleanup()
 #
 lauf <- "class_eval_index.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # create eval_index
 eval_index <- which(train$MonthlyCharges > 100)
 assign('eval_index', eval_index, envir = .GlobalEnv)
@@ -445,7 +522,7 @@ SRxgboost_cleanup()
 #
 lauf <- "class_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # create folds
 train$group <- c(1, 1, 1, rep(1:(nrow(train) / 10), each = 10))
 folds <- SRxgboost_create_folds(df = train, foldcolumn = "group", k = 5)
@@ -517,7 +594,7 @@ SRxgboost_cleanup()
 #
 lauf <- "class_scale_pos_weight.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # prepare data and test
 SRxgboost_data_prep(yname = "Churn",
                     data_train = train,
@@ -575,7 +652,72 @@ SRxgboost_cleanup()
 
 
 
-# Classification: clean up ----------------------------------------------------
+# Classification: no_folds, sel_vars --------------------------------------
+#
+## run model with all variables and 'add_random_variables = TRUE' to determine
+## the most important variables
+#
+lauf <- "class_no_folds_all.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat("\n", lauf, "\n")
+# prepare data and test
+SRxgboost_data_prep(yname = "Churn",
+                    data_train = train,
+                    no_folds = 5,
+                    objective = "classification",
+                    add_random_variables = TRUE)
+# run model
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+# clean up
+SRxgboost_cleanup()
+
+
+## select relevant variables
+#
+sel_vars <- SRxgboost_select_variables(lauf_all_variables = "class_no_folds_all.csv",
+                                       threshold_cor = 0.8)
+
+
+## run final model with selected variables
+#
+lauf <- "class_no_folds_sel.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# prepare data and test
+SRxgboost_data_prep(yname = "Churn",
+                    data_train = train %>%
+                      select(Churn,
+                             all_of(sel_vars$Feature[sel_vars$Select])),
+                    no_folds = 5,
+                    objective = "classification")
+# run model
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+
+
+## tests
+#
+test_that("classification / sel_vars", {
+  expect_equal(class(sel_vars), "data.frame")
+})
+#
+test_that("classification / sel_vars: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+})
+
+
+## clean up
+#
+rm(sel_vars); SRxgboost_cleanup()
+
+
+
+
+# Classification: clean up ------------------------------------------------
 #
 rm(churn, train, id_unique_train)
 
@@ -603,7 +745,7 @@ assign('train', train, envir = .GlobalEnv)
 #
 lauf <- "mclass_no_folds_softprob.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # prepare data and test
 SRxgboost_data_prep(yname = "type",
                     data_train = train,
@@ -676,7 +818,7 @@ SRxgboost_cleanup()
 #
 lauf <- "mclass_no_folds_softprob_wprec.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # prepare data and test
 weights <-
   (prop.table(table(train$type)) + 0.15) /   # laplace / additive smoothing
@@ -752,7 +894,7 @@ SRxgboost_cleanup(); rm(weights)
 #
 lauf <- "mclass_no_folds_softmax.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-cat(lauf, "\n")
+cat("\n", lauf, "\n")
 # prepare data and test
 SRxgboost_data_prep(yname = "type",
                     data_train = train,
@@ -821,7 +963,69 @@ SRxgboost_cleanup()
 
 
 
-# Multilabel Classification: clean up ----------------------------------------------------
+# Multilabel Classification: no_folds softprob, sel_vars ------------------
+#
+lauf <- "mclass_no_folds_softprob.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat("\n", lauf, "\n")
+# prepare data and test
+SRxgboost_data_prep(yname = "type",
+                    data_train = train,
+                    no_folds = 5,
+                    objective = "multilabel",
+                    add_random_variables = TRUE)
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+# clean up
+SRxgboost_cleanup()
+
+
+## select relevant variables
+#
+sel_vars <- SRxgboost_select_variables(lauf_all_variables = "mclass_no_folds_softprob.csv",
+                                       threshold_cor = 0.9)
+
+
+## run final model with selected variables
+#
+lauf <- "mclass_no_folds_softprob_sel.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+# prepare data and test
+SRxgboost_data_prep(yname = "type",
+                    data_train = train %>%
+                      select(type,
+                             all_of(sel_vars$Feature[sel_vars$Select])),,
+                    no_folds = 5,
+                    objective = "multilabel")
+# run model
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
+              nfold = 5)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+
+
+## tests
+#
+test_that("multilabel classification / sel_vars", {
+  expect_equal(class(sel_vars), "data.frame")
+})
+#
+test_that("multilabel classification / sel_vars: files in path_output/lauf", {
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+})
+
+
+## clean up
+#
+rm(sel_vars); SRxgboost_cleanup()
+
+
+
+
+# Multilabel Classification: clean up -------------------------------------
 #
 rm(birds, train, id_unique_train)
 
