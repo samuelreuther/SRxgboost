@@ -21,7 +21,7 @@ assign('this_file', this_file, envir = .GlobalEnv)
 
 
 
-# Regression: read data --------------------------------------------------------------
+# Regression: read data ---------------------------------------------------
 #
 house <- utils::read.csv(paste0(path_to_data,
                                 "Regression/Kaggle - house prices/data/train.csv"))
@@ -652,7 +652,7 @@ SRxgboost_cleanup()
 
 
 
-# Classification: no_folds, sel_vars ------------------------------------------
+# Classification: no_folds, sel_vars --------------------------------------
 #
 ## run model with all variables and 'add_random_variables = TRUE' to determine
 ## the most important variables
@@ -717,7 +717,7 @@ rm(sel_vars); SRxgboost_cleanup()
 
 
 
-# Classification: clean up ----------------------------------------------------
+# Classification: clean up ------------------------------------------------
 #
 rm(churn, train, id_unique_train)
 
@@ -1025,7 +1025,7 @@ rm(sel_vars); SRxgboost_cleanup()
 
 
 
-# Multilabel Classification: clean up ----------------------------------------------------
+# Multilabel Classification: clean up -------------------------------------
 #
 rm(birds, train, id_unique_train)
 
