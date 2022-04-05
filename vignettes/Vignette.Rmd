@@ -25,14 +25,26 @@ library(SRxgboost)
 
 ### TODOs
 
-- Feature Selection: not working right now  
-- plot shapley contribution: more expressive graphic for multilabel classification  
-- Enforcing Monotonic Constraints:  
-  - https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html  
-  - params_constrained = params.copy()  
-  - params_constrained['monotone_constraints'] = "(1,-1)"  
-  - (1,-1,0): increasing/decreasing constraint, no constraint on the third  
-  - model_with_constraints = xgb.train(params_constrained, d_train,  
-                                       num_boost_round = 1000, evals = evallist)  
+- SRxgboost_run:  
+  - remove parameters for Feature Selection: 
+    - feat_sel
+    - Feat_Sel
+    - Feat_Sel_Vars
+    - Selected_Features = FALSE
+  - add columns in summaryCV for:  
+    - train1f/test1f  
+    - train/CV  
+    - trainfinal/testfinal (calculate test-results if y_test is provided)  
+    - fixed metrics AUC/accuracy/R2/RMSE/MAPE  
+  - plot shapley contribution: more expressive graphic for multilabel classification  
+- latin hypercube sampling of hyper-parameter:  
+  - https://statcompute.wordpress.com/2019/07/06/latin-hypercube-sampling-in-hyper-parameter-optimization/
+  - Enforcing Monotonic Constraints:  
+    - https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html  
+    - params_constrained = params.copy()  
+    - params_constrained['monotone_constraints'] = "(1,-1)"  
+    - (1,-1,0): increasing/decreasing constraint, no constraint on the third  
+    - model_with_constraints = xgb.train(params_constrained, d_train,  
+                                         num_boost_round = 1000, evals = evallist)  
   
   
