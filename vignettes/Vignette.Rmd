@@ -26,19 +26,24 @@ library(SRxgboost)
 ### TODOs
 
 - SRxgboost_run:  
-  - remove parameters for Feature Selection: 
-    - feat_sel
-    - Feat_Sel
-    - Feat_Sel_Vars
-    - Selected_Features = FALSE
+  - Fehler bei test-02_SRxgboost_run:  
+    - mclass_no_folds_softprob  
+    - mclass_no_folds_softprob_wprec  
+    - mclass_no_folds_softmax  
+  - remove parameters for Feature Selection:  
+    - feat_sel  
+    - Feat_Sel  
+    - Feat_Sel_Vars  
+    - Selected_Features = FALSE  
   - add columns in summaryCV for:  
     - train1f/test1f  
     - train/CV  
     - trainfinal/testfinal (calculate test-results if y_test is provided)  
     - fixed metrics AUC/accuracy/R2/RMSE/MAPE  
   - plot shapley contribution: more expressive graphic for multilabel classification  
+  - Shap values für XGBOOST-Modelle: Funktion um für Testdata zu kalkulieren  
 - latin hypercube sampling of hyper-parameter:  
-  - https://statcompute.wordpress.com/2019/07/06/latin-hypercube-sampling-in-hyper-parameter-optimization/
+  - https://statcompute.wordpress.com/2019/07/06/latin-hypercube-sampling-in-hyper-parameter-optimization/  
   - Enforcing Monotonic Constraints:  
     - https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html  
     - params_constrained = params.copy()  
@@ -46,5 +51,9 @@ library(SRxgboost)
     - (1,-1,0): increasing/decreasing constraint, no constraint on the third  
     - model_with_constraints = xgb.train(params_constrained, d_train,  
                                          num_boost_round = 1000, evals = evallist)  
-  
-  
+- SRxgboost_prepare_data:  
+  - Factor Encoder OOF hinzufügen:  
+    - http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-munging/target-encoding.html  
+    - https://towardsdatascience.com/getting-deeper-into-categorical-encodings-for-machine-learning-2312acd347c8  
+- Beispiel für "Starter-Code für Machine Learning-Modell mit XGBOOST inkl. Modell Explainability" erstellen  
+
