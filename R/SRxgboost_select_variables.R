@@ -78,7 +78,7 @@ SRxgboost_select_variables <- function(lauf_all_variables,
   cor_deselection <- cor_matrix %>%
     data.frame() %>%
     tibble::rownames_to_column(var = "Var1") %>%
-    reshape::melt(id = "Var1", variable_name = "Var2") %>%
+    reshape2::melt(id = "Var1", variable_name = "Var2") %>%
     dplyr::filter(value >= threshold_cor) %>%
     dplyr::filter(Var1 != Var2) %>%
     dplyr::mutate(Var1_ = as.character(Var1),

@@ -14,6 +14,7 @@
 #' @param objective character: one of "regression", "classification", "multilabel"
 #' @param weights table of weights (multilabel classification with "weighted_precision" only)
 #' @param label_encoding boolean
+#' @param add_random_variables boolean
 #' @param check_covariate_drift boolean
 #'
 #' @return assigns output into global workspace
