@@ -37,6 +37,8 @@ SRxgboost_data_prep(
 
 \item{label_encoding}{boolean}
 
+\item{add_random_variables}{boolean}
+
 \item{check_covariate_drift}{boolean}
 }
 \value{
