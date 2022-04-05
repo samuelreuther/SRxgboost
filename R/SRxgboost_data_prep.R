@@ -26,6 +26,7 @@ SRxgboost_data_prep <- function(yname,
                                 objective = NULL,
                                 weights = NULL,
                                 label_encoding = TRUE,
+                                add_random_variables = FALSE,
                                 check_covariate_drift = FALSE) {
   ### checks
   # check path_output exists
@@ -139,6 +140,20 @@ SRxgboost_data_prep <- function(yname,
   #
   #
   ### data cleaning
+  # add randomly generated variables
+  if (add_random_variables) {
+    set.seed(12345)
+    datenModell <- datenModell %>%
+      dplyr::mutate(random_numeric = round(stats::runif(nrow(.)), 3),
+                    random_binary = ifelse(stats::runif(nrow(.)) >= 0.5, TRUE, FALSE),
+                    random_category = sample(letters[1:10], size = nrow(.), replace = TRUE))
+    set.seed(246810)
+    datenModelltest <- datenModelltest %>%
+      dplyr::mutate(random_numeric = round(stats::runif(nrow(.)), 3),
+                    random_binary = ifelse(stats::runif(nrow(.)) >= 0.5, TRUE, FALSE),
+                    random_category = sample(letters[1:10], size = nrow(.), replace = TRUE))
+    set.seed(Sys.time())
+  }
   # date
   datenModell <- SRfunctions::SR_feat_eng_date(datenModell,
                                                only_date_to_numeric = FALSE)
