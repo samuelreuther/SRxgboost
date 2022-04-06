@@ -43,9 +43,19 @@ SRxgboost_select_variables <- function(lauf_all_variables,
                       header = TRUE, sep = ";", dec = ",")
   # check
   if (sum(grepl("random", importance_matrix$Feature)) == 0) {
-    stop("SRxgboost_select_variables: Randomly generated variables are expected!\n",
-         "The function 'SRxgboost_data_prep' for lauf_all_variables = '", lauf_all_variables, "'\n",
-         "needs to be generated with parameter 'add_random_variables = TRUE'!")
+    # this happens if the model is very simple because of few training data!
+    # stop("SRxgboost_select_variables: Randomly generated variables are expected!\n",
+    #      "The function 'SRxgboost_data_prep' for lauf_all_variables = '", lauf_all_variables,
+    #      "needs to be generated with parameter 'add_random_variables = TRUE' ")
+    warning("SRxgboost_select_variables: Randomly generated variables are expected!\n",
+            "The function 'SRxgboost_data_prep' for lauf_all_variables = '", lauf_all_variables,
+            "needs to be generated with parameter 'add_random_variables = TRUE' \n",
+            "If the model is very simple because of few training data, this might ",
+            "happen by chance anyway. \n",
+            " => threshold_gain will be set arbitrary to 0.001")
+    threshold_gain <- 0.001
+  } else {
+    threshold_gain <- mean(importance_matrix$Gain[grepl("random", importance_matrix$Feature)])
   }
   #
   # load prepared training data for correlation analysis
@@ -57,13 +67,9 @@ SRxgboost_select_variables <- function(lauf_all_variables,
   ### select variables with higher Gain than mean Random_...-variables
   #
   sel_vars <- importance_matrix %>%
-    dplyr::mutate(Random = grepl("random", Feature)) %>%
-    dplyr::mutate(Select = ifelse(Gain >= mean(.$Gain[.$Random]) &
-                                    !Random,
-                                  TRUE, FALSE)) %>%
-    # dplyr::filter(Gain >= mean(.$Gain[.$Random]),
-    #               !Random) %>%
-    dplyr::select(-Random)
+    dplyr::mutate(Select = ifelse(Gain >= threshold_gain &
+                                    !grepl("random", Feature),
+                                  TRUE, FALSE))
   #
   #
   #
