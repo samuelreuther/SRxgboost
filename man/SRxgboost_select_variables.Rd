@@ -4,12 +4,12 @@
 \alias{SRxgboost_select_variables}
 \title{SRxgboost_select_variables}
 \usage{
-SRxgboost_select_variables(lauf_all_variables, threshold_cor = 0.8)
+SRxgboost_select_variables(lauf_all_variables, threshold_cor = 0.9)
 }
 \arguments{
 \item{lauf_all_variables}{character}
 
-\item{threshold_cor}{numeric (default = 0.8)}
+\item{threshold_cor}{numeric (default = 0.9)}
 }
 \value{
 data.frame with relevant variables and their variable importance
@@ -18,8 +18,8 @@ data.frame with relevant variables and their variable importance
 Take the results of a previous run and deduct relevant variables:
 - by comparing the information gain against the mean of random_numeric,
   random_binary and random_category variables created in 'SRxgboost_data_prep'
-- removing from highly correlated variables (default threshold = 0.8) the
-  variable with lower information gain
+- removing from highly correlated variables (default threshold = 0.9 like the
+  default value in recipes::step_corr()) the variable with lower information gain
 Requirements of previous run with all variables provided at 'lauf_all_variables':
 - run the following 3 functions:
   - 'SRxgboost_data_prep(..., add_random_variables = TRUE)'
