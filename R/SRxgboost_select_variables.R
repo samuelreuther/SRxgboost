@@ -157,8 +157,9 @@ SRxgboost_select_variables <- function(lauf_all_variables,
     ggplot2::coord_flip() +
     ggplot2::guides(fill = "none")
   print(p)
-  ggplot2::ggsave(p, paste0(path_output, gsub(".csv", "/", lauf_all_variables),
-                            "Best Model/0 Variable Selection.png"),
+  ggplot2::ggsave(plot = p,
+                  filename = paste0(path_output, gsub(".csv", "/", lauf_all_variables),
+                                    "Best Model/0 Variable Selection.png"),
                   width = 9.92, height = 5.3)  # 4.67
   #
   #
