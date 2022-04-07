@@ -151,7 +151,7 @@ SRxgboost_select_variables <- function(lauf_all_variables,
     ggplot2::ggplot(ggplot2::aes(y = value, x = Feature, fill = Select,
                                  label = Highest_Correlation_with)) +
     ggplot2::geom_bar(position = "dodge", stat = "identity", na.rm = TRUE) +
-    ggplot2::geom_text(ggplot2::aes(y = value / 2), na.rm = TRUE, size = 3) +
+    ggplot2::geom_text(ggplot2::aes(y = value / 2), na.rm = TRUE, size = 2) +
     ggplot2::labs(x = "Variable", y = "") +
     ggplot2::scale_y_continuous(labels = scales::percent, breaks = scales::pretty_breaks(4)) +
     ggplot2::scale_fill_discrete(drop = FALSE) +
