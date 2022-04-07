@@ -132,7 +132,8 @@ SRxgboost_select_variables <- function(lauf_all_variables,
   sel_vars_temp <- sel_vars %>%
     dplyr::mutate(Feature = factor(Feature,
                                    levels = rev(stats::reorder(sel_vars$Feature,
-                                                               sel_vars$Gain)))) %>%
+                                                               sel_vars$Gain))),
+                  Select = factor(Select, levels = c("FALSE", "TRUE"))) %>%
     dplyr::slice(1:(min(nrow(sel_vars), 30))) %>%
     dplyr::select(Feature, Gain, Frequency, Select, Highest_Correlation,
                   Highest_Correlation_with)
@@ -153,6 +154,7 @@ SRxgboost_select_variables <- function(lauf_all_variables,
     ggplot2::geom_text(ggplot2::aes(y = value / 2), na.rm = TRUE, size = 3) +
     ggplot2::labs(x = "Variable", y = "") +
     ggplot2::scale_y_continuous(labels = scales::percent, breaks = scales::pretty_breaks(4)) +
+    ggplot2::scale_fill_discrete(drop = FALSE) +
     ggplot2::facet_grid(~variable, scales = "free") +
     ggplot2::coord_flip() +
     ggplot2::guides(fill = "none")
