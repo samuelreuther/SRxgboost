@@ -7,7 +7,7 @@
 #'   \item "reg:squarederror": "rmse", "auc", "rmsle", "mae", "mape"
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
-#'                            "f1_score", "mcc_score", "prAUC"
+#'                            "f1_score", "mcc_score", "tpr", "prAUC"
 #'   \item "multi:softprob": "merror", "mlogloss", "mAUC", "weighted_precision"
 #'   \item "multi:softmax": "merror", "mlogloss", "mAUC", "weighted_precision"
 #'   \item "rank:pairwise": "ndcg"
