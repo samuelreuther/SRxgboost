@@ -242,7 +242,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                         "weighted_precision", "mAUC", "prAUC")
     # Maximise metric
     metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score", "mcc_score",
-                                             "mAUC", "weighted_precision", "prAUC"),
+                                             "tpr", "mAUC", "weighted_precision", "prAUC"),
                                TRUE, FALSE)
     # custom functions to be used by XGBOOST during optimization
     if (metric %in% custom_metrics) {
@@ -284,6 +284,12 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         err <- max(mcc@y.values[[1]], na.rm = TRUE)
         opt_cutoff <- mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
         return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
+      }
+      # true positive rate/recall/sensitivity
+      tpr <- function(preds, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        err <- Metrics::recall(labels, preds)
+        return(list(metric = "tpr", value = err))
       }
       # weighted_precision
       weighted_precision <- function(pred, d_train) {
