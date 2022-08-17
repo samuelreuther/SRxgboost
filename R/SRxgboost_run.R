@@ -288,8 +288,13 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # true positive rate/recall/sensitivity
       tpr <- function(preds, d_train) {
         labels <- xgboost::getinfo(d_train, "label")
+        pred <- ROCR::prediction(preds, labels)
+        tpr <- ROCR::performance(pred, measure = "tpr")
+        err <- max(tpr@y.values[[1]], na.rm = TRUE)
+        opt_cutoff <- tpr@x.values[[1]][which.max(tpr@y.values[[1]])]
+        preds <- ifelse(preds >= opt_cutoff, 1, 0)
         err <- Metrics::recall(labels, preds)
-        return(list(metric = "tpr", value = err))
+        return(list(metric = "tpr", value = err, opt_cutoff = opt_cutoff))
       }
       # weighted_precision
       weighted_precision <- function(pred, d_train) {
