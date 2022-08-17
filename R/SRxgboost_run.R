@@ -172,7 +172,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       if (!feat_sel) {
         bp <- utils::read.table(paste0(path_output, gsub(".csv", "/", best_params),
                                        "Summary.csv"), header = TRUE, sep = ";", dec = ",")
-        if (metric %in% c("auc", "qwk_score", "f1_score", "mcc_score")) {
+        if (metric %in% c("auc", "qwk_score", "f1_score", "mcc_score", "tpr")) {
           bp <- bp %>% dplyr::arrange(dplyr::desc(test), dplyr::desc(eval_1fold))
         } else {
           bp <- bp %>% dplyr::arrange(test, eval_1fold)
@@ -239,7 +239,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     # Custom metrics
     custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score",
-                        "weighted_precision", "mAUC", "prAUC")
+                        "tpr", "weighted_precision", "mAUC", "prAUC")
     # Maximise metric
     metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score", "mcc_score",
                                              "tpr", "mAUC", "weighted_precision", "prAUC"),
