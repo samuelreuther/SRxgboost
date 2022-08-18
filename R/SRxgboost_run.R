@@ -7,7 +7,7 @@
 #'   \item "reg:squarederror": "rmse", "auc", "rmsle", "mae", "mape"
 #'   \item "reg:logistic": "error", "auc"
 #'   \item "binary:logistic": "error", "logloss", "auc", "roc", "qwk_score",
-#'                            "f1_score", "mcc_score", "prAUC"
+#'                            "f1_score", "mcc_score", "tpr", "prAUC"
 #'   \item "multi:softprob": "merror", "mlogloss", "mAUC", "weighted_precision"
 #'   \item "multi:softmax": "merror", "mlogloss", "mAUC", "weighted_precision"
 #'   \item "rank:pairwise": "ndcg"
@@ -172,7 +172,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       if (!feat_sel) {
         bp <- utils::read.table(paste0(path_output, gsub(".csv", "/", best_params),
                                        "Summary.csv"), header = TRUE, sep = ";", dec = ",")
-        if (metric %in% c("auc", "qwk_score", "f1_score", "mcc_score")) {
+        if (metric %in% c("auc", "qwk_score", "f1_score", "mcc_score", "tpr")) {
           bp <- bp %>% dplyr::arrange(dplyr::desc(test), dplyr::desc(eval_1fold))
         } else {
           bp <- bp %>% dplyr::arrange(test, eval_1fold)
@@ -239,10 +239,10 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     # Custom metrics
     custom_metrics <- c("rmsle", "mape", "mae", "qwk_score", "f1_score", "mcc_score",
-                        "weighted_precision", "mAUC", "prAUC")
+                        "tpr", "weighted_precision", "mAUC", "prAUC")
     # Maximise metric
     metrics_maximize <- ifelse(metric %in% c("auc", "qwk_score", "f1_score", "mcc_score",
-                                             "mAUC", "weighted_precision", "prAUC"),
+                                             "tpr", "mAUC", "weighted_precision", "prAUC"),
                                TRUE, FALSE)
     # custom functions to be used by XGBOOST during optimization
     if (metric %in% custom_metrics) {
@@ -284,6 +284,17 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         err <- max(mcc@y.values[[1]], na.rm = TRUE)
         opt_cutoff <- mcc@x.values[[1]][which.max(mcc@y.values[[1]])]
         return(list(metric = "mcc", value = err, opt_cutoff = opt_cutoff))
+      }
+      # true positive rate/recall/sensitivity
+      tpr <- function(preds, d_train) {
+        labels <- xgboost::getinfo(d_train, "label")
+        pred <- ROCR::prediction(preds, labels)
+        tpr <- ROCR::performance(pred, measure = "tpr")
+        err <- max(tpr@y.values[[1]], na.rm = TRUE)
+        opt_cutoff <- tpr@x.values[[1]][which.max(tpr@y.values[[1]])]
+        preds <- ifelse(preds >= opt_cutoff, 1, 0)
+        err <- Metrics::recall(labels, preds)
+        return(list(metric = "tpr", value = err, opt_cutoff = opt_cutoff))
       }
       # weighted_precision
       weighted_precision <- function(pred, d_train) {
@@ -874,6 +885,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                            min.rating = min(y), max.rating = max(y))
     if (metric %in% c("f1_score")) benchmark <- Metrics::f1(y, mean(y))
     if (metric %in% c("mcc_score")) benchmark <- 0
+    if (metric %in% c("tpr")) benchmark <- Metrics::recall(y, mean(y))
     if (metric %in% c("weighted_precision")) benchmark <- max(prop.table(table(y)))
     if (metric %in% c("prAUC")) benchmark <- as.numeric(prop.table(table(y))[2])
     #
