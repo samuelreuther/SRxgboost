@@ -597,7 +597,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         set.seed(Sys.time())
         #
         # convert shapley to data.frame
-        if (class(shapley) == "matrix") {
+        if (class(shapley)[1] == "matrix") {
           shapley <- data.frame(shapley)
         } else if (class(shapley) == "list") {
           # for multilabel classification: select class of shap_pred
