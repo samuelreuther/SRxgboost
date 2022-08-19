@@ -18,6 +18,7 @@ XGBOOST
 auc
 automl
 bei
+berechnen
 cran
 csv
 dmatrix
@@ -59,6 +60,7 @@ softprob
 squarederror
 summaryCV
 testfinal
+tpr
 trainfinal
 ubCNN
 ubENN

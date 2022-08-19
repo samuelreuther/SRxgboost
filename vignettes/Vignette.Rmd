@@ -59,4 +59,5 @@ library(SRxgboost)
   - generate 3 random variables per category  
   - take mean of random variable per category as threshold per variable category  
 - Beispiel für "Starter-Code für Machine Learning-Modell mit XGBOOST inkl. Modell Explainability" erstellen  
+- Surrogate Model berechnen
 
