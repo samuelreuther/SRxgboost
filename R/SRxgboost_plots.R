@@ -680,7 +680,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
     ### 1way graphics
     #
     # variable importance
-    importance_matrix <- xgboost::xgb.importance(colnames(train_mat), model = bst)
+    importance_matrix <- xgboost::xgb.importance(feature_names = colnames(train_mat),
+                                                 model = bst)
     importance_matrix <- importance_matrix %>%
       dplyr::select(Feature, Gain, Frequency)  %>%
       dplyr::arrange(-Gain) %>%
