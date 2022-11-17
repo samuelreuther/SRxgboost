@@ -170,7 +170,7 @@ test_that("regression train test", {
 
 # Regression: clean up ----------------------------------------------------
 #
-rm(house, train, id_unique_train, id_unique_test)
+suppressWarnings(rm(house, train, id_unique_train, id_unique_test))
 
 
 
@@ -265,7 +265,7 @@ test_that("classification train test", {
 
 # Classification: clean up ----------------------------------------------------
 #
-rm(churn, train, id_unique_train, id_unique_test)
+suppressWarnings(rm(churn, train, id_unique_train, id_unique_test))
 
 
 
@@ -280,7 +280,7 @@ assign('birds', birds, envir = .GlobalEnv)
 id_unique_train <- birds$id
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- birds %>%
-  dplyr::mutate(type = as.numeric(type) - 1) %>%
+  dplyr::mutate(type = as.numeric(as.factor(type)) - 1) %>%
   dplyr::select(-id)
 assign('train', train, envir = .GlobalEnv)
 
@@ -421,7 +421,7 @@ test_that("multilabel classification train test", {
 
 # Multilabel Classification: clean up ----------------------------------------------------
 #
-rm(birds, train, id_unique_train, id_unique_test)
+suppressWarnings(rm(birds, train, id_unique_train, id_unique_test))
 
 
 

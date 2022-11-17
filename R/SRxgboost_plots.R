@@ -375,7 +375,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         prauc_benchmark <- as.numeric(prop.table(table(train_pr_oof$y))[2])
         ggplot2::ggplot(temp, ggplot2::aes(x = fpr, y = tpr)) +
           ggplot2::geom_line() +
-          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
+          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", linewidth = 1,
                                linetype = "dashed") +
           ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(5),
                                       limits = c(0, 1)) +
@@ -546,7 +546,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr,
                                               colour = stats::reorder(binary, -binary_AUC))) +
           ggplot2::geom_line() +
-          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
+          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", linewidth = 1,
                                linetype = "dashed") +
           ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(5),
                                       limits = c(0, 1)) +
@@ -893,7 +893,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               }
             } else {
               p1 <- p1 +
-                ggplot2::geom_line(size = I(1)) +                            # numeric
+                ggplot2::geom_line(linewidth = I(1)) +                          # numeric
                 ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
             }; p1
             p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
