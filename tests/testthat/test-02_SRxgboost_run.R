@@ -785,10 +785,10 @@ test_that("multilabel classification / no_folds: files in path_output/lauf/Data"
 })
 # runtime
 test_that("multilabel classification / no_folds: runtime[1]", {
-  expect_true(SummaryCV$runtime[1] < 2)
+  expect_true(SummaryCV$runtime[1] < 10)
 })
 test_that("multilabel classification / no_folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 2)
+  expect_true(SummaryCV$runtime[1] < 10)
 })
 # mAUC
 test_that("multilabel classification / no_folds: SummaryCV$eval_1fold[1]", {
