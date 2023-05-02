@@ -112,7 +112,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
       reshape2::melt(id = "Lauf") %>%
       ggplot2::ggplot(ggplot2::aes(x = Lauf, y = value, colour = variable,
                                    group = variable, label = round(value, 3))) +
-      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_line(linewidth = 1) +
       ggplot2::geom_point(size = 2) +
       ggrepel::geom_text_repel(size = 3, direction = "y") +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 0, vjust = 0.5)) +
@@ -178,7 +178,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
       reshape2::melt(id = "Lauf") %>%
       ggplot2::ggplot(ggplot2::aes(x = Lauf, y = value, colour = variable,
                                    group = variable, label = round(value, 3))) +
-      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_line(linewidth = 1) +
       ggplot2::geom_point(size = 2) +
       ggrepel::geom_text_repel(size = 3, direction = "y") +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 0, vjust = 0.5)) +

@@ -102,10 +102,14 @@ comparison <- SRxgboost_compare_sample_methods(df_train = train,
                                                # y_name = "Churn",              # TODO !!!
                                                df_test = NULL,
                                                folds = folds5, runs = 2,
-                                               sample_methods = c("ubOver", "ubUnder",
-                                                                  "ubSMOTE", "ubOSS",
-                                                                  "ubCNN", "ubENN",
-                                                                  "ubNCL", "ubTomek"))
+                                               sample_methods = c("ubOver",
+                                                                  "ubUnder",
+                                                                  "ubSMOTE",
+                                                                  "ubOSS",
+                                                                  "ubCNN",
+                                                                  "ubENN",
+                                                                  "ubNCL",
+                                                                  "ubTomek"))
 #
 #
 ## tests
@@ -170,10 +174,14 @@ comparison <- SRxgboost_compare_sample_methods(df_train = train,
                                                # y_name = "Churn",              # TODO !!!
                                                df_test = test,
                                                folds = folds5, runs = 2,
-                                               sample_methods = c("ubOver", "ubUnder",
-                                                                  "ubSMOTE", "ubENN",
-                                                                  "ubNCL", "ubOSS",
-                                                                  "ubCNN", "ubTomek"))
+                                               sample_methods = c("ubOver",
+                                                                  "ubUnder",
+                                                                  "ubSMOTE",
+                                                                  "ubENN",
+                                                                  "ubNCL",
+                                                                  "ubOSS",
+                                                                  "ubCNN",
+                                                                  "ubTomek"))
 #
 #
 ## tests
@@ -274,10 +282,14 @@ file.rename("output_temp/compare_sample_methods/",
 #                                                # y_name = "Churn",              # TODO !!!
 #                                                df_test = test,
 #                                                folds = folds5, runs = 2,
-#                                                sample_methods = c("ubOver", "ubUnder",
-#                                                                   "ubSMOTE", "ubENN",
-#                                                                   "ubNCL", "ubOSS",
-#                                                                   "ubCNN", "ubTomek"))
+#                                                sample_methods = c("ubOver",
+#                                                                   "ubUnder",
+#                                                                   "ubSMOTE",
+#                                                                   "ubENN",
+#                                                                   "ubNCL",
+#                                                                   "ubOSS",
+#                                                                   "ubCNN",
+#                                                                   "ubTomek"))
 # #
 # #
 # ## tests
@@ -344,10 +356,14 @@ file.rename("output_temp/compare_sample_methods/",
 #                                                # y_name = "Churn",              # TODO !!!
 #                                                df_test = test,
 #                                                folds = folds5, runs = 2,
-#                                                sample_methods = c("ubOver", "ubUnder",
-#                                                                   "ubSMOTE", "ubENN",
-#                                                                   "ubNCL", "ubOSS",
-#                                                                   "ubCNN", "ubTomek"))
+#                                                sample_methods = c("ubOver",
+#                                                                   "ubUnder",
+#                                                                   "ubSMOTE",
+#                                                                   "ubENN",
+#                                                                   "ubNCL",
+#                                                                   "ubOSS",
+#                                                                   "ubCNN",
+#                                                                   "ubTomek"))
 # #
 # #
 # ## tests
