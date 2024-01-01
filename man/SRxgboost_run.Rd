@@ -15,6 +15,7 @@ SRxgboost_run(
   early_stopping_rounds = 30,
   scale_pos_weight = 1,
   trees = 1,
+  nthreads = NULL,
   tree_method = "auto",
   verbose = 0,
   test_param = FALSE,

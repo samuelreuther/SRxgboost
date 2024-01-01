@@ -4,7 +4,7 @@
 \alias{SRxgboost_load_everything}
 \title{SRxgboost_load_everything}
 \usage{
-SRxgboost_load_everything(lauf)
+SRxgboost_load_everything(lauf, nthreads = NULL)
 }
 \arguments{
 \item{lauf}{character}

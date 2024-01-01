@@ -4,7 +4,7 @@
 \alias{SRxgboost_data_prep_forecast}
 \title{SRxgboost_data_prep_forecast}
 \usage{
-SRxgboost_data_prep_forecast(df, label_encoding = TRUE)
+SRxgboost_data_prep_forecast(df, label_encoding = TRUE, nthreads = NULL)
 }
 \arguments{
 \item{df}{data.frame}

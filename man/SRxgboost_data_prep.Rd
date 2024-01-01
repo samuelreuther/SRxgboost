@@ -11,6 +11,7 @@ SRxgboost_data_prep(
   no_folds = NULL,
   folds = NULL,
   eval_index = NULL,
+  nthreads = NULL,
   objective = NULL,
   weights = NULL,
   label_encoding = TRUE,
