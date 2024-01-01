@@ -1,6 +1,6 @@
 Package: SRxgboost
 Title: Helper and meta-functions for modelling with XGBOOST
-Version: 0.5.1
+Version: 0.6.0
 Authors@R: 
     person(given = "First",
            family = "Last",
@@ -17,7 +17,7 @@ Suggests:
     knitr,
     rmarkdown
 Language: en-US
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Imports: 
     magrittr,
     ROCR,
