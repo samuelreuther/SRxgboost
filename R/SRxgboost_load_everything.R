@@ -8,12 +8,16 @@
 #' @return loads rds-files into global environment
 #'
 #' @export
-SRxgboost_load_everything <- function(lauf) {
+SRxgboost_load_everything <- function(lauf,
+                                      nthreads = NULL) {
   ### checks
   # check path_output exists
   if (!exists("path_output")) cat("'path_output' is missing \n")
   # check lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  #
+  ### general options
+  if (is.null(nthreads)) nthreads <- parallel::detectCores()
   #
   # create path_temp for loading data
   path_temp <- paste0(path_output, gsub(".csv", "/", lauf), "Data/")
@@ -62,10 +66,12 @@ SRxgboost_load_everything <- function(lauf) {
                                            header = TRUE, sep = ";", dec = ","), TRUE))
   #
   # generate DMatrix
-  d_train <- xgboost::xgb.DMatrix(data = train_mat, label = y)
-  d_test <- xgboost::xgb.DMatrix(data = test_mat)
-  d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat, label = y_train_eval)
-  d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat, label = y_test_eval)
+  d_train <- xgboost::xgb.DMatrix(data = train_mat, label = y, nthread = nthreads)
+  d_test <- xgboost::xgb.DMatrix(data = test_mat, nthread = nthreads)
+  d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat, label = y_train_eval,
+                                       nthread = nthreads)
+  d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat, label = y_test_eval,
+                                      nthread = nthreads)
   #
   #
   ### assign to global environment
