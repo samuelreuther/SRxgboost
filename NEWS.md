@@ -1,3 +1,6 @@
+# SRxgboost 0.6.0
+- Added support for parameter nthread in xgb.DMatrix, xgb.train, xgboost, xgb.cv
+
 # SRxgboost 0.5.1
 
 # SRxgboost 0.1.0
