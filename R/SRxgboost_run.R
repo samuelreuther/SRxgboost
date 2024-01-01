@@ -43,7 +43,7 @@
 #' @export
 SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                           nfold = NULL, folds = NULL, early_stopping_rounds = 30,
-                          scale_pos_weight = 1, trees = 1,
+                          scale_pos_weight = 1, trees = 1, nthreads = NULL,
                           tree_method = "auto", verbose = 0, test_param = FALSE,
                           shap = TRUE, continue_threshold = 0.1,
                           run_final_model = TRUE, best_params = NULL,
@@ -62,6 +62,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
   #
   ### general options
   tree_method <- tree_method   # "exact" "auto"
+  if (is.null(nthreads)) nthreads <- parallel::detectCores()
   #
   #
   #
@@ -353,19 +354,23 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     if (Selected_Features) {
       train_eval_mat <- train_eval_mat
       train_eval_mat <- train_eval_mat[, Feat_Sel_Vars_best]
-      d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat, label = y_train_eval)
+      d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat,
+                                           label = y_train_eval,
+                                           nthread = nthreads)
       #
       test_eval_mat <- test_eval_mat
       test_eval_mat <- test_eval_mat[, Feat_Sel_Vars_best]
-      d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat, label = y_test_eval)
+      d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat,
+                                          label = y_test_eval,
+                                          nthread = nthreads)
       #
       train_mat <- train_mat
       train_mat <- train_mat[, Feat_Sel_Vars_best]
-      d_train <- xgboost::xgb.DMatrix(data = train_mat, label = y)
+      d_train <- xgboost::xgb.DMatrix(data = train_mat, label = y, nthread = nthreads)
       #
       test_mat <- test_mat
       test_mat <- test_mat[, Feat_Sel_Vars_best]
-      d_test <- xgboost::xgb.DMatrix(data = test_mat)
+      d_test <- xgboost::xgb.DMatrix(data = test_mat, nthread = nthreads)
     }
     #
     #
@@ -392,7 +397,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 early_stopping_rounds = early_stopping_rounds,
                                 # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
                                 data = d_train_eval, nround = nround_test,
-                                verbose = verbose,
+                                verbose = verbose, nthread = nthreads,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                 watchlist = list(train = d_train_eval, eval = d_test_eval),
                                 callbacks = list(xgboost::cb.evaluation.log()))
@@ -407,7 +412,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 early_stopping_rounds = early_stopping_rounds,
                                 # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
                                 data = d_train_eval, nround = nround_test,
-                                verbose = verbose,
+                                verbose = verbose, nthread = nthreads,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                 watchlist = list(train = d_train_eval, eval = d_test_eval),
                                 callbacks = list(xgboost::cb.evaluation.log()))
@@ -681,7 +686,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                tree_method = tree_method,
                                early_stopping_rounds = early_stopping_rounds,
                                # scale_pos_weight = scale_pos_weight,           # warning 2021-10-19
-                               data = d_train, nround = nround,
+                               data = d_train, nround = nround, nthread = nthreads,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                prediction = TRUE)
@@ -695,7 +700,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                tree_method = tree_method,
                                early_stopping_rounds = early_stopping_rounds,
                                # scale_pos_weight = scale_pos_weight,           # warning 2021-10-19
-                               data = d_train, nround = nround,
+                               data = d_train, nround = nround, nthread = nthreads,
                                nfold = nfold, folds = folds, verbose = verbose,
                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
                                prediction = TRUE)
@@ -771,7 +776,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
                                 # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
                                 num_parallel_tree = trees,
-                                tree_method = tree_method,
+                                tree_method = tree_method, nthread = nthreads,
                                 data = d_train, nround = temp[[4]], verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50))
       } else {
@@ -782,7 +787,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                                 subsample = subsample, colsample_bytree = colsample_bytree,
                                 # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
                                 num_parallel_tree = trees,
-                                tree_method = tree_method,
+                                tree_method = tree_method, nthread = nthreads,
                                 data = d_train, nround = temp[[4]], verbose = verbose,
                                 print_every_n = ifelse(verbose == 0, nround, nround_test / 50))
       }

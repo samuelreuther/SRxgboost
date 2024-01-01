@@ -9,7 +9,8 @@
 #'
 #' @export
 SRxgboost_data_prep_forecast <- function(df,
-                                         label_encoding = TRUE) {
+                                         label_encoding = TRUE,
+                                         nthreads = NULL) {
   #
   # # data cleaning
   # # factors
@@ -46,11 +47,14 @@ SRxgboost_data_prep_forecast <- function(df,
   # df <- SR_feat_eng_date(df, only_date_to_numeric = TRUE)
   # df <- df[, names(datenModell)]
   #
+  ### general options
+  if (is.null(nthreads)) nthreads <- parallel::detectCores()
+  #
   # turn train and test into matrices for dummy variables
   options(na.action = 'na.pass')  # global option !!!
   #
   forecast_mat <- Matrix::sparse.model.matrix(~. -1, data = df)
-  d_forecast <- xgboost::xgb.DMatrix(data = forecast_mat)
+  d_forecast <- xgboost::xgb.DMatrix(data = forecast_mat, nthread = nthreads)
   #
   # return results to environment
   assign('forecast_mat', forecast_mat, envir = .GlobalEnv)

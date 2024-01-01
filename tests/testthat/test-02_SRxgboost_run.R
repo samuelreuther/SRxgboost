@@ -9,7 +9,7 @@ path_output <- "output_temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
 if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
   path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
-} else if (dir.exists("/data/shared/CH00RHU/")) {
+} else if (dir.exists("/home/sandbox/sandbox/z-Sonstige_Analysen/")) {
   path_to_data <- "/home/sandbox/sandbox/z-Sonstige_Analysen/99_ML_Algorithm_Benchmark/"
 }
 assign('path_to_data', path_to_data, envir = .GlobalEnv)
@@ -42,13 +42,12 @@ lauf <- "regr_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "SalePrice",
-                    data_train = train,
-                    no_folds = 5,
+SRxgboost_data_prep(yname = "SalePrice", data_train = train,
+                    no_folds = 5, nthreads = 1,
                     objective = "regression")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
-              nfold = 5)
+              nfold = 5 , nthreads = 1)
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.01)
 #
@@ -80,7 +79,7 @@ test_that("regression / no_folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 1)
 })
 test_that("regression / no_folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 1)
+  expect_true(SummaryCV$runtime[2] < 1)
 })
 # rmse
 test_that("regression / no_folds: SummaryCV$eval_1fold[1]", {
@@ -153,7 +152,7 @@ test_that("regression / eval_index: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 1)
 })
 test_that("regression / eval_index: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 1)
+  expect_true(SummaryCV$runtime[2] < 1)
 })
 # rmse
 test_that("regression / eval_index: SummaryCV$eval_1fold[1]", {
@@ -220,7 +219,7 @@ test_that("regression / folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 1)
 })
 test_that("regression / folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 1)
+  expect_true(SummaryCV$runtime[2] < 1)
 })
 # rmse
 test_that("regression / folds: SummaryCV$eval_1fold[1]", {
@@ -430,7 +429,7 @@ test_that("classification / no_folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 0.6)
 })
 test_that("classification / no_folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 1)
+  expect_true(SummaryCV$runtime[2] < 1)
 })
 # auc
 test_that("classification / no_folds: SummaryCV$eval_1fold[1]", {
@@ -500,7 +499,7 @@ test_that("classification / eval_index: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 1)
 })
 test_that("classification / eval_index: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 1)
+  expect_true(SummaryCV$runtime[2] < 1)
 })
 # auc
 test_that("classification / eval_index: SummaryCV$eval_1fold[1]", {
@@ -636,7 +635,7 @@ test_that("classification / eval_index: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 1)
 })
 test_that("classification / eval_index: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 1)
+  expect_true(SummaryCV$runtime[2] < 1)
 })
 # auc
 test_that("classification / eval_index: SummaryCV$eval_1fold[1]", {
@@ -788,7 +787,7 @@ test_that("multilabel classification / no_folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 10)
 })
 test_that("multilabel classification / no_folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 10)
+  expect_true(SummaryCV$runtime[2] < 10)
 })
 # mAUC
 test_that("multilabel classification / no_folds: SummaryCV$eval_1fold[1]", {
@@ -864,7 +863,7 @@ test_that("multilabel classification wprec / no_folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 2)
 })
 test_that("multilabel classification wprec / no_folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 1)
+  expect_true(SummaryCV$runtime[2] < 1)
 })
 # weighted_precision
 test_that("multilabel classification wprec / no_folds: SummaryCV$eval_1fold[1]", {
@@ -937,7 +936,7 @@ test_that("multilabel classification / no_folds: runtime[1]", {
   expect_true(SummaryCV$runtime[1] < 2)
 })
 test_that("multilabel classification / no_folds: runtime[2]", {
-  expect_true(SummaryCV$runtime[1] < 2)
+  expect_true(SummaryCV$runtime[2] < 2)
 })
 # mAUC
 test_that("multilabel classification / no_folds: SummaryCV$eval_1fold[1]", {
