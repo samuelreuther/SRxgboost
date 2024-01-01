@@ -24,6 +24,7 @@ SRxgboost_data_prep <- function(yname,
                                 data_train,
                                 data_test = NULL,
                                 no_folds = NULL, folds = NULL, eval_index = NULL,
+                                nthreads = NULL,
                                 objective = NULL,
                                 weights = NULL,
                                 label_encoding = TRUE,
@@ -37,6 +38,9 @@ SRxgboost_data_prep <- function(yname,
   }
   # check lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
+  #
+  ### general options
+  if (is.null(nthreads)) nthreads <- parallel::detectCores()
   #
   #
   #
@@ -320,48 +324,56 @@ SRxgboost_data_prep <- function(yname,
     train_mat <- Matrix::sparse.model.matrix(y~. - 1,
                                              data = datenModell)
     d_train <- xgboost::xgb.DMatrix(data = train_mat,
-                                    label = y)
-    #
-    test_mat <- Matrix::sparse.model.matrix(~. - 1,
-                                            data = datenModelltest)
-    d_test <- xgboost::xgb.DMatrix(data = test_mat)
-    #
-    train_eval_mat <- cbind(y_train_eval, train_eval)
-    train_eval_mat <- Matrix::sparse.model.matrix(y_train_eval~. - 1,
-                                                  data = train_eval_mat)
-    d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat,
-                                         label = y_train_eval)
-    #
-    test_eval_mat <- cbind(y_test_eval, test_eval)
-    test_eval_mat <- Matrix::sparse.model.matrix(y_test_eval~. - 1,
-                                                 data = test_eval_mat)
-    d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat,
-                                        label = y_test_eval)
-  } else {
-    # add weight
-    train_mat <- Matrix::sparse.model.matrix(y~. - 1,
-                                             data = datenModell)
-    d_train <- xgboost::xgb.DMatrix(data = train_mat,
                                     label = y,
-                                    weight = weights[y + 1])
+                                    nthread = nthreads)
     #
     test_mat <- Matrix::sparse.model.matrix(~. - 1,
                                             data = datenModelltest)
-    d_test <- xgboost::xgb.DMatrix(data = test_mat)
+    d_test <- xgboost::xgb.DMatrix(data = test_mat,
+                                   nthread = nthreads)
     #
     train_eval_mat <- cbind(y_train_eval, train_eval)
     train_eval_mat <- Matrix::sparse.model.matrix(y_train_eval~. - 1,
                                                   data = train_eval_mat)
     d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat,
                                          label = y_train_eval,
-                                         weight = weights[y_train_eval + 1])
+                                         nthread = nthreads)
     #
     test_eval_mat <- cbind(y_test_eval, test_eval)
     test_eval_mat <- Matrix::sparse.model.matrix(y_test_eval~. - 1,
                                                  data = test_eval_mat)
     d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat,
                                         label = y_test_eval,
-                                        weight = weights[y_test_eval + 1])
+                                        nthread = nthreads)
+  } else {
+    # add weight
+    train_mat <- Matrix::sparse.model.matrix(y~. - 1,
+                                             data = datenModell)
+    d_train <- xgboost::xgb.DMatrix(data = train_mat,
+                                    label = y,
+                                    weight = weights[y + 1],
+                                    nthread = nthreads)
+    #
+    test_mat <- Matrix::sparse.model.matrix(~. - 1,
+                                            data = datenModelltest)
+    d_test <- xgboost::xgb.DMatrix(data = test_mat,
+                                   nthread = nthreads)
+    #
+    train_eval_mat <- cbind(y_train_eval, train_eval)
+    train_eval_mat <- Matrix::sparse.model.matrix(y_train_eval~. - 1,
+                                                  data = train_eval_mat)
+    d_train_eval <- xgboost::xgb.DMatrix(data = train_eval_mat,
+                                         label = y_train_eval,
+                                         weight = weights[y_train_eval + 1],
+                                         nthread = nthreads)
+    #
+    test_eval_mat <- cbind(y_test_eval, test_eval)
+    test_eval_mat <- Matrix::sparse.model.matrix(y_test_eval~. - 1,
+                                                 data = test_eval_mat)
+    d_test_eval <- xgboost::xgb.DMatrix(data = test_eval_mat,
+                                        label = y_test_eval,
+                                        weight = weights[y_test_eval + 1],
+                                        nthread = nthreads)
   }
   #
   #
