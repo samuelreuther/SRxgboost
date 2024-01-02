@@ -49,6 +49,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       file.exists(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))) {
     if (file.exists(modelpath)) {
       bst <- xgboost::xgb.load(modelpath)
+      bst_ <- readRDS(gsub(".model", ".model.rds", modelpath, fixed = TRUE))
       assign('bst', bst, envir = .GlobalEnv)
     } else {
       bst <- xgboost::xgb.load(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))
