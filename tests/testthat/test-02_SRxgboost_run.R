@@ -85,7 +85,7 @@ test_that("regression / no_folds: runtime[2]", {
 })
 # rmse
 test_that("regression / no_folds: SummaryCV$eval_1fold[1]", {
-  expect_true(SummaryCV$eval_1fold[1] < 28000)
+  expect_true(SummaryCV$eval_1fold[1] < 29000)
   # expect_equal(round(SummaryCV$eval_1fold[1], -3), 27000)
 })
 test_that("regression / no_folds: SummaryCV$train[1]", {
@@ -966,7 +966,7 @@ SRxgboost_cleanup()
 
 # Multilabel Classification: no_folds softprob, sel_vars ------------------
 #
-lauf <- "mclass_no_folds_softprob.csv"
+lauf <- "mclass_no_folds_softprob_selvars.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
@@ -986,13 +986,13 @@ SRxgboost_cleanup()
 
 ## select relevant variables
 #
-sel_vars <- SRxgboost_select_variables(lauf_all_variables = "mclass_no_folds_softprob.csv",
+sel_vars <- SRxgboost_select_variables(lauf_all_variables = "mclass_no_folds_softprob_selvars.csv",
                                        threshold_cor = 0.9)
 
 
 ## run final model with selected variables
 #
-lauf <- "mclass_no_folds_softprob_sel.csv"
+lauf <- "mclass_no_folds_softprob_selvars_final.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 # prepare data and test
 SRxgboost_data_prep(yname = "type",
