@@ -11,6 +11,7 @@
 #' @param no_folds integer
 #' @param folds list, output from xxx
 #' @param eval_index vector
+#' @param nthreads integer
 #' @param objective character: one of "regression", "classification", "multilabel"
 #' @param weights table of weights (multilabel classification with "weighted_precision" only)
 #' @param label_encoding boolean
@@ -20,13 +21,9 @@
 #' @return assigns output into global workspace
 #'
 #' @export
-SRxgboost_data_prep <- function(yname,
-                                data_train,
-                                data_test = NULL,
+SRxgboost_data_prep <- function(yname, data_train, data_test = NULL,
                                 no_folds = NULL, folds = NULL, eval_index = NULL,
-                                nthreads = NULL,
-                                objective = NULL,
-                                weights = NULL,
+                                nthreads = NULL, objective = NULL, weights = NULL,
                                 label_encoding = TRUE,
                                 add_random_variables = FALSE,
                                 check_covariate_drift = FALSE) {
