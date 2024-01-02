@@ -28,6 +28,7 @@
 #' @param tree_method character
 #' @param verbose integer 0 to 3
 #' @param test_param boolean
+#' @param nthreads integer
 #' @param shap boolean
 #' @param continue_threshold numeric
 #' @param run_final_model boolean
@@ -43,8 +44,8 @@
 #' @export
 SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                           nfold = NULL, folds = NULL, early_stopping_rounds = 30,
-                          scale_pos_weight = 1, trees = 1, nthreads = NULL,
-                          tree_method = "auto", verbose = 0, test_param = FALSE,
+                          scale_pos_weight = 1, trees = 1, tree_method = "auto",
+                          verbose = 0, test_param = FALSE, nthreads = NULL,
                           shap = TRUE, continue_threshold = 0.1,
                           run_final_model = TRUE, best_params = NULL,
                           max_overfit = -1,
