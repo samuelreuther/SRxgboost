@@ -4,6 +4,7 @@
 #' environment.
 #'
 #' @param lauf character
+#' @param nthreads integer
 #'
 #' @return loads rds-files into global environment
 #'
