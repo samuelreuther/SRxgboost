@@ -9,8 +9,10 @@ path_output <- "temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
 if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
   path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
-} else if (dir.exists("/data/shared/CH00RHU/")) {
+} else if (dir.exists("/home/sandbox/sandbox/z-Sonstige_Analysen/")) {
   path_to_data <- "/home/sandbox/sandbox/z-Sonstige_Analysen/99_ML_Algorithm_Benchmark/"
+} else if (dir.exists("O:/Group/CC-Analytics/04_Organisatorisches/RHU/")) {
+  path_to_data <- "O:/Group/CC-Analytics/04_Organisatorisches/RHU/AnalysenInR/99 ML Algorithm Benchmark/"
 }
 assign('path_to_data', path_to_data, envir = .GlobalEnv)
 # get path and name of this file
