@@ -812,7 +812,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       rm(pred)
       #
       # Save model
-      xgboost::xgb.save(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+      xgboost::xgb.save(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/", # looses information!
                                     gsub(":", ".", as.character(start)), ".model"))
       saveRDS(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
                           gsub(":", ".", as.character(start)), ".model.rds"))
