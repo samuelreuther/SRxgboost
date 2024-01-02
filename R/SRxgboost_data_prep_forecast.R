@@ -4,6 +4,7 @@
 #'
 #' @param df data.frame
 #' @param label_encoding boolean
+#' @param nthreads integer
 #'
 #' @return assigns output into global workspace
 #'
