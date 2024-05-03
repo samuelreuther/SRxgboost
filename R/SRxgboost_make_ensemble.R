@@ -364,7 +364,6 @@ SRxgboost_make_ensemble <- function(name,
                                          MARGIN = 1, which.max)) - 1)
       rm(accuracy, cor, weights)
       #
-      # browser()
       # # Train caret ensemble models   xgbTree works best, but check overfitting!!!
       # train <- OOFforecast %>% dplyr::select(., 2:(top_rank + 1), y)
       # set.seed(12345)

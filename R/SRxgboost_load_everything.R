@@ -63,7 +63,11 @@ SRxgboost_load_everything <- function(lauf,
   #
   suppressWarnings(try(var_imp <-
                          utils::read.table(paste0(path_temp,
-                                                  "Best Model/0 Variable importance.csv"),
+                                                  "Best Model/VarImp 0.csv"),
+                                           header = TRUE, sep = ";", dec = ","), TRUE))
+  suppressWarnings(try(var_imp <-
+                         utils::read.table(paste0(path_temp,
+                                                  "Best Model/VarImpInt 0.csv"),
                                            header = TRUE, sep = ";", dec = ","), TRUE))
   #
   # generate DMatrix

@@ -51,7 +51,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
                           max_overfit = -1,
                           feat_sel = FALSE, Feat_Sel = NULL, Feat_Sel_Vars = NULL,
                           Selected_Features = FALSE) {
-  ### checks
+  ### checks ####
+  #
   # check path_output exists
   if (!exists("path_output")) cat("'path_output' is missing \n")
   # check lauf ends with ".csv"
@@ -67,7 +68,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
   #
   #
   #
-  ### Read or create output files
+  ### Read or create output files ####
   #
   # Check and maybe create output folder
   # ifelse(!dir.exists(paste0(path_output, gsub(".csv", "/", lauf))),
@@ -142,8 +143,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
   #
   #
   #
-  ### Loop on 1/kfold or eval_index to check if model parameters are promising,
-  # continue best models
+  ### Loop on 1/kfold or eval_index to check if model parameters are promising  ####
+  # continue with best models
   #
   if (feat_sel) runs <- nrow(SummaryCV) + 1
   #
@@ -160,7 +161,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     #
     #
-    ### Define modell parameters
+    #### Define modell parameters ####
+    #
     nround_test <- ifelse(test_param, min(3000, nround), nround)
     eta_test <- ifelse(test_param, 0.5, eta)
     if (i == 1 & nrow(SummaryCV) == 0) {
@@ -376,7 +378,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     #
     #
-    ### Test model parameter on fraction of data (1/kfold or eval_index)
+    #### Test model parameter on fraction of data (1/kfold or eval_index) ####
+    #
     if (exists("bst")) rm(bst)
     set.seed(12345)
     try(rm(params), TRUE)
@@ -670,7 +673,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     rm(bst, evaluation_log_); invisible(gc())
     #
     #
-    ### Run CV model
+    ### Run CV model ####
+    #
     if ((run_final_model & ((i == 1 & nrow(SummaryCV) == 0) |
                             condition_best |
                             (i == 2 & !is.null(best_params)))) |
@@ -763,7 +767,8 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     #
     #
-    # Run final model if (i = 1) or condition_best = TRUE and run_final_model
+    ### Run final model ####
+    # if (i = 1) or condition_best = TRUE and run_final_model
     if ((run_final_model & ((i == 1 & nrow(SummaryCV) == 0) |
                             condition_best |
                             (i == 2 & !is.null(best_params)))) |
@@ -823,7 +828,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     #
     #
-    ### Results
+    ### Results ####
     #
     # Save results as SummaryCV
     temp[11] <- round(as.numeric(difftime(Sys.time(), start, units = "mins")), 3)
@@ -868,7 +873,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     #
     #
     #
-    ### Plot output
+    ### Plot output ####
     #
     # calculate benchmark
     benchmark <- NA

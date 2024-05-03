@@ -39,7 +39,7 @@ SRxgboost_select_variables <- function(lauf_all_variables,
   # load importance_matrix from provided lauf_all_variables
   importance_matrix <-
     utils::read.table(paste0(path_output, gsub(".csv", "/", lauf_all_variables),
-                             "Best Model/0 Variable importance.csv"),
+                             "Best Model/VarImp 0.csv"),
                       header = TRUE, sep = ";", dec = ",")
   # check
   if (sum(grepl("random", importance_matrix$Feature)) == 0) {

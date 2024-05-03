@@ -66,7 +66,11 @@ test_that("regression / no_folds: files in path_output/lauf/All Models", {
 test_that("regression / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
+                 nrow() * 2 +
+                 utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                         "/Best Model/VarImpInt 0.csv")) %>%
                  dplyr::filter(Gain >= 0.01) %>%
                  nrow() * 2 + 14)
 })
@@ -139,7 +143,11 @@ test_that("regression / eval_index: files in path_output/lauf/All Models", {
 test_that("regression / eval_index: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
+                 nrow() * 2 +
+                 utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                         "/Best Model/VarImpInt 0.csv")) %>%
                  dplyr::filter(Gain >= 0.01) %>%
                  nrow() * 2 + 12)
 })
@@ -206,7 +214,11 @@ test_that("regression / folds: files in path_output/lauf/All Models", {
 test_that("regression / folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
+                 nrow() * 2 +
+                 utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                         "/Best Model/VarImpInt 0.csv")) %>%
                  dplyr::filter(Gain >= 0.01) %>%
                  nrow() * 2 + 14)
 })
@@ -416,9 +428,13 @@ test_that("classification / no_folds: files in path_output/lauf/All Models", {
 test_that("classification / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 20)
+                 nrow() * 2 +
+                 utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                         "/Best Model/VarImpInt 0.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
+                 nrow() * 2 + 2)
 })
 # test_that("classification / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
@@ -486,9 +502,13 @@ test_that("classification / eval_index: files in path_output/lauf/All Models", {
 test_that("classification / eval_index: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 18)
+                 nrow() * 2 +
+                 utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                         "/Best Model/VarImpInt 0.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
+                 nrow() * 2 - 12)
 })
 # test_that("classification / eval_index: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
@@ -553,9 +573,13 @@ test_that("classification / folds: files in path_output/lauf/All Models", {
 test_that("classification / folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 20)
+                 nrow() * 2 +
+                 utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                         "/Best Model/VarImpInt 0.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
+                 nrow() * 2 + 0)
 })
 # test_that("classification / folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
@@ -622,9 +646,13 @@ test_that("classification / eval_index: files in path_output/lauf/All Models", {
 test_that("classification / eval_index: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 20)
+                 nrow() * 2 +
+                 utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
+                                         "/Best Model/VarImpInt 0.csv")) %>%
+                 dplyr::filter(Gain >= 0.01) %>%
+                 nrow() * 2 - 4)
 })
 # test_that("classification / eval_index: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
@@ -774,9 +802,9 @@ test_that("multilabel classification / no_folds: files in path_output/lauf/All M
 test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 16)
+                 nrow() * 2 + 18)
 })
 # test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
@@ -804,7 +832,7 @@ test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 37)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
 })
 #
 #
@@ -831,7 +859,8 @@ SRxgboost_data_prep(yname = "type",
                     objective = "multilabel",
                     weights = weights)
 # run models
-SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "weighted_precision", runs = 2,
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob",
+              metric = "weighted_precision", runs = 2,
               nfold = 5)
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
@@ -850,9 +879,9 @@ test_that("multilabel classification wprec / no_folds: files in path_output/lauf
 test_that("multilabel classification wprec / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 16)
+                 nrow() * 2 + 18)
 })
 # test_that("multilabel classification wprec / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
@@ -880,7 +909,7 @@ test_that("multilabel classification wprec / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification wprec / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 38)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 37)
 })
 #
 #
@@ -923,9 +952,9 @@ test_that("multilabel classification / no_folds: files in path_output/lauf/All M
 test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))),
                utils::read.csv2(paste0(path_output, gsub(".csv", "", lauf),
-                                       "/Best Model/0 Variable importance.csv")) %>%
+                                       "/Best Model/VarImp 0.csv")) %>%
                  dplyr::filter(Gain >= 0.05) %>%
-                 nrow() * 2 + 16)
+                 nrow() * 2 + 18)
 })
 # test_that("multilabel classification / no_folds: files in path_output/lauf/Best Model", {
 #   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 30)
@@ -953,7 +982,7 @@ test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 38)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
 })
 #
 #

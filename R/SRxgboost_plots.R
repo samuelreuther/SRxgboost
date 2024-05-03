@@ -22,6 +22,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                             sample = 100000, pdp_sample = 20000, pdp_cuts = 50,
                             pdp_parallel = FALSE, n_core = "max",
                             silent = FALSE) {
+  ### Initialisation ####
+  #
   # check lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
@@ -114,7 +116,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
   #
   #
   #
-  ### get OOFforecast and TESTforecast
+  ### get OOFforecast and TESTforecast ####
   #
   SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf, top_rank = 1, ensemble = FALSE)
   if (length(y) == nrow(OOFforecast)) {
@@ -163,7 +165,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
   #
   #
   #
-  ### generate graphics
+  ### generate graphics ####
+  #
   if (plots) {
     ### downsample train_pr_oof if nrow > sample
     # quite different results, e.g. optimal cutoff value! error at XGBFI_PDP1!
@@ -216,7 +219,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #
-    ### Plot y vs. model prediction
+    #### Plot y vs. model prediction ####
     #
     if (objective == "regression") {   # SRfunctions::SR_is_number(y) & length(unique(y)) > 2
       # avoid negative values if min(y) >= 0
@@ -584,7 +587,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #
-    ### Residual drift
+    #### Residual drift ####
     #
     if (exists("test_pr")) {
       train_temp <- train_pr_oof %>%
@@ -600,7 +603,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #
-    ### Lift Chart
+    #### Lift Chart ####
     #
     if (objective %in% c("regression", "classification")) {
       train_pr_oof$group <- cut(train_pr_oof$pr,
@@ -678,9 +681,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #
-    ### 1way graphics
+    #### 1way graphics ####
     #
-    # variable importance
+    ##### variable importance ####
     importance_matrix <- xgboost::xgb.importance(feature_names = colnames(train_mat),
                                                  model = bst)
     importance_matrix <- importance_matrix %>%
@@ -696,26 +699,27 @@ SRxgboost_plots <- function(lauf, rank = 1,
       ggplot2::ggplot(ggplot2::aes(y = value, x = Feature)) +
       ggplot2::geom_bar(stat = "identity") +
       ggplot2::labs(x = "Variable", y = "") +
-      ggplot2::scale_y_continuous(labels = scales::percent, breaks = scales::pretty_breaks(5)) +
+      ggplot2::scale_y_continuous(labels = scales::percent,
+                                  breaks = scales::pretty_breaks(5)) +
       ggplot2::facet_grid(~variable, scales = "free") +
       ggplot2::coord_flip()
     ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Best Model/0 Variable importance.png"),
+                           "Best Model/VarImp 0.png"),
                     width = 9.92, height = 5.3)  # 4.67
     # save table
     assign('importance_matrix', importance_matrix, envir = .GlobalEnv)
     utils::write.table(importance_matrix,
                        paste0(path_output, gsub(".csv", "/", lauf),
-                              "Best Model/0 Variable importance.csv"),
+                              "Best Model/VarImp 0.csv"),
                        row.names = FALSE, col.names = TRUE, append = FALSE,
                        sep = ";", dec = ",")
     #
-    # Partial Dependence Plots
+    ##### Partial Dependence Plots ####
     temp <- importance_matrix %>%
       dplyr::filter(Gain >= min_rel_Gain) %>%
       dplyr::mutate(Feature = as.character(Feature))
     #
-    if (nrow(temp) > 1) {
+    if (nrow(temp) >= 1) {
       # run dpd::partial in parallel
       if (nrow(datenModell_eval) > 1000 & pdp_parallel) {
         if (n_core == "max") n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
@@ -735,6 +739,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
             datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_sample)
             set.seed(12345)
             y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_sample)
+            set.seed(Sys.time())
             test_eval_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_eval_)
             pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat_))
           } else {
@@ -939,14 +944,15 @@ SRxgboost_plots <- function(lauf, rank = 1,
           }
           # save graphic
           xlabel <- gsub("[[:punct:]]", "", xlabel)
-          try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/", i,
-                                     " ", gsub("LabelEnc", "", xlabel), ".png"),
+          try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                     "Best Model/VarImp ", i, " ",
+                                     gsub("LabelEnc", "", xlabel), ".png"),
                               plot = p, width = 9.92, height = 5.3))  # 4.67
           try(rm(p), TRUE)
           # save summary table
           utils::write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
-                                           "Best Model/", i, " ", gsub("LabelEnc", "",
-                                                                       xlabel), ".csv"),
+                                           "Best Model/VarImp ", i, " ",
+                                           gsub("LabelEnc", "", xlabel), ".csv"),
                              row.names = FALSE, sep = ";")
         })
       }
@@ -958,5 +964,146 @@ SRxgboost_plots <- function(lauf, rank = 1,
         rm(cl, n_core); invisible(gc())
       }
     }
-  }
+    #
+    #
+    #### 2way graphics ####
+    #
+    #####  variable importance ####
+    #
+    # downsample datenModell (because EIX::interactions is very slow)
+    pdp_sample_ <- 1000
+    if (nrow(datenModell) > pdp_sample_) {
+      set.seed(12345)
+      datenModell_ <- datenModell %>% dplyr::sample_n(pdp_sample_)
+      train_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_)
+      set.seed(Sys.time())
+    } else {
+      datenModell_ <- datenModell
+      train_mat_ <- train_mat
+    }
+    # downsample datenModell_eval (because pdp::partial is very slow)
+    pdp_sample_ <- 1000
+    if (nrow(datenModell_eval) > pdp_sample_) {
+      set.seed(12345)
+      datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_sample_)
+      set.seed(12345)
+      y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_sample_)
+      set.seed(Sys.time())
+      test_eval_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_eval_)
+      pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat_))
+    } else {
+      datenModell_eval_ <- datenModell_eval
+      y_ <- data.frame(y = y_test_eval)
+      test_eval_mat_ <- test_eval_mat
+      pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
+    }
+    #
+    # calculate most important interaction pairs Parent/Child
+    interactions <- EIX::interactions(bst, train_mat_, option = "pairs")
+    # interactions <- EIX::interactions(bst, train_mat_, option = "interactions")
+    # plot(interactions)
+    #
+    # clean up stats
+    interactions_clean <- data.frame(interactions) %>%
+      dplyr::left_join(importance_matrix %>%
+                         dplyr::mutate(Parent_Rang = 1:nrow(.)) %>%
+                         dplyr::select(Feature, Parent_Rang),
+                       by = c("Parent" = "Feature")) %>%
+      dplyr::left_join(importance_matrix %>%
+                         dplyr::mutate(Child_Rang = 1:nrow(.)) %>%
+                         dplyr::select(Feature, Child_Rang),
+                       by = c("Child" = "Feature")) %>%
+      dplyr::mutate(Parent_clean = ifelse(Parent_Rang < Child_Rang, Parent, Child),
+                    Child_clean = ifelse(Parent_Rang > Child_Rang, Parent, Child),
+                    Parent = Parent_clean,
+                    Child = Child_clean) %>%
+      dplyr::select(-Parent_clean, -Parent_Rang, -Child_clean, -Child_Rang) %>%
+      dplyr::group_by(Parent, Child) %>%
+      dplyr::summarise(sumGain = sum(sumGain),
+                       frequency = sum(frequency),
+                       .groups = "drop") %>%
+      dplyr::arrange(-sumGain) %>%
+      dplyr::mutate(Gain = sumGain / sum(sumGain),
+                    Frequency = frequency / sum(frequency),
+                    Feature = paste0(Parent, " - ", Child))
+    utils::write.table(interactions_clean,
+                       paste0(path_output, gsub(".csv", "/", lauf),
+                              "Best Model/VarImpInt 0.csv"),
+                       row.names = FALSE, col.names = TRUE, append = FALSE,
+                       sep = ";", dec = ",")
+    #
+    # importance <- EIX::importance(bst, train_mat_, option = "interactions")
+    # importance <- EIX::importance(bst, train_mat_, option = "both")
+    # plot(importance, top = 5)
+    # plot(importance, top = 5, radar = FALSE)
+    # head(importance)
+    #
+    # plot
+    interactions_clean %>%
+      dplyr::slice(1:(min(nrow(interactions_clean), 30))) %>%
+      dplyr::select(Feature, Gain, Frequency) %>%
+      reshape2::melt(id.vars = "Feature") %>%
+      ggplot2::ggplot(ggplot2::aes(x = reorder(Feature, value), y = value)) +
+      ggplot2::geom_bar(stat = "identity") +
+      ggplot2::labs(x = "Variable", y = "") +
+      ggplot2::scale_y_continuous(labels = scales::percent,
+                                  breaks = scales::pretty_breaks(5)) +
+      ggplot2::facet_grid(~variable, scales = "free") +
+      ggplot2::coord_flip()
+    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                           "Best Model/VarImpInt 0.png"),
+                    width = 9.92, height = 5.3)  # 4.67
+    #
+    ##### Partial Dependence Plots ####
+    #
+    # also plots possible for class predictions in "multilabel"                 # TODO
+    # https://journal.r-project.org/archive/2017/RJ-2017-016/RJ-2017-016.pdf
+    if (objective %in% c("regression", "classification")) {
+      temp <- interactions_clean %>%
+        dplyr::filter(Gain >= min_rel_Gain,
+                      Parent != Child)
+      #
+      if (nrow(temp) >= 1) {
+        for (i in seq_along(temp$Feature)) {   # i <- 1
+          # print progress
+          print(paste0("Plot ", i, " of ", nrow(temp), ": ", temp$Feature[i]))
+          #
+          try({
+            # calculate stats
+            partial <- pdp::partial(bst_1fold,
+                                    pred.var = c(temp$Parent[i], temp$Child[i]),
+                                    # pred.grid = data.frame(stats$x_orig) %>%
+                                    #   stats::setNames(xlabel),
+                                    # grid.resolution = 30,
+                                    train = test_eval_mat_,
+                                    # train = datenModell_eval_,
+                                    # type = objective,
+                                    type = "regression",
+                                    # type = "classification", prob = TRUE,   # error "classification" !!!
+                                    plot = FALSE)
+            #
+            # save graphic
+            p <- ggplot2::autoplot(partial) +
+              ggplot2::labs(title = "Partial Dependence Plot")
+            ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                   "Best Model/VarImpInt ", i, " ",
+                                   gsub("LabelEnc", "", temp$Feature[i]), ".png"),
+                            plot = p, width = 9.92, height = 5.3)  # 4.67
+            rm(p)
+
+            #
+            p <- pdp::plotPartial(partial, zlab = "y",
+                                  levelplot = FALSE, drape = TRUE)
+            ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                   "Best Model/VarImpInt ", i, " ",
+                                   gsub("LabelEnc", "", temp$Feature[i]), " 3D.png"),
+                            plot = gridExtra::arrangeGrob(p),
+                            width = 9.92, height = 5.3)  # 4.67
+            rm(p)
+            rm(partial)
+          })
+        }
+      }
+    }
+  }   # end of 'plots'
 }
