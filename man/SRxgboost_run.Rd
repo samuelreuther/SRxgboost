@@ -15,10 +15,10 @@ SRxgboost_run(
   early_stopping_rounds = 30,
   scale_pos_weight = 1,
   trees = 1,
-  nthreads = NULL,
   tree_method = "auto",
   verbose = 0,
   test_param = FALSE,
+  nthreads = NULL,
   shap = TRUE,
   continue_threshold = 0.1,
   run_final_model = TRUE,
@@ -58,6 +58,8 @@ typical value: sum(y == 0) / sum(y == 1)}
 \item{verbose}{integer 0 to 3}
 
 \item{test_param}{boolean}
+
+\item{nthreads}{integer}
 
 \item{shap}{boolean}
 

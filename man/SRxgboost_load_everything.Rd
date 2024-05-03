@@ -8,6 +8,8 @@ SRxgboost_load_everything(lauf, nthreads = NULL)
 }
 \arguments{
 \item{lauf}{character}
+
+\item{nthreads}{integer}
 }
 \value{
 loads rds-files into global environment

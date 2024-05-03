@@ -32,6 +32,8 @@ SRxgboost_data_prep(
 
 \item{eval_index}{vector}
 
+\item{nthreads}{integer}
+
 \item{objective}{character: one of "regression", "classification", "multilabel"}
 
 \item{weights}{table of weights (multilabel classification with "weighted_precision" only)}

@@ -10,6 +10,8 @@ SRxgboost_data_prep_forecast(df, label_encoding = TRUE, nthreads = NULL)
 \item{df}{data.frame}
 
 \item{label_encoding}{boolean}
+
+\item{nthreads}{integer}
 }
 \value{
 assigns output into global workspace
