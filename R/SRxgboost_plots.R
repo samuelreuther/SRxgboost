@@ -3,25 +3,27 @@
 #' Plots model results for a selected model.
 #'
 #' @param lauf character
-#' @param rank integer
-#' @param plots boolean
-#' @param min_rel_Gain numeric
-#' @param sample integer
-#' @param pdp_sample integer
-#' @param pdp_cuts integer
-#' @param pdp_parallel boolean
-#' @param n_core character
-#' @param silent boolean
+#' @param rank integer, default = 1
+#' @param plots boolean, default = TRUE
+#' @param sample integer, default =
+#' @param silent boolean, default = FALSE
+#' @param pdp_plots boolean, default = TRUE
+#' @param pdp_min_rel_Gain numeric, default =  0.01
+#' @param pdp_sample integer, default = 20000
+#' @param pdp_cuts integer, default = NULL, depending on number of data points
+#' @param pdp_sample_int integer, default = 1000
+#' @param pdp_parallel boolean, default =  = FALSE
 #'
 #' @return several files in folder
 #'
 #' @export
 SRxgboost_plots <- function(lauf, rank = 1,
-                            plots = TRUE,
-                            min_rel_Gain = 0.01,
-                            sample = 100000, pdp_sample = 20000, pdp_cuts = 50,
-                            pdp_parallel = FALSE, n_core = "max",
-                            silent = FALSE) {
+                            plots = TRUE, sample = 100000,
+                            silent = FALSE,
+                            pdp_plots = TRUE, pdp_min_rel_Gain = 0.01,
+                            pdp_sample = 20000, pdp_cuts = NULL,
+                            pdp_sample_int = 1000,
+                            pdp_parallel = FALSE) {
   ### Initialisation ####
   #
   # check lauf ends with ".csv"
@@ -249,7 +251,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           format(., nsmall = 3),
                                         "\nR2:          ",
                                         round(stats::cor(train_pr_oof$y,
-                                                          train_pr_oof$pr)^2, 3) %>%
+                                                         train_pr_oof$pr)^2, 3) %>%
                                           format(., nsmall = 3))) # ,
       # "\nAUC:       ", round(pROC::auc(train_pr_oof$y,
       #                                  train_pr_oof$pr), 3)))
@@ -560,8 +562,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                         x = "Rate of false positives", y = "Rate of true positives",
                         subtitle = paste0("AUC:                  ",
                                           round(ifelse(exists("ROC_prob"),
-                                                              as.numeric(ROC_prob$auc),
-                                                              as.numeric(ROC$auc)), 3) %>%
+                                                       as.numeric(ROC_prob$auc),
+                                                       as.numeric(ROC$auc)), 3) %>%
                                             format(., nsmall = 3),
                                           # "\nMCC:                  ",
                                           # paste0(round(mcc$mcc, 3),
@@ -715,255 +717,262 @@ SRxgboost_plots <- function(lauf, rank = 1,
                        sep = ";", dec = ",")
     #
     ##### Partial Dependence Plots ####
-    temp <- importance_matrix %>%
-      dplyr::filter(Gain >= min_rel_Gain) %>%
-      dplyr::mutate(Feature = as.character(Feature))
     #
-    if (nrow(temp) >= 1) {
-      # run dpd::partial in parallel
-      if (nrow(datenModell_eval) > 1000 & pdp_parallel) {
-        if (n_core == "max") n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
-        cl <- parallel::makeCluster(n_core)
-        doParallel::registerDoParallel(cl)
-        # parallel::clusterEvalQ(cl, library(stats)) # ?
-      }
+    if (pdp_plots) {
+      temp <- importance_matrix %>%
+        dplyr::filter(Gain >= pdp_min_rel_Gain) %>%
+        dplyr::mutate(Feature = as.character(Feature))
       #
-      for (i in 1:nrow(temp)) {
-        try({
-          # print progress
-          print(paste0("Plot ", i, " of ", nrow(temp), ": ", temp[i, 1]))
-          #
-          # downsample datenModell if nrow > pdp_sample
-          if (nrow(datenModell_eval) > pdp_sample) {
-            set.seed(12345)
-            datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_sample)
-            set.seed(12345)
-            y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_sample)
-            set.seed(Sys.time())
-            test_eval_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_eval_)
-            pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat_))
-          } else {
-            datenModell_eval_ <- datenModell_eval
-            y_ <- data.frame(y = y_test_eval)
-            test_eval_mat_ <- test_eval_mat
-            pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
-          }
-          #
-          # if (y_multiclass == FALSE) {   # linear, binary
-          x <- min(stringdist::stringdist(temp$Feature[i], names(datenModell_eval_)))
-          #
-          if (x > 0) {       # x is factor
-            x <- names(datenModell_eval_)[which.min(stringdist::stringdist(
-              temp$Feature[i], names(datenModell_eval_), method = "lcs"))]
-            xlabel <- x
-            xlabel2 <- gsub(x, "", temp$Feature[i])
-            stats <- data.frame(x = datenModell_eval_[, xlabel] == xlabel2,
-                                Actual = y_$y, Predicted = pr_$pr) %>%
-              dplyr::group_by(x) %>%
-              dplyr::summarise(Count = dplyr::n(),
-                               Predicted = mean(Predicted),
-                               Actual = mean(Actual))
-            stats <- stats %>%
-              dplyr::left_join(partial,
-                               by = c("x_orig" = xlabel)) %>%
-              dplyr::rename("Partial_Dependence" = "yhat")
-            stats_long <- reshape2::melt(stats[, c(3, 5:7)], id.vars = "x_orig")
-            xlabel <- paste0(x, " = ", xlabel2)
-            p1 <- ggplot2::ggplot(stats_long,
-                                  ggplot2::aes(x = x, y = value, colour = variable)) +
-              ggplot2::geom_point(size = 2) +
-              ggplot2::labs(x = xlabel, y = "Value") +
-              ggplot2::theme(legend.position = "top",
-                             legend.title = ggplot2::element_blank()); p1
-            p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
-              ggplot2::geom_bar(stat = "identity", position = "dodge") +
-              ggplot2::labs(x = xlabel); p2
-            p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
-          } else {
-            # x is numeric, integer or Date
-            xlabel <- temp$Feature[i]
-            # check if x = as.numeric(date)
-            if (sum(is.na(as.Date(as.character(datenModell_eval_[, xlabel]),
-                                  format = "%Y%m%d"))) == 0) {
-              xx <- as.Date(as.character(datenModell_eval_[, xlabel]), format = "%Y%m%d")
+      if (nrow(temp) >= 1) {
+        # run dpd::partial in parallel
+        if (nrow(datenModell_eval) > 1000 & pdp_parallel) {
+          pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
+          cl <- parallel::makeCluster(pdp_n_core)
+          doParallel::registerDoParallel(cl)
+          # parallel::clusterEvalQ(cl, library(stats)) # ?
+        }
+        #
+        for (i in 1:nrow(temp)) {
+          try({
+            # print progress
+            print(paste0("Plot ", i, " of ", nrow(temp), ": ", temp[i, 1]))
+            #
+            # downsample datenModell if nrow > pdp_sample
+            if (nrow(datenModell_eval) > pdp_sample) {
+              set.seed(12345)
+              datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_sample)
+              set.seed(12345)
+              y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_sample)
+              set.seed(Sys.time())
+              test_eval_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_eval_)
+              pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat_))
             } else {
-              xx <- datenModell_eval_[, xlabel]
+              datenModell_eval_ <- datenModell_eval
+              y_ <- data.frame(y = y_test_eval)
+              test_eval_mat_ <- test_eval_mat
+              pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
             }
-            # check if x = as.numeric(factor), set number of cuts
-            if (gsub("_LabelEnc", "", temp$Feature[i]) %in% factor_encoding$feature) {
-              xx <- factor(xx)
-              levels(xx) <- factor_encoding$levels[factor_encoding$feature ==
-                                                     gsub("_LabelEnc", "", temp$Feature[i])]
-              # cuts <- length(unique(xx))
-              # summarise results
-              stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
+            #
+            # if (y_multiclass == FALSE) {   # linear, binary
+            x <- min(stringdist::stringdist(temp$Feature[i], names(datenModell_eval_)))
+            #
+            if (x > 0) {       # x is factor
+              x <- names(datenModell_eval_)[which.min(stringdist::stringdist(
+                temp$Feature[i], names(datenModell_eval_), method = "lcs"))]
+              xlabel <- x
+              xlabel2 <- gsub(x, "", temp$Feature[i])
+              stats <- data.frame(x = datenModell_eval_[, xlabel] == xlabel2,
                                   Actual = y_$y, Predicted = pr_$pr) %>%
-                dplyr::mutate(Group = xx) %>%
-                dplyr::group_by(Group) %>%
-                dplyr::summarise(x = x[1],
-                                 x_orig = mean(x_orig),
-                                 Count = dplyr::n(),
+                dplyr::group_by(x) %>%
+                dplyr::summarise(Count = dplyr::n(),
                                  Predicted = mean(Predicted),
                                  Actual = mean(Actual))
+              stats <- stats %>%
+                dplyr::left_join(partial,
+                                 by = c("x_orig" = xlabel)) %>%
+                dplyr::rename("Partial_Dependence" = "yhat")
+              stats_long <- reshape2::melt(stats[, c(3, 5:7)], id.vars = "x_orig")
+              xlabel <- paste0(x, " = ", xlabel2)
+              p1 <- ggplot2::ggplot(stats_long,
+                                    ggplot2::aes(x = x, y = value, colour = variable)) +
+                ggplot2::geom_point(size = 2) +
+                ggplot2::labs(x = xlabel, y = "Value") +
+                ggplot2::theme(legend.position = "top",
+                               legend.title = ggplot2::element_blank()); p1
+              p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
+                ggplot2::geom_bar(stat = "identity", position = "dodge") +
+                ggplot2::labs(x = xlabel); p2
+              p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
             } else {
-              # summarise results
-              stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
-                                  Actual = y_$y, Predicted = pr_$pr) %>%
-                dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
-                                          include.lowest = TRUE, dig.lab = 10)) %>%
-                # dplyr::mutate(Group = cut(x_orig, breaks = unique(quantile(x_orig, seq(0, 1.01, 0.02))),
-                #                    include.lowest = TRUE, dig.lab = 10)) %>%
-                dplyr::group_by(Group) %>%
-                dplyr::summarise(x = mean(x),
-                                 x_orig = mean(x_orig),
-                                 Count = dplyr::n(),
-                                 Predicted = mean(Predicted),
-                                 Actual = mean(Actual))
-            }
-            #
-            ## partial dependence
-            #
-            if (pdp_parallel) {
-              # in parallel
-              partial <- pdp::partial(bst_1fold,
-                                      pred.var = temp$Feature[i],
-                                      pred.grid = data.frame(stats$x_orig) %>%
-                                        stats::setNames(xlabel),
-                                      # grid.resolution = 30,
-                                      train = test_eval_mat_,
-                                      plot = FALSE, chull = TRUE, type = "regression",
-                                      # type = ifelse(objective == "multilabel",
-                                      #               "classification", objective))
-                                      parallel = TRUE, paropts = list(.packages = "xgboost"))
-            } else {
-              # single core
-              partial <- pdp::partial(bst_1fold,
-                                      pred.var = temp$Feature[i],
-                                      pred.grid = data.frame(stats$x_orig) %>%
-                                        stats::setNames(xlabel),
-                                      # grid.resolution = 30,
-                                      train = test_eval_mat_,
-                                      plot = FALSE, chull = TRUE, type = "regression")
-                                      # type = ifelse(objective == "multilabel",
-                                      #               "classification", objective))
-            }
-            #
-            stats <- stats %>%
-              dplyr::left_join(partial, by = c("x_orig" = xlabel)) %>%
-              dplyr::rename("Partial_Dependence" = "yhat")
-            #
-            # evtl. noch skalieren !!!
-            #
-            stats_long <- reshape2::melt(stats %>% dplyr::select(x, 5:7), id.vars = "x")
-            #
-            p1 <- ggplot2::ggplot(stats_long,
-                                  ggplot2::aes(x = x, y = value, colour = variable)) +
-              ggplot2::geom_point(size = 2) +
-              ggplot2::labs(x = "", y = "Value") +
-              # ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
-              ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
-              ggplot2::theme(legend.position = "top",
-                             legend.title = ggplot2::element_blank())
-            if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-              # if (cuts > 8) {                                              # factor
-              #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
-              # }
-            } else if (SRfunctions::SR_is_date(stats_long$x)) {                            # date
-              spanne = as.numeric(difftime(max(stats_long$x), min(stats_long$x),
-                                           units = "days"))
-              if (spanne > 365.25 * 20) {
-                p1 <- p1 +
-                  ggplot2::scale_x_date(date_breaks = "10 years",
-                                        date_labels = "%Y",
-                                        date_minor_breaks = "1 year")
-              } else if (spanne > 365.25 * 3) {
-                p1 <- p1 +
-                  ggplot2::scale_x_date(date_breaks = "year",
-                                        date_labels = "%Y",
-                                        date_minor_breaks = "3 months")
-              } else if (spanne > 365.25) {
-                p1 <- p1 +
-                  ggplot2::scale_x_date(date_breaks = "3 months",
-                                        date_labels = "%Y-%m",
-                                        date_minor_breaks = "1 month")
-              } else if (spanne > 30) {
-                p1 <- p1 +
-                  ggplot2::scale_x_date(date_breaks = "1 month",
-                                        date_labels = "%Y-%m-%d",
-                                        date_minor_breaks = "1 week")
+              # x is numeric, integer or Date
+              xlabel <- temp$Feature[i]
+              # check if x = as.numeric(date)
+              if (sum(is.na(as.Date(as.character(datenModell_eval_[, xlabel]),
+                                    format = "%Y%m%d"))) == 0) {
+                xx <- as.Date(as.character(datenModell_eval_[, xlabel]), format = "%Y%m%d")
+              } else {
+                xx <- datenModell_eval_[, xlabel]
+              }
+              # check if x = as.numeric(factor), set number of cuts
+              if (gsub("_LabelEnc", "", temp$Feature[i]) %in% factor_encoding$feature) {
+                xx <- factor(xx)
+                levels(xx) <- factor_encoding$levels[factor_encoding$feature ==
+                                                       gsub("_LabelEnc", "", temp$Feature[i])]
+                # cuts <- length(unique(xx))
+                # summarise results
+                stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
+                                    Actual = y_$y, Predicted = pr_$pr) %>%
+                  dplyr::mutate(Group = xx) %>%
+                  dplyr::group_by(Group) %>%
+                  dplyr::summarise(x = x[1],
+                                   x_orig = mean(x_orig),
+                                   Count = dplyr::n(),
+                                   Predicted = mean(Predicted),
+                                   Actual = mean(Actual))
+              } else {
+                # summarise results
+                if (is.null(pdp_cuts)) pdp_cuts <- min(round(length(xx) / 20), 50)
+                stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
+                                    Actual = y_$y, Predicted = pr_$pr) %>%
+                  dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
+                                            include.lowest = TRUE, dig.lab = 10)) %>%
+                  # dplyr::mutate(Group = cut(x_orig, breaks = unique(quantile(x_orig, seq(0, 1.01, 0.02))),
+                  #                    include.lowest = TRUE, dig.lab = 10)) %>%
+                  dplyr::group_by(Group) %>%
+                  dplyr::summarise(x = mean(x),
+                                   x_orig = mean(x_orig),
+                                   Count = dplyr::n(),
+                                   Predicted = mean(Predicted),
+                                   Actual = mean(Actual))
+              }
+              #
+              ## partial dependence
+              #
+              if (pdp_parallel) {
+                # in parallel
+                partial <- pdp::partial(bst_1fold,
+                                        pred.var = temp$Feature[i],
+                                        pred.grid = data.frame(stats$x_orig) %>%
+                                          stats::setNames(xlabel),
+                                        # grid.resolution = 30,
+                                        train = test_eval_mat_,
+                                        plot = FALSE, chull = TRUE, type = "regression",
+                                        # type = ifelse(objective == "multilabel",
+                                        #               "classification", objective))
+                                        parallel = TRUE,
+                                        paropts = list(.packages = "xgboost"))
+              } else {
+                # single core
+                partial <- pdp::partial(bst_1fold,
+                                        pred.var = temp$Feature[i],
+                                        pred.grid = data.frame(stats$x_orig) %>%
+                                          stats::setNames(xlabel),
+                                        # grid.resolution = 30,
+                                        train = test_eval_mat_,
+                                        plot = FALSE, chull = TRUE, type = "regression")
+                # type = ifelse(objective == "multilabel",
+                #               "classification", objective))
+              }
+              #
+              stats <- stats %>%
+                dplyr::left_join(partial, by = c("x_orig" = xlabel)) %>%
+                dplyr::rename("Partial_Dependence" = "yhat")
+              #
+              # evtl. noch skalieren !!!
+              #
+              stats_long <- reshape2::melt(stats %>% dplyr::select(x, 5:7), id.vars = "x")
+              #
+              p1 <- ggplot2::ggplot(stats_long,
+                                    ggplot2::aes(x = x, y = value, colour = variable)) +
+                ggplot2::geom_point(size = 2) +
+                ggplot2::labs(x = "", y = "Value") +
+                # ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
+                ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+                ggplot2::theme(legend.position = "top",
+                               legend.title = ggplot2::element_blank())
+              if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
+                # if (cuts > 8) {                                              # factor
+                #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
+                #                                               hjust = 1, vjust = 0.3))
+                # }
+              } else if (SRfunctions::SR_is_date(stats_long$x)) {                            # date
+                spanne = as.numeric(difftime(max(stats_long$x), min(stats_long$x),
+                                             units = "days"))
+                if (spanne > 365.25 * 20) {
+                  p1 <- p1 +
+                    ggplot2::scale_x_date(date_breaks = "10 years",
+                                          date_labels = "%Y",
+                                          date_minor_breaks = "1 year")
+                } else if (spanne > 365.25 * 3) {
+                  p1 <- p1 +
+                    ggplot2::scale_x_date(date_breaks = "year",
+                                          date_labels = "%Y",
+                                          date_minor_breaks = "3 months")
+                } else if (spanne > 365.25) {
+                  p1 <- p1 +
+                    ggplot2::scale_x_date(date_breaks = "3 months",
+                                          date_labels = "%Y-%m",
+                                          date_minor_breaks = "1 month")
+                } else if (spanne > 30) {
+                  p1 <- p1 +
+                    ggplot2::scale_x_date(date_breaks = "1 month",
+                                          date_labels = "%Y-%m-%d",
+                                          date_minor_breaks = "1 week")
+                } else {
+                  p1 <- p1 +
+                    ggplot2::scale_x_date(date_breaks = "1 week",
+                                          date_labels = "%Y-%m-%d",
+                                          date_minor_breaks = "1 day")
+                }
               } else {
                 p1 <- p1 +
-                  ggplot2::scale_x_date(date_breaks = "1 week",
-                                        date_labels = "%Y-%m-%d",
-                                        date_minor_breaks = "1 day")
-              }
-            } else {
-              p1 <- p1 +
-                ggplot2::geom_line(linewidth = I(1)) +                          # numeric
-                ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
-            }; p1
-            p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
-              ggplot2::geom_bar(stat = "identity", position = "dodge", orientation = "x") +
-              ggplot2::labs(x = gsub("_LabelEnc", "", xlabel))
-            if ((gsub("_LabelEnc", "", temp$Feature[i]) %in% factor_encoding$feature)) {
-              # if (cuts > 8) {                                              # factor
-              #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
-              # }
-            } else if (SRfunctions::SR_is_date(stats_long$x)) {                             # date
-              if (spanne > 365.25 * 20) {
-                p2 <- p2 +
-                  ggplot2::scale_x_date(date_breaks = "10 years",
-                                        date_labels = "%Y",
-                                        date_minor_breaks = "1 year")
-              } else if (spanne > 365.25 * 3) {
-                p2 <- p2 +
-                  ggplot2::scale_x_date(date_breaks = "year",
-                                        date_labels = "%Y",
-                                        date_minor_breaks = "3 months")
-              } else if (spanne > 365.25) {
-                p2 <- p2 +
-                  ggplot2::scale_x_date(date_breaks = "3 months",
-                                        date_labels = "%Y-%m",
-                                        date_minor_breaks = "1 month")
-              } else if (spanne > 30) {
-                p2 <- p2 +
-                  ggplot2::scale_x_date(date_breaks = "1 month",
-                                        date_labels = "%Y-%m-%d",
-                                        date_minor_breaks = "1 week")
+                  ggplot2::geom_line(linewidth = I(1)) +                          # numeric
+                  ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
+              }; p1
+              p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
+                ggplot2::geom_bar(stat = "identity", position = "dodge", orientation = "x") +
+                ggplot2::labs(x = gsub("_LabelEnc", "", xlabel))
+              if ((gsub("_LabelEnc", "", temp$Feature[i]) %in% factor_encoding$feature)) {
+                # if (cuts > 8) {                                              # factor
+                #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
+                #                                               hjust = 1, vjust = 0.3))
+                # }
+              } else if (SRfunctions::SR_is_date(stats_long$x)) {                             # date
+                if (spanne > 365.25 * 20) {
+                  p2 <- p2 +
+                    ggplot2::scale_x_date(date_breaks = "10 years",
+                                          date_labels = "%Y",
+                                          date_minor_breaks = "1 year")
+                } else if (spanne > 365.25 * 3) {
+                  p2 <- p2 +
+                    ggplot2::scale_x_date(date_breaks = "year",
+                                          date_labels = "%Y",
+                                          date_minor_breaks = "3 months")
+                } else if (spanne > 365.25) {
+                  p2 <- p2 +
+                    ggplot2::scale_x_date(date_breaks = "3 months",
+                                          date_labels = "%Y-%m",
+                                          date_minor_breaks = "1 month")
+                } else if (spanne > 30) {
+                  p2 <- p2 +
+                    ggplot2::scale_x_date(date_breaks = "1 month",
+                                          date_labels = "%Y-%m-%d",
+                                          date_minor_breaks = "1 week")
+                } else {
+                  p2 <- p2 +
+                    ggplot2::scale_x_date(date_breaks = "1 week",
+                                          date_labels = "%Y-%m-%d",
+                                          date_minor_breaks = "1 day")
+                }
               } else {
                 p2 <- p2 +
-                  ggplot2::scale_x_date(date_breaks = "1 week",
-                                        date_labels = "%Y-%m-%d",
-                                        date_minor_breaks = "1 day")
-              }
-            } else {
-              p2 <- p2 +
-                ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))       # numeric
-            }; p2
-            p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
-          }
-          # save graphic
-          xlabel <- gsub("[[:punct:]]", "", xlabel)
-          try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                     "Best Model/VarImp ", i, " ",
-                                     gsub("LabelEnc", "", xlabel), ".png"),
-                              plot = p, width = 9.92, height = 5.3))  # 4.67
-          try(rm(p), TRUE)
-          # save summary table
-          utils::write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
-                                           "Best Model/VarImp ", i, " ",
-                                           gsub("LabelEnc", "", xlabel), ".csv"),
-                             row.names = FALSE, sep = ";")
-        })
+                  ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))       # numeric
+              }; p2
+              p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
+            }
+            # save graphic
+            xlabel <- gsub("[[:punct:]]", "", xlabel)
+            try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                       "Best Model/VarImp ", i, " ",
+                                       gsub("LabelEnc", "", xlabel), ".png"),
+                                plot = p, width = 9.92, height = 5.3))  # 4.67
+            try(rm(p), TRUE)
+            # save summary table
+            utils::write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
+                                             "Best Model/VarImp ", i, " ",
+                                             gsub("LabelEnc", "", xlabel), ".csv"),
+                               row.names = FALSE, sep = ";")
+          })
+        }
+        #
+        # stop cluster for pdp::partial
+        if (pdp_parallel) {
+          try(parallel::stopCluster(cl), TRUE)
+          try(parallel::stopCluster(cl), TRUE)
+          rm(cl, pdp_n_core); invisible(gc())
+        }
       }
-      #
-      # stop cluster for pdp::partial
-      if (pdp_parallel) {
-        try(parallel::stopCluster(cl), TRUE)
-        try(parallel::stopCluster(cl), TRUE)
-        rm(cl, n_core); invisible(gc())
-      }
-    }
+    }   # end of 'pdp_plots'
     #
     #
     #### 2way graphics ####
@@ -971,10 +980,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #####  variable importance ####
     #
     # downsample datenModell (because EIX::interactions is very slow)
-    pdp_sample_ <- 1000
-    if (nrow(datenModell) > pdp_sample_) {
+    if (nrow(datenModell) > pdp_sample_int) {
       set.seed(12345)
-      datenModell_ <- datenModell %>% dplyr::sample_n(pdp_sample_)
+      datenModell_ <- datenModell %>% dplyr::sample_n(pdp_sample_int)
       train_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_)
       set.seed(Sys.time())
     } else {
@@ -982,12 +990,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
       train_mat_ <- train_mat
     }
     # downsample datenModell_eval (because pdp::partial is very slow)
-    pdp_sample_ <- 1000
-    if (nrow(datenModell_eval) > pdp_sample_) {
+    if (nrow(datenModell_eval) > pdp_sample_int) {
       set.seed(12345)
-      datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_sample_)
+      datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_sample_int)
       set.seed(12345)
-      y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_sample_)
+      y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_sample_int)
       set.seed(Sys.time())
       test_eval_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_eval_)
       pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat_))
@@ -1058,52 +1065,72 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     # also plots possible for class predictions in "multilabel"                 # TODO
     # https://journal.r-project.org/archive/2017/RJ-2017-016/RJ-2017-016.pdf
-    if (objective %in% c("regression", "classification")) {
-      temp <- interactions_clean %>%
-        dplyr::filter(Gain >= min_rel_Gain,
-                      Parent != Child)
-      #
-      if (nrow(temp) >= 1) {
-        for (i in seq_along(temp$Feature)) {   # i <- 1
-          # print progress
-          print(paste0("Plot ", i, " of ", nrow(temp), ": ", temp$Feature[i]))
-          #
-          try({
-            # calculate stats
-            partial <- pdp::partial(bst_1fold,
-                                    pred.var = c(temp$Parent[i], temp$Child[i]),
-                                    # pred.grid = data.frame(stats$x_orig) %>%
-                                    #   stats::setNames(xlabel),
-                                    # grid.resolution = 30,
-                                    train = test_eval_mat_,
-                                    # train = datenModell_eval_,
-                                    # type = objective,
-                                    type = "regression",
-                                    # type = "classification", prob = TRUE,   # error "classification" !!!
-                                    plot = FALSE)
+    if (pdp_plots) {
+      if (objective %in% c("regression", "classification")) {
+        temp <- interactions_clean %>%
+          dplyr::filter(Gain >= pdp_min_rel_Gain,
+                        Parent != Child)
+        # add interactions of 4 most important variables (if not existing)
+        temp <- dplyr::full_join(temp,
+                                 importance_matrix %>%
+                                   dplyr::slice(1:4) %>%
+                                   dplyr::filter(Gain >= pdp_min_rel_Gain) %>%
+                                   dplyr::mutate(Feature = as.character(Feature)) %>%
+                                   dplyr::select(Feature) %>%
+                                   dplyr::cross_join(., .) %>%
+                                   dplyr::slice(c(2:4, 7:8, 12)) %>%
+                                   stats::setNames(c("Parent", "Child")) %>%
+                                   dplyr::mutate(Feature = paste0(Parent, " - ", Child)),
+                                 by = c("Parent", "Child", "Feature"))
+        #
+        if (nrow(temp) >= 1) {
+          for (i in seq_along(temp$Feature)) {   # i <- 1
+            # print progress
+            print(paste0("Plot ", i, " of ", nrow(temp), ": ", temp$Feature[i]))
             #
-            # save graphic
-            p <- ggplot2::autoplot(partial) +
-              ggplot2::labs(title = "Partial Dependence Plot")
-            ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                   "Best Model/VarImpInt ", i, " ",
-                                   gsub("LabelEnc", "", temp$Feature[i]), ".png"),
-                            plot = p, width = 9.92, height = 5.3)  # 4.67
-            rm(p)
-
-            #
-            p <- pdp::plotPartial(partial, zlab = "y",
-                                  levelplot = FALSE, drape = TRUE)
-            ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                   "Best Model/VarImpInt ", i, " ",
-                                   gsub("LabelEnc", "", temp$Feature[i]), " 3D.png"),
-                            plot = gridExtra::arrangeGrob(p),
-                            width = 9.92, height = 5.3)  # 4.67
-            rm(p)
-            rm(partial)
-          })
+            try({
+              # calculate stats
+              partial <- pdp::partial(bst_1fold,
+                                      pred.var = c(temp$Parent[i], temp$Child[i]),
+                                      # pred.grid = data.frame(stats$x_orig) %>%
+                                      #   stats::setNames(xlabel),
+                                      # grid.resolution = 30,
+                                      train = test_eval_mat_,
+                                      # train = datenModell_eval_,
+                                      # type = objective,
+                                      type = "regression",
+                                      # type = "classification", prob = TRUE,   # error "classification" !!!
+                                      plot = FALSE)
+              #
+              # save graphic
+              p <- ggplot2::autoplot(partial) +
+                ggplot2::labs(title = "Partial Dependence Plot")
+              ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                     "Best Model/VarImpInt ", i, " ",
+                                     gsub("_LabelEnc", "", temp$Feature[i]), ".png"),
+                              plot = p, width = 9.92, height = 5.3)  # 4.67
+              rm(p)
+              #
+              p <- pdp::plotPartial(partial, zlab = "y",
+                                    levelplot = FALSE, drape = TRUE)
+              ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                     "Best Model/VarImpInt ", i, " ",
+                                     gsub("_LabelEnc", "", temp$Feature[i]), " 3D.png"),
+                              plot = gridExtra::arrangeGrob(p),
+                              width = 9.92, height = 5.3)  # 4.67
+              rm(p)
+              #
+              # save summary table
+              utils::write.table(partial,
+                                 paste0(path_output, gsub(".csv", "/", lauf),
+                                        "Best Model/VarImpInt ", i, " ",
+                                        gsub("_LabelEnc", "", temp$Feature[i]), ".csv"),
+                                 row.names = FALSE, sep = ";")
+              rm(partial)
+            })
+          }
         }
       }
-    }
+    }   # end of 'pdp_plots'
   }   # end of 'plots'
 }

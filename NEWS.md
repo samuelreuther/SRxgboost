@@ -1,5 +1,6 @@
 # SRxgboost 0.6.1
 - Added calculation and plots of interaction effects
+- Generate cleaner PDP-plots with less cuts
 
 # SRxgboost 0.6.0
 - Added support for parameter nthread in xgb.DMatrix, xgb.train, xgboost, xgb.cv

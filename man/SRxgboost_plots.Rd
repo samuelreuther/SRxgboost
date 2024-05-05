@@ -8,35 +8,38 @@ SRxgboost_plots(
   lauf,
   rank = 1,
   plots = TRUE,
-  min_rel_Gain = 0.01,
   sample = 1e+05,
+  silent = FALSE,
+  pdp_plots = TRUE,
+  pdp_min_rel_Gain = 0.01,
   pdp_sample = 20000,
-  pdp_cuts = 50,
-  pdp_parallel = FALSE,
-  n_core = "max",
-  silent = FALSE
+  pdp_cuts = NULL,
+  pdp_sample_int = 1000,
+  pdp_parallel = FALSE
 )
 }
 \arguments{
 \item{lauf}{character}
 
-\item{rank}{integer}
+\item{rank}{integer, default = 1}
 
-\item{plots}{boolean}
+\item{plots}{boolean, default = TRUE}
 
-\item{min_rel_Gain}{numeric}
+\item{sample}{integer, default =}
 
-\item{sample}{integer}
+\item{silent}{boolean, default = FALSE}
 
-\item{pdp_sample}{integer}
+\item{pdp_plots}{boolean, default = TRUE}
 
-\item{pdp_cuts}{integer}
+\item{pdp_min_rel_Gain}{numeric, default =  0.01}
 
-\item{pdp_parallel}{boolean}
+\item{pdp_sample}{integer, default = 20000}
 
-\item{n_core}{character}
+\item{pdp_cuts}{integer, default = NULL, depending on number of data points}
 
-\item{silent}{boolean}
+\item{pdp_sample_int}{integer, default = 1000}
+
+\item{pdp_parallel}{boolean, default =  = FALSE}
 }
 \value{
 several files in folder

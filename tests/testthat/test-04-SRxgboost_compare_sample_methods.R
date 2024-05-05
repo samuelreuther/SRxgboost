@@ -223,7 +223,7 @@ file.rename("output_temp/compare_sample_methods/",
 #               test_param = FALSE, run_final_model = TRUE, best_params = NULL)
 #
 # # plot results of best model
-# SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.03)
+# SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 #
 # # make ensemble
 # # debugonce("SRxgboost_make_ensemble")

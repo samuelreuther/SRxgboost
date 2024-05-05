@@ -59,7 +59,7 @@ SRxgboost_covariate_drift_XGB <- function(df1 = NULL,
                 run_final_model = TRUE, best_params = NULL)
   #
   # SRxgboost_plots results of best model
-  SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.02)
+  SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.02)
   #
   # clean up
   rm(no_folds)

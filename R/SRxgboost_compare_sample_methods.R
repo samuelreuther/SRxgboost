@@ -64,7 +64,7 @@ SRxgboost_compare_sample_methods <- function(df_train,
                     runs = runs, folds = folds_sampled, run_final_model = TRUE, max_overfit = -1)
       #
       # generate plots for best model
-      SRxgboost_plots(lauf = lauf, rank = 1, min_rel_Gain = 0.05)
+      SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
       #
       # clean up
       saveRDS(return, paste0(path_output, m, "/Data/return.rds"))
