@@ -11,7 +11,8 @@
 #' @param pdp_min_rel_Gain numeric, default =  0.01
 #' @param pdp_sample integer, default = 20000
 #' @param pdp_cuts integer, default = NULL, depending on number of data points
-#' @param pdp_sample_int integer, default = 1000
+#' @param pdp_int_sample integer, default = 1000
+#' @param pdp_int_cuts_sample integer, default = 20
 #' @param pdp_parallel boolean, default =  = FALSE
 #'
 #' @return several files in folder
@@ -22,7 +23,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                             silent = FALSE,
                             pdp_plots = TRUE, pdp_min_rel_Gain = 0.01,
                             pdp_sample = 20000, pdp_cuts = NULL,
-                            pdp_sample_int = 1000,
+                            pdp_int_sample = 1000, pdp_int_cuts_sample = 20,
                             pdp_parallel = FALSE) {
   ### Initialisation ####
   #
@@ -811,7 +812,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                    Actual = mean(Actual))
               } else {
                 # summarise results
-                if (is.null(pdp_cuts)) pdp_cuts <- min(round(length(xx) / 20), 50)
+                if (is.null(pdp_cuts)) 
+                  pdp_cuts <- min(round(length(xx) / pdp_int_cuts_sample), 50)
                 stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
@@ -980,9 +982,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #####  variable importance ####
     #
     # downsample datenModell (because EIX::interactions is very slow)
-    if (nrow(datenModell) > pdp_sample_int) {
+    if (nrow(datenModell) > pdp_int_sample) {
       set.seed(12345)
-      datenModell_ <- datenModell %>% dplyr::sample_n(pdp_sample_int)
+      datenModell_ <- datenModell %>% dplyr::sample_n(pdp_int_sample)
       train_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_)
       set.seed(Sys.time())
     } else {
@@ -990,11 +992,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
       train_mat_ <- train_mat
     }
     # downsample datenModell_eval (because pdp::partial is very slow)
-    if (nrow(datenModell_eval) > pdp_sample_int) {
+    if (nrow(datenModell_eval) > pdp_int_sample) {
       set.seed(12345)
-      datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_sample_int)
+      datenModell_eval_ <- datenModell_eval %>% dplyr::sample_n(pdp_int_sample)
       set.seed(12345)
-      y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_sample_int)
+      y_ <- data.frame(y = y_test_eval) %>% dplyr::sample_n(pdp_int_sample)
       set.seed(Sys.time())
       test_eval_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_eval_)
       pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat_))
