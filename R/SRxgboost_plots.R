@@ -952,25 +952,12 @@ SRxgboost_plots <- function(lauf, rank = 1,
               }; p2
               p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
             }
-            # save graphic
-            xlabel <- gsub("[[:punct:]]", "", xlabel)
-            try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                       "Best Model/VarImp ", i, " ",
-                                       gsub("LabelEnc", "", xlabel), ".png"),
-                                plot = p, width = 9.92, height = 5.3))  # 4.67
-            try(rm(p), TRUE)
-            # save summary table
-            utils::write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
-                                             "Best Model/VarImp ", i, " ",
-                                             gsub("LabelEnc", "", xlabel), ".csv"),
-                               row.names = FALSE, sep = ";")
-            #
-            # save simple PDP-graphic
+            # 
+            # simple PDP-graphic
             p3 <- ggplot2::ggplot(stats,
                                   ggplot2::aes(x = x, y = Partial_Dependence)) +
               ggplot2::geom_point(size = 2, colour = "steelblue") +
-              ggplot2::labs(x = "", y = "Value") +
-              # ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
+              ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
               ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6))
             if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
               # if (cuts > 8) {                                               # factor
@@ -1010,12 +997,25 @@ SRxgboost_plots <- function(lauf, rank = 1,
               p3 <- p3 +
                 ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +    # numeric
                 ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
-            }; p3
+            }
+            # 
+            # save graphic
+            xlabel <- gsub("[[:punct:]]", "", xlabel)
+            try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                       "Best Model/VarImp ", i, " ",
+                                       gsub("LabelEnc", "", xlabel), ".png"),
+                                plot = p, width = 9.92, height = 5.3))  # 4.67
+            try(rm(p), TRUE)
             try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
                                        "Best Model/VarImp ", i, " ",
                                        gsub("LabelEnc", "", xlabel), " PDP.png"),
                                 plot = p3, width = 9.92, height = 5.3))  # 4.67
             try(rm(p3), TRUE)
+            # save summary table
+            utils::write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
+                                             "Best Model/VarImp ", i, " ",
+                                             gsub("LabelEnc", "", xlabel), ".csv"),
+                               row.names = FALSE, sep = ";")
           })
         }
         #
