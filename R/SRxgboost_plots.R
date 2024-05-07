@@ -812,7 +812,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                    Actual = mean(Actual))
               } else {
                 # summarise results
-                if (is.null(pdp_cuts)) 
+                if (is.null(pdp_cuts))
                   pdp_cuts <- min(round(length(xx) / pdp_int_cuts_sample), 50)
                 stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
                                     Actual = y_$y, Predicted = pr_$pr) %>%
@@ -873,11 +873,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 ggplot2::theme(legend.position = "top",
                                legend.title = ggplot2::element_blank())
               if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-                # if (cuts > 8) {                                              # factor
+                # if (cuts > 8) {                                               # factor
                 #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
                 #                                               hjust = 1, vjust = 0.3))
                 # }
-              } else if (SRfunctions::SR_is_date(stats_long$x)) {                            # date
+              } else if (SRfunctions::SR_is_date(stats_long$x)) {               # date
                 spanne = as.numeric(difftime(max(stats_long$x), min(stats_long$x),
                                              units = "days"))
                 if (spanne > 365.25 * 20) {
@@ -908,18 +908,18 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 }
               } else {
                 p1 <- p1 +
-                  ggplot2::geom_line(linewidth = I(1)) +                          # numeric
+                  ggplot2::geom_line(linewidth = I(1)) +                        # numeric
                   ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
               }; p1
               p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
                 ggplot2::geom_bar(stat = "identity", position = "dodge", orientation = "x") +
                 ggplot2::labs(x = gsub("_LabelEnc", "", xlabel))
               if ((gsub("_LabelEnc", "", temp$Feature[i]) %in% factor_encoding$feature)) {
-                # if (cuts > 8) {                                              # factor
+                # if (cuts > 8) {                                               # factor
                 #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
                 #                                               hjust = 1, vjust = 0.3))
                 # }
-              } else if (SRfunctions::SR_is_date(stats_long$x)) {                             # date
+              } else if (SRfunctions::SR_is_date(stats_long$x)) {               # date
                 if (spanne > 365.25 * 20) {
                   p2 <- p2 +
                     ggplot2::scale_x_date(date_breaks = "10 years",
@@ -948,7 +948,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 }
               } else {
                 p2 <- p2 +
-                  ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))       # numeric
+                  ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8)) # numeric
               }; p2
               p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
             }
@@ -964,6 +964,58 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                              "Best Model/VarImp ", i, " ",
                                              gsub("LabelEnc", "", xlabel), ".csv"),
                                row.names = FALSE, sep = ";")
+            #
+            # save simple PDP-graphic
+            p3 <- ggplot2::ggplot(stats,
+                                  ggplot2::aes(x = x, y = Partial_Dependence)) +
+              ggplot2::geom_point(size = 2, colour = "steelblue") +
+              ggplot2::labs(x = "", y = "Value") +
+              # ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
+              ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6))
+            if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
+              # if (cuts > 8) {                                               # factor
+              #   p3 <- p3 + theme(axis.text.x = element_text(angle = 90,
+              #                                               hjust = 1, vjust = 0.3))
+              # }
+            } else if (SRfunctions::SR_is_date(stats$x)) {               # date
+              spanne = as.numeric(difftime(max(stats$x), min(stats$x),
+                                           units = "days"))
+              if (spanne > 365.25 * 20) {
+                p3 <- p3 +
+                  ggplot2::scale_x_date(date_breaks = "10 years",
+                                        date_labels = "%Y",
+                                        date_minor_breaks = "1 year")
+              } else if (spanne > 365.25 * 3) {
+                p3 <- p3 +
+                  ggplot2::scale_x_date(date_breaks = "year",
+                                        date_labels = "%Y",
+                                        date_minor_breaks = "3 months")
+              } else if (spanne > 365.25) {
+                p3 <- p3 +
+                  ggplot2::scale_x_date(date_breaks = "3 months",
+                                        date_labels = "%Y-%m",
+                                        date_minor_breaks = "1 month")
+              } else if (spanne > 30) {
+                p3 <- p3 +
+                  ggplot2::scale_x_date(date_breaks = "1 month",
+                                        date_labels = "%Y-%m-%d",
+                                        date_minor_breaks = "1 week")
+              } else {
+                p3 <- p3 +
+                  ggplot2::scale_x_date(date_breaks = "1 week",
+                                        date_labels = "%Y-%m-%d",
+                                        date_minor_breaks = "1 day")
+              }
+            } else {
+              p3 <- p3 +
+                ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +    # numeric
+                ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
+            }; p3
+            try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                       "Best Model/VarImp ", i, " ",
+                                       gsub("LabelEnc", "", xlabel), " PDP.png"),
+                                plot = p3, width = 9.92, height = 5.3))  # 4.67
+            try(rm(p3), TRUE)
           })
         }
         #
