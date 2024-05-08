@@ -952,7 +952,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               }; p2
               p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
             }
-            # 
+            #
             # simple PDP-graphic
             p3 <- ggplot2::ggplot(stats,
                                   ggplot2::aes(x = x, y = Partial_Dependence)) +
@@ -998,7 +998,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +    # numeric
                 ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
             }
-            # 
+            #
             # save graphic
             xlabel <- gsub("[[:punct:]]", "", xlabel)
             try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
@@ -1025,6 +1025,67 @@ SRxgboost_plots <- function(lauf, rank = 1,
           try(parallel::stopCluster(cl), TRUE)
           rm(cl, pdp_n_core); invisible(gc())
         }
+        #
+        # Plot PDP-summary of all important variables
+        files <- list.files(path = paste0(path_output, gsub(".csv", "/", lauf),
+                                          "/Best Model/"),
+                            pattern = "VarImp .*.csv", full.names = TRUE) %>%
+          data.frame(filename = .) %>%
+          dplyr::filter(!grepl("VarImp 0.csv", filename)) %>%
+          dplyr::mutate(Variable =
+                          SRfunctions::SR_trim_text(substr(basename(filename),
+                                                           10, nchar(basename(filename)) - 4)),
+                        Variable = paste0(row_number(), " ", Variable))
+        #
+        df_temp <- data.frame()
+        for (i in 1:nrow(files)) {
+          df_temp <- dplyr::bind_rows(
+            df_temp,
+            rio::import(files$filename[i]) %>%
+              dplyr::mutate(Group = factor(Group,
+                                           levels = rio::import(files$filename[i])$Group),
+                            x = as.character(x),
+                            Variable = files$Variable[i],
+                            .before = 1))
+        }; rm(i, files)
+        saveRDS(df_temp, paste0(path_output, gsub(".csv", "/", lauf),
+                                "/Best Model/VarImp 0 Alle PDP.rds"))
+        #
+        df_temp %>%
+          ggplot2::ggplot(ggplot2::aes(x = Group, y = Partial_Dependence, group = Variable)) +
+          ggplot2::geom_point(colour = "steelblue") +
+          ggplot2::geom_line(colour = "steelblue") +
+          ggplot2::facet_wrap(vars(Variable), scales = "free_x") +
+          ggplot2::labs(title = "Partial Dependence Plots")
+        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                               "/Best Model/VarImp 0 Alle PDP.png"),
+                        width = 9.92, height = 5.3)
+        #
+        # plot of selected variables (does not run, for documentary purposes only !!!)
+        if (FALSE) {
+          lauf <- "XGB_2023_AnteilAB_v11"
+          df_temp <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
+                                    "/Best Model/VarImp 0 Alle PDP.rds"))
+          df_temp %>% count(Variable)
+          df_temp %>%
+            filter(Variable %in% c("1 KDMFANT", "2 KDELANT", "5 KDSHANT")) %>%
+            mutate(Variable = Variable %>%
+                     sub("KD", "Kunden ", .) %>%
+                     sub("ANT", " Anteil", .)) %>%
+            mutate(x = as.numeric(x)) %>%
+            ggplot(aes(x = x, y = Partial_Dependence, group = Variable, colour = Variable)) +
+            geom_point() +
+            geom_line() +
+            scale_x_continuous(breaks = pretty_breaks(6), labels = scales::percent) +
+            scale_y_continuous(breaks = pretty_breaks(6), labels = scales::percent) +
+            labs(title = "Partial Dependence Plot",
+                 x = "x", y = "y")
+          ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                        "/Best Model/VarImp 0 PDP ....png"),
+                 width = 9.92, height = 5.3)
+        }
+        #
+        rm(df_temp)
       }
     }   # end of 'pdp_plots'
     #
