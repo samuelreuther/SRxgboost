@@ -1128,7 +1128,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         temp <- dplyr::full_join(temp,
                                  importance_matrix %>%
                                    dplyr::slice(1:4) %>%
-                                   dplyr::filter(Gain >= pdp_min_rel_Gain) %>%
+                                   # dplyr::filter(Gain >= pdp_min_rel_Gain) %>%
                                    dplyr::mutate(Feature = as.character(Feature)) %>%
                                    dplyr::select(Feature) %>%
                                    dplyr::cross_join(., .) %>%
