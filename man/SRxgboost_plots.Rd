@@ -14,7 +14,8 @@ SRxgboost_plots(
   pdp_min_rel_Gain = 0.01,
   pdp_sample = 20000,
   pdp_cuts = NULL,
-  pdp_sample_int = 1000,
+  pdp_int_sample = 1000,
+  pdp_int_cuts_sample = 20,
   pdp_parallel = FALSE
 )
 }
@@ -37,7 +38,9 @@ SRxgboost_plots(
 
 \item{pdp_cuts}{integer, default = NULL, depending on number of data points}
 
-\item{pdp_sample_int}{integer, default = 1000}
+\item{pdp_int_sample}{integer, default = 1000}
+
+\item{pdp_int_cuts_sample}{integer, default = 20}
 
 \item{pdp_parallel}{boolean, default =  = FALSE}
 }
