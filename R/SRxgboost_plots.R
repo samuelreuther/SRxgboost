@@ -1061,28 +1061,36 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                "/Best Model/VarImp 0 Alle PDP.png"),
                         width = 9.92, height = 5.3)
         #
-        # plot of selected variables (does not run, for documentary purposes only !!!)
-        if (FALSE) {
-          lauf <- "XGB_2023_AnteilAB_v11"
-          df_temp <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
-                                    "/Best Model/VarImp 0 Alle PDP.rds"))
-          df_temp %>% count(Variable)
-          df_temp %>%
-            filter(Variable %in% c("1 KDMFANT", "2 KDELANT", "5 KDSHANT")) %>%
-            mutate(Variable = Variable %>%
-                     sub("KD", "Kunden ", .) %>%
-                     sub("ANT", " Anteil", .)) %>%
-            mutate(x = as.numeric(x)) %>%
-            ggplot(aes(x = x, y = Partial_Dependence, group = Variable, colour = Variable)) +
-            geom_point() +
-            geom_line() +
-            scale_x_continuous(breaks = pretty_breaks(6), labels = scales::percent) +
-            scale_y_continuous(breaks = pretty_breaks(6), labels = scales::percent) +
-            labs(title = "Partial Dependence Plot",
-                 x = "x", y = "y")
-          ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                        "/Best Model/VarImp 0 PDP ....png"),
-                 width = 9.92, height = 5.3)
+        # plot of selected variables
+        if (TRUE) {
+          # lauf <- "XGB_2023_AnteilAB_v11"
+          # df_temp <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
+          #                           "/Best Model/VarImp 0 Alle PDP.rds"))
+          df_temp %>% dplyr::count(Variable)
+          suppressWarnings({
+            df_temp %>%
+              # select x-variables with a similar range:
+              dplyr::filter(Variable %in% c(unique(df_temp$Variable)[1:5])) %>%
+              # dplyr::mutate(Variable = Variable %>%
+              #                 sub("KD", "Kunden ", .) %>%
+              #                 sub("ANT", " Anteil", .)) %>%
+              dplyr::mutate(x = as.numeric(x)) %>%
+              ggplot2::ggplot(ggplot2::aes(x = x, y = Partial_Dependence,
+                                           group = Variable, colour = Variable)) +
+              ggplot2::geom_point() +
+              ggplot2::geom_line() +
+              ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
+                                          labels = scales::format_format(big.mark = "'"),
+                                          transform = "log1p") +
+              # transform = scales::transform_yj()) +
+              ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
+                                          # labels = scales::percent) +
+                                          labels = scales::format_format(big.mark = "'")) +
+              ggplot2::labs(title = "Partial Dependence Plot", x = "x", y = "y")
+            ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
+                                   "/Best Model/VarImp 0 Alle PDP 2.png"),
+                            width = 9.92, height = 5.3)
+          })
         }
         #
         rm(df_temp)
