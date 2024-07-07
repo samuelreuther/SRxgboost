@@ -1,5 +1,6 @@
 AUCPR
 Beispiel
+DMatrix
 Explainability
 Fehler
 Funktion
@@ -8,6 +9,7 @@ Modell
 Modelle
 OOF
 OOFforecast
+PDP
 RMSLE
 Sel
 Shap
@@ -21,6 +23,7 @@ bei
 berechnen
 cran
 csv
+cv
 dmatrix
 erstellen
 evallist
@@ -45,6 +48,7 @@ modelling
 multiclass
 multilabel
 ndcg
+nthread
 num
 params
 prAUC

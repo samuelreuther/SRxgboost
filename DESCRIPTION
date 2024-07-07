@@ -54,5 +54,6 @@ Imports:
     e1071,
     PRROC,
     ggrepel,
-    EIX
+    EIX,
+    rio
 VignetteBuilder: knitr
