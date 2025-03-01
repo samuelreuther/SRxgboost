@@ -37,7 +37,13 @@ SRxgboost_data_prep <- function(yname, data_train, data_test = NULL,
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
   ### general options
-  if (is.null(nthreads)) nthreads <- parallel::detectCores()
+  if (is.null(nthreads)) {
+    if (exists("n_cores")) {
+      nthreads <- n_cores
+    } else {
+      nthreads <- parallel::detectCores() - 1
+    }
+  }
   #
   #
   #

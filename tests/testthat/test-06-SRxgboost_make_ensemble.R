@@ -3,7 +3,7 @@
 # empty memory and cache
 rm(list = ls()); gc()
 # load libraries
-library(dplyr)
+library(dplyr); library(testthat)
 # set paths
 path_output <- "output_temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
@@ -59,7 +59,7 @@ test_that("regression", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 6)
+    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 6)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -96,7 +96,7 @@ test_that("regression train test", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 10)
+    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 10)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -159,7 +159,7 @@ test_that("regression train test", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 10)
+    paste0(path_output, "regression_train_test_1_2_ensemble/"))), 10)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -217,7 +217,7 @@ test_that("classification", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 12)
+    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 12)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -254,7 +254,7 @@ test_that("classification train test", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 20)
+    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 20)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -312,7 +312,7 @@ test_that("multilabel classification", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 8)
+    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 8)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -349,7 +349,7 @@ test_that("multilabel classification train test", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 14)
+    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 14)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -410,11 +410,11 @@ test_that("multilabel classification train test", {
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "/Ensemble/"))), 14)
+    paste0(path_output, "mclass_softprob_train_test_1_2_ensemble/"))), 14)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
-                      y_OOF, y_TEST, SummaryCV_META))
+                      y_OOF, y_TEST, SummaryCV_META, train_))
   SRxgboost_cleanup()
 })
 

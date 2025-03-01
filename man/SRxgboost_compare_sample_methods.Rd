@@ -9,7 +9,8 @@ SRxgboost_compare_sample_methods(
   df_test = NULL,
   folds,
   runs = 2,
-  sample_methods
+  sample_methods,
+  pdp_parallel = TRUE
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ SRxgboost_compare_sample_methods(
 
 \item{sample_methods}{list, c("ubOver", "ubUnder", "ubSMOTE", "ubOSS", "ubCNN",
 "ubENN", "ubNCL", "ubTomek")}
+
+\item{pdp_parallel}{boolean, default = TRUE}
 }
 \value{
 lots of files and a graphic of method comparison

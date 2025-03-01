@@ -3,7 +3,7 @@
 # empty memory and cache
 rm(list = ls()); gc()
 # load libraries
-library(dplyr)
+library(dplyr); library(testthat)
 # set paths
 path_output <- "temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
@@ -43,9 +43,9 @@ set.seed(Sys.time())
 # run SRxgboost_covariate_drift_XGB
 lauf <- "covariate_drift.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
-SRxgboost_covariate_drift_XGB(df1 = df1, df2 = df2)
-
-
+SRxgboost_covariate_drift_XGB(df1 = df1, df2 = df2, pdp_parallel = TRUE)
+#
+#
 ## tests
 #
 # no. of files
@@ -56,7 +56,7 @@ test_that("files in path_output/lauf/All Models", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
 })
 test_that("files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 32)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 85)
 })
 test_that("files in path_output/lauf/Data", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 22)
@@ -70,3 +70,4 @@ test_that("files in path_output/lauf/Data", {
 SRxgboost_cleanup()
 unlink(path_output, recursive = TRUE)
 rm(df1, df2, path_output, path_to_data, this_file)
+

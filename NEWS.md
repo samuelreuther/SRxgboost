@@ -1,3 +1,7 @@
+# SRxgboost 0.6.2
+- Set pdp_parallel = 'TRUE' in 'SRxgboost_plots()'
+- Use existing global variable 'n_cores' for nthreads
+
 # SRxgboost 0.6.1
 - Added calculation and plots of interaction effects
 - Generate cleaner PDP-plots with less cuts

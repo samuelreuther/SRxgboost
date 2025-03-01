@@ -15,8 +15,8 @@ SRxgboost_plots(
   pdp_sample = 20000,
   pdp_cuts = NULL,
   pdp_int_sample = 1000,
-  pdp_int_cuts_sample = 20,
-  pdp_parallel = FALSE
+  pdp_int_cuts_sample = 50,
+  pdp_parallel = TRUE
 )
 }
 \arguments{
@@ -36,13 +36,14 @@ SRxgboost_plots(
 
 \item{pdp_sample}{integer, default = 20000}
 
-\item{pdp_cuts}{integer, default = NULL, depending on number of data points}
+\item{pdp_cuts}{integer, default = NULL, depending on number of data points
+(max. 40 but in average at least pdp_int_cuts_sample per cut)}
 
 \item{pdp_int_sample}{integer, default = 1000}
 
-\item{pdp_int_cuts_sample}{integer, default = 20}
+\item{pdp_int_cuts_sample}{integer, default = 50}
 
-\item{pdp_parallel}{boolean, default =  = FALSE}
+\item{pdp_parallel}{boolean, default = TRUE}
 }
 \value{
 several files in folder

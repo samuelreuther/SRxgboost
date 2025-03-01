@@ -11,7 +11,9 @@ SRxgboost_h2o_automl(
   metric = NULL,
   kfold = 5,
   max_runtime_sec = 5 * 60,
-  run_shap = FALSE
+  run_shap = FALSE,
+  nthreads = NULL,
+  max_mem_size = "16g"
 )
 }
 \arguments{
@@ -37,4 +39,5 @@ writes a lot of files
 Runs several models with h2o.automl.
 Install latestest version of h2o:
 install.packages("h2o", type="source",
+                 repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
 }

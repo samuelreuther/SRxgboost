@@ -49,7 +49,13 @@ SRxgboost_data_prep_forecast <- function(df,
   # df <- df[, names(datenModell)]
   #
   ### general options
-  if (is.null(nthreads)) nthreads <- parallel::detectCores()
+  if (is.null(nthreads)) {
+    if (exists("n_cores")) {
+      nthreads <- n_cores
+    } else {
+      nthreads <- parallel::detectCores() - 1
+    }
+  }
   #
   # turn train and test into matrices for dummy variables
   options(na.action = 'na.pass')  # global option !!!

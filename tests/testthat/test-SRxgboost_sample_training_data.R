@@ -3,7 +3,7 @@
 # empty memory and cache
 rm(list = ls()); gc()
 # load libraries
-library(dplyr)
+library(dplyr); library(testthat)
 # set paths
 path_output <- "output_temp/"
 assign('path_output', path_output, envir = .GlobalEnv)

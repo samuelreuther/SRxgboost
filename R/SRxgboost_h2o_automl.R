@@ -3,7 +3,7 @@
 #' Runs several models with h2o.automl.
 #' Install latestest version of h2o:
 #' install.packages("h2o", type="source",
-#                  repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
+#'                  repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
 #'
 #' @param y character
 #' @param data_train data.frame
@@ -23,7 +23,9 @@ SRxgboost_h2o_automl <- function(y = NULL,
                                  metric = NULL,
                                  kfold = 5,
                                  max_runtime_sec = 5 * 60,
-                                 run_shap = FALSE) {
+                                 run_shap = FALSE,
+                                 nthreads = NULL,
+                                 max_mem_size = "16g") {
   # check lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
@@ -37,8 +39,14 @@ SRxgboost_h2o_automl <- function(y = NULL,
   Sys.setenv(http_proxy = "")
   Sys.setenv(http_proxy_user = "")
   Sys.setenv(https_proxy_user = "")
-  n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
-  h2o::h2o.init(nthreads = n_core, max_mem_size = '16g') # always verbose!
+  if (is.null(nthreads)) {
+    if (exists("n_cores")) {
+      nthreads <- n_cores
+    } else {
+      nthreads <- parallel::detectCores() - 1
+    }
+  }
+  h2o::h2o.init(nthreads = nthreads, max_mem_size = max_mem_size) # always verbose!
   #
   # set y as.factor for classification
   if (length(unique(data_train[, y])) == 2 & class(data_train[, y]) != "factor") {
@@ -93,8 +101,8 @@ SRxgboost_h2o_automl <- function(y = NULL,
                                   "rmse", "mae", "rmsle")) %>%
     dplyr::mutate(variable = gsub("mean_per_class_error", "mean per\nclass error", variable)) %>%
     ggplot2::ggplot(ggplot2::aes(x = model_id, y = value)) +
-    ggplot2::geom_bar(stat = "identity") +
-    ggplot2::geom_text(ggplot2::aes(label = round(value, 3)),
+    ggplot2::geom_bar(stat = "identity", na.rm = TRUE) +
+    ggplot2::geom_text(ggplot2::aes(label = round(value, 3)), na.rm = TRUE,
                        position = ggplot2::position_stack(vjust = 0.5)) +
     # ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(5)) +
     ggplot2::facet_grid(.~variable, scales = "free") +   # , space = "free_x"
@@ -132,7 +140,8 @@ SRxgboost_h2o_automl <- function(y = NULL,
   # tbd
   #
   # Shap values (not supported for "multinomial" as of 2020-06-27)
-  if (run_shap & lb_leader@parameters[["distribution"]] != "multinomial") {
+  # if (run_shap & lb_leader@parameters[["distribution"]] != "multinomial") {  # 2025-02-23
+  if (run_shap) {
     shap_TRAIN <- as.data.frame(h2o::h2o.predict_contributions(model, train_h2o))
     saveRDS(shap_TRAIN, paste0(path_output_, "shap_TRAIN_topmodel.rds"))
     if (!is.null(data_test)) {

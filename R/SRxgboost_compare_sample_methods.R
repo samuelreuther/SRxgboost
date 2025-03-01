@@ -8,6 +8,7 @@
 #' @param runs integer, number of xgboost runs
 #' @param sample_methods list, c("ubOver", "ubUnder", "ubSMOTE", "ubOSS", "ubCNN",
 #'                                "ubENN", "ubNCL", "ubTomek")
+#' @param pdp_parallel boolean, default = TRUE
 #'
 #' @return lots of files and a graphic of method comparison
 #'
@@ -17,7 +18,8 @@ SRxgboost_compare_sample_methods <- function(df_train,
                                              df_test = NULL,
                                              folds,
                                              runs = 2,
-                                             sample_methods) {
+                                             sample_methods,
+                                             pdp_parallel = TRUE) {
   ### checks
   # check path_output exists
   if (!exists("path_output")) cat("'path_output' is missing \n")
@@ -64,7 +66,8 @@ SRxgboost_compare_sample_methods <- function(df_train,
                     runs = runs, folds = folds_sampled, run_final_model = TRUE, max_overfit = -1)
       #
       # generate plots for best model
-      SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
+      SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
+                      pdp_parallel = pdp_parallel)
       #
       # clean up
       saveRDS(return, paste0(path_output, m, "/Data/return.rds"))

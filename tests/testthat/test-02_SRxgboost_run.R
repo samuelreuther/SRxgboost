@@ -3,7 +3,7 @@
 # empty memory and cache
 rm(list = ls()); gc()
 # load libraries
-library(dplyr)
+library(dplyr); library(testthat)
 # set paths
 path_output <- "output_temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
@@ -702,14 +702,14 @@ SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc",
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
 # clean up
 SRxgboost_cleanup()
-
-
+#
+#
 ## select relevant variables
 #
 sel_vars <- SRxgboost_select_variables(lauf_all_variables = "class_no_folds_all.csv",
                                        threshold_cor = 0.8)
-
-
+#
+#
 ## run final model with selected variables
 #
 lauf <- "class_no_folds_sel.csv"
@@ -726,8 +726,8 @@ SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc",
               nfold = 5)
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
-
-
+#
+#
 ## tests
 #
 test_that("classification / sel_vars", {
@@ -737,8 +737,8 @@ test_that("classification / sel_vars", {
 test_that("classification / sel_vars: files in path_output/lauf", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
-
-
+#
+#
 ## clean up
 #
 rm(sel_vars); SRxgboost_cleanup()
@@ -784,7 +784,7 @@ SRxgboost_data_prep(yname = "type",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
               nfold = 5)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05, pdp_parallel = FALSE)
 # load OOFforecast and TESTforecast
 SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf)
 #
@@ -832,7 +832,7 @@ test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 35)
 })
 #
 #
@@ -863,7 +863,7 @@ SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob",
               metric = "weighted_precision", runs = 2,
               nfold = 5)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05, pdp_parallel = FALSE)
 #
 #
 #
@@ -909,7 +909,7 @@ test_that("multilabel classification wprec / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification wprec / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 37)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
 })
 #
 #
@@ -934,7 +934,7 @@ SRxgboost_data_prep(yname = "type",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "mAUC", runs = 2,
               nfold = 5)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05, pdp_parallel = FALSE)
 # load OOFforecast and TESTforecast
 SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf)
 #
@@ -982,7 +982,7 @@ test_that("multilabel classification / no_folds: SummaryCV$test[1]", {
 #
 # no. ob objects in memory: check OOFforecast and TESTforecast
 test_that("multilabel classification / no_folds, no. ob objects in memory", {
-  expect_equal(nrow(SRfunctions::SR_memory_usage()), 36)
+  expect_equal(nrow(SRfunctions::SR_memory_usage()), 35)
 })
 #
 #
@@ -1008,17 +1008,17 @@ SRxgboost_data_prep(yname = "type",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
               nfold = 5)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05, pdp_parallel = FALSE)
 # clean up
 SRxgboost_cleanup()
-
-
+#
+#
 ## select relevant variables
 #
 sel_vars <- SRxgboost_select_variables(lauf_all_variables = "mclass_no_folds_softprob_selvars.csv",
                                        threshold_cor = 0.9)
-
-
+#
+#
 ## run final model with selected variables
 #
 lauf <- "mclass_no_folds_softprob_selvars_final.csv"
@@ -1034,9 +1034,9 @@ SRxgboost_data_prep(yname = "type",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
               nfold = 5)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
-
-
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05, pdp_parallel = FALSE)
+#
+#
 ## tests
 #
 test_that("multilabel classification / sel_vars", {
@@ -1046,8 +1046,8 @@ test_that("multilabel classification / sel_vars", {
 test_that("multilabel classification / sel_vars: files in path_output/lauf", {
   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
 })
-
-
+#
+#
 ## clean up
 #
 rm(sel_vars); SRxgboost_cleanup()

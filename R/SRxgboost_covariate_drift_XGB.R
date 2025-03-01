@@ -4,12 +4,13 @@
 #'
 #' @param df1 data.frame
 #' @param df2 data.frame
+#' @param pdp_parallel boolean, default = TRUE
 #'
 #' @return several files in folder
 #'
 #' @export
-SRxgboost_covariate_drift_XGB <- function(df1 = NULL,
-                                          df2 = NULL) {
+SRxgboost_covariate_drift_XGB <- function(df1 = NULL, df2 = NULL,
+                                          pdp_parallel = TRUE) {
   # check lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   # create folder
@@ -59,7 +60,8 @@ SRxgboost_covariate_drift_XGB <- function(df1 = NULL,
                 run_final_model = TRUE, best_params = NULL)
   #
   # SRxgboost_plots results of best model
-  SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.02)
+  SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.02,
+                  pdp_parallel = pdp_parallel)
   #
   # clean up
   rm(no_folds)

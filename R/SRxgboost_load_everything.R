@@ -18,7 +18,13 @@ SRxgboost_load_everything <- function(lauf,
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
   ### general options
-  if (is.null(nthreads)) nthreads <- parallel::detectCores()
+  if (is.null(nthreads)) {
+    if (exists("n_cores")) {
+      nthreads <- n_cores
+    } else {
+      nthreads <- parallel::detectCores() - 1
+    }
+  }
   #
   # create path_temp for loading data
   path_temp <- paste0(path_output, gsub(".csv", "/", lauf), "Data/")

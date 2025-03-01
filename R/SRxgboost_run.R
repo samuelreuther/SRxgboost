@@ -63,8 +63,14 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
   options(warn = -1)
   #
   ### general options
-  tree_method <- tree_method   # "exact" "auto"
-  if (is.null(nthreads)) nthreads <- parallel::detectCores()
+  tree_method <- tree_method   # "exact", "auto"
+  if (is.null(nthreads)) {
+    if (exists("n_cores")) {
+      nthreads <- n_cores
+    } else {
+      nthreads <- parallel::detectCores() - 1
+    }
+  }
   #
   #
   #

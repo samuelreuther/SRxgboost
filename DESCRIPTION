@@ -1,6 +1,6 @@
 Package: SRxgboost
 Title: Helper and meta-functions for modelling with XGBOOST
-Version: 0.6.1
+Version: 0.6.2
 Authors@R: 
     person(given = "First",
            family = "Last",
@@ -55,5 +55,5 @@ Imports:
     PRROC,
     ggrepel,
     EIX,
-    rio
+    purrr
 VignetteBuilder: knitr

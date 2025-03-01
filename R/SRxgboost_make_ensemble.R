@@ -136,7 +136,7 @@ SRxgboost_make_ensemble <- function(name,
       train <- OOFforecast %>% dplyr::select(., 2:(top_rank + 1), y)
       set.seed(12345)
       trcontrol <- caret::trainControl(method = "cv", number = 5, search = "grid",
-                                       savePredictions = 'final')
+                                       savePredictions = "final")
       #
       # glm
       set.seed(12345)
@@ -168,9 +168,9 @@ SRxgboost_make_ensemble <- function(name,
                              subsample = 1)
       set.seed(12345)
       stack <- caret::train(y ~ ., method = "xgbTree", data = train,
-                            tuneGrid = gridxgb, trControl = trcontrol) # ; stack
+                            tuneGrid = gridxgb, trControl = trcontrol, verbosity = 0) # ; stack
       # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
-      #                       trControl = trcontrol, tuneLength = 10) # tuneLength not working !!!
+      #                       trControl = trcontrol, tuneLength = 10, verbosity = 0) # tuneLength not working !!!
       OOFforecast$ensemble_xgb <- data.frame(stack$pred) %>%
         dplyr::arrange(rowIndex) %>%
         dplyr::pull(pred)
@@ -185,7 +185,7 @@ SRxgboost_make_ensemble <- function(name,
         dplyr::mutate(y = factor(dplyr::if_else(y >= 0.5, "ja", "nein")))
       set.seed(12345)
       trcontrol <- caret::trainControl(method = "cv", number = 5, search = "grid",
-                                       savePredictions = 'final',
+                                       savePredictions = "final",
                                        classProbs = T)
                                        # summaryFunction = twoClassSummary)
       #
@@ -221,9 +221,9 @@ SRxgboost_make_ensemble <- function(name,
                              subsample = 1)
       set.seed(12345)
       stack <- caret::train(y ~ ., method = "xgbTree", data = train, metric = "ROC",
-                            tuneGrid = gridxgb, trControl = trcontrol) # ; stack
+                            tuneGrid = gridxgb, trControl = trcontrol, verbosity = 0) # ; stack
       # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
-      #                       trControl = trcontrol, tuneLength = 10) # tuneLength not working !!!
+      #                       trControl = trcontrol, tuneLength = 10, verbosity = 0) # tuneLength not working !!!
       OOFforecast$ensemble_xgb <- data.frame(stack$pred) %>%
         dplyr::arrange(rowIndex) %>%
         dplyr::pull(ja)
@@ -368,7 +368,7 @@ SRxgboost_make_ensemble <- function(name,
       # train <- OOFforecast %>% dplyr::select(., 2:(top_rank + 1), y)
       # set.seed(12345)
       # trcontrol <- caret::trainControl(method = "cv", number = 5, search = "grid",
-      #                                  savePredictions = 'final')
+      #                                  savePredictions = "final")
       # #
       # # glm
       # set.seed(12345)
@@ -400,9 +400,9 @@ SRxgboost_make_ensemble <- function(name,
       #                        subsample = 1)
       # set.seed(12345)
       # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
-      #                       tuneGrid = gridxgb, trControl = trcontrol) # ; stack
+      #                       tuneGrid = gridxgb, trControl = trcontrol, verbosity = 0) # ; stack
       # # stack <- caret::train(y ~ ., method = "xgbTree", data = train,
-      # #                       trControl = trcontrol, tuneLength = 10) # tuneLength not working !!!
+      # #                       trControl = trcontrol, tuneLength = 10, verbosity = 0) # tuneLength not working !!!
       # OOFforecast$ensemble_xgb <- data.frame(stack$pred) %>%
       #   dplyr::arrange(rowIndex) %>%
       #   dplyr::pull(pred)
@@ -483,7 +483,7 @@ SRxgboost_make_ensemble <- function(name,
                          position = ggplot2::position_stack(0.5)) +
       ggplot2::facet_wrap(variable~., scales = "free_x") +
       ggplot2::labs(x = "", y = "", title = "OOF Comparison of model metrics") +
-      ggplot2::guides(fill = FALSE) +
+      ggplot2::guides(fill = "none") +
       ggplot2::coord_flip()
     print(p)
     ggplot2::ggsave(paste0(path_output, name, "/OOF Comparison of model metrics.png"),
@@ -573,7 +573,7 @@ SRxgboost_make_ensemble <- function(name,
                            position = ggplot2::position_stack(0.5)) +
         ggplot2::facet_wrap(variable~., scales = "free_x") +
         ggplot2::labs(x = "", y = "", title = "TEST Comparison of model metrics") +
-        ggplot2::guides(fill = FALSE) +
+        ggplot2::guides(fill = "none") +
         ggplot2::coord_flip()
       print(p)
       ggplot2::ggsave(paste0(path_output, name, "/TEST Comparison of model metrics.png"),
@@ -711,7 +711,7 @@ SRxgboost_make_ensemble <- function(name,
                          position = ggplot2::position_stack(0.5)) +
       ggplot2::facet_wrap(variable~., scales = "free_x") +
       ggplot2::labs(x = "", y = "", title = "OOF Comparison of model metrics") +
-      ggplot2::guides(fill = FALSE) +
+      ggplot2::guides(fill = "none") +
       ggplot2::coord_flip()
     print(p)
     ggplot2::ggsave(paste0(path_output, name, "/OOF Comparison of model metrics.png"),
@@ -833,7 +833,7 @@ SRxgboost_make_ensemble <- function(name,
       mcc <- mcc_(OOFforecast$ensemble_best, OOFforecast$y)
       p <- ggplot2::ggplot(temp, ggplot2::aes(x = fpr, y = tpr)) +
         ggplot2::geom_line() +
-        ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
+        ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", linewidth = 1,
                              linetype = "dashed") +
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(5),
                                     limits = c(0, 1)) +
@@ -961,7 +961,7 @@ SRxgboost_make_ensemble <- function(name,
                            position = ggplot2::position_stack(0.5)) +
         ggplot2::facet_wrap(variable~., scales = "free_x") +
         ggplot2::labs(x = "", y = "", title = "TEST Comparison of model metrics") +
-        ggplot2::guides(fill = FALSE) +
+        ggplot2::guides(fill = "none") +
         ggplot2::coord_flip()
       print(p)
       ggplot2::ggsave(paste0(path_output, name, "/TEST Comparison of model metrics.png"),
@@ -1018,7 +1018,7 @@ SRxgboost_make_ensemble <- function(name,
         mcc <- mcc_(TESTforecast$ensemble_best, TESTforecast$y, cutoff = mcc$opt_cutoff)
         p <- ggplot2::ggplot(temp, ggplot2::aes(x = fpr, y = tpr)) +
           ggplot2::geom_line() +
-          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
+          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", linewidth = 1,
                                linetype = "dashed") +
           ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(5),
                                       limits = c(0, 1)) +
@@ -1179,7 +1179,7 @@ SRxgboost_make_ensemble <- function(name,
                          position = ggplot2::position_stack(0.5)) +
       ggplot2::facet_wrap(variable~., scales = "free_x") +
       ggplot2::labs(x = "", y = "", title = "OOF Comparison of model metrics") +
-      ggplot2::guides(fill = FALSE) +
+      ggplot2::guides(fill = "none") +
       ggplot2::coord_flip()
     print(p)
     ggplot2::ggsave(paste0(path_output, name, "/OOF Comparison of model metrics.png"),
@@ -1269,7 +1269,7 @@ SRxgboost_make_ensemble <- function(name,
       p <- ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr,
                                                  colour = stats::reorder(binary, -binary_AUC))) +
         ggplot2::geom_line() +
-        ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
+        ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", linewidth = 1,
                              linetype = "dashed") +
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(5),
                                     limits = c(0, 1)) +
@@ -1396,7 +1396,7 @@ SRxgboost_make_ensemble <- function(name,
                            position = ggplot2::position_stack(0.5)) +
         ggplot2::facet_wrap(variable~., scales = "free_x") +
         ggplot2::labs(x = "", y = "", title = "TEST Comparison of model metrics") +
-        ggplot2::guides(fill = FALSE) +
+        ggplot2::guides(fill = "none") +
         ggplot2::coord_flip()
       print(p)
       ggplot2::ggsave(paste0(path_output, name, "/TEST Comparison of model metrics.png"),
@@ -1486,7 +1486,7 @@ SRxgboost_make_ensemble <- function(name,
         p <- ggplot2::ggplot(ROC_bin, ggplot2::aes(x = fpr, y = tpr,
                                                    colour = stats::reorder(binary, -binary_AUC))) +
           ggplot2::geom_line() +
-          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", size = 1,
+          ggplot2::geom_abline(intercept = 0, slope = 1, color = "gray", linewidth = 1,
                                linetype = "dashed") +
           ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(5),
                                       limits = c(0, 1)) +

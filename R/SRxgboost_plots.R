@@ -11,9 +11,10 @@
 #' @param pdp_min_rel_Gain numeric, default =  0.01
 #' @param pdp_sample integer, default = 20000
 #' @param pdp_cuts integer, default = NULL, depending on number of data points
+#'                 (max. 40 but in average at least pdp_int_cuts_sample per cut)
 #' @param pdp_int_sample integer, default = 1000
-#' @param pdp_int_cuts_sample integer, default = 20
-#' @param pdp_parallel boolean, default =  = FALSE
+#' @param pdp_int_cuts_sample integer, default = 50
+#' @param pdp_parallel boolean, default = TRUE
 #'
 #' @return several files in folder
 #'
@@ -23,8 +24,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                             silent = FALSE,
                             pdp_plots = TRUE, pdp_min_rel_Gain = 0.01,
                             pdp_sample = 20000, pdp_cuts = NULL,
-                            pdp_int_sample = 1000, pdp_int_cuts_sample = 20,
-                            pdp_parallel = FALSE) {
+                            pdp_int_sample = 1000, pdp_int_cuts_sample = 50,
+                            pdp_parallel = TRUE) {
   ### Initialisation ####
   #
   # check lauf ends with ".csv"
@@ -218,6 +219,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
       # => should be faster, but problems with installation and documentation
       #
       return(list(metric="prAUC", value = prauc))
+    }
+    # clean up foreach/dopar between runs
+    unregister_dopar <- function() {
+      env <- foreach:::.foreachGlobals
+      rm(list = ls(name = env), pos = env)
     }
     #
     #
@@ -512,34 +518,36 @@ SRxgboost_plots <- function(lauf, rank = 1,
       if (exists("ROC_prob")) {
         for (i in 1:length(ROC_prob[['rocs']])) {
           suppressMessages({
-            ROC_bin <- dplyr::bind_rows(ROC_bin,
-                                        data.frame(binary_ROC = toString(ROC_prob[['rocs']][[i]][[1]][["levels"]]),
-                                                   binary_AUC = as.numeric(pROC::auc(ROC_prob[["rocs"]][[i]][[1]][["response"]],
-                                                                                     ROC_prob[["rocs"]][[i]][[1]][["predictor"]])),
-                                                   # binary_AUC = as.numeric(pROC::auc(ROC_prob[["rocs"]][[i]][[1]][["response"]],
-                                                   #                                   ifelse(ROC_prob[["rocs"]][[i]][[1]][["predictor"]] > 0.5, 1, 0))),
-                                                   thresholds = ROC_prob[['rocs']][[i]][[1]][["thresholds"]],
-                                                   tpr = ROC_prob[['rocs']][[i]][[1]][["sensitivities"]],
-                                                   fpr = 1 - ROC_prob[['rocs']][[i]][[1]][["specificities"]],
-                                                   no = length(ROC_prob[['rocs']][[i]][[1]][["response"]]),
-                                                   no_y_1 = length(ROC_prob[['rocs']][[i]][[1]][["controls"]]),
-                                                   stringsAsFactors = FALSE))
+            ROC_bin <- dplyr::bind_rows(
+              ROC_bin,
+              data.frame(binary_ROC = toString(ROC_prob[['rocs']][[i]][[1]][["levels"]]),
+                         binary_AUC = as.numeric(pROC::auc(ROC_prob[["rocs"]][[i]][[1]][["response"]],
+                                                           ROC_prob[["rocs"]][[i]][[1]][["predictor"]])),
+                         # binary_AUC = as.numeric(pROC::auc(ROC_prob[["rocs"]][[i]][[1]][["response"]],
+                         #                                   ifelse(ROC_prob[["rocs"]][[i]][[1]][["predictor"]] > 0.5, 1, 0))),
+                         thresholds = ROC_prob[['rocs']][[i]][[1]][["thresholds"]],
+                         tpr = ROC_prob[['rocs']][[i]][[1]][["sensitivities"]],
+                         fpr = 1 - ROC_prob[['rocs']][[i]][[1]][["specificities"]],
+                         no = length(ROC_prob[['rocs']][[i]][[1]][["response"]]),
+                         no_y_1 = length(ROC_prob[['rocs']][[i]][[1]][["controls"]]),
+                         stringsAsFactors = FALSE))
           })
         }
       } else {
         # WARNING: depends on ROC with "multi:softmax" which is worse than "multi:softprob"
         for (i in 1:length(ROC[['rocs']])) {
           suppressMessages({
-            ROC_bin <- dplyr::bind_rows(ROC_bin,
-                                        data.frame(binary_ROC = toString(ROC[['rocs']][[i]][["levels"]]),
-                                                   binary_AUC = as.numeric(pROC::auc(ROC[["rocs"]][[i]][["response"]],
-                                                                                     ROC[["rocs"]][[i]][["predictor"]])), # direction = "<" ???
-                                                   thresholds = ROC[['rocs']][[i]][["thresholds"]],
-                                                   tpr = ROC[['rocs']][[i]][["sensitivities"]],
-                                                   fpr = 1 - ROC[['rocs']][[i]][["specificities"]],
-                                                   no = length(ROC[['rocs']][[i]][["response"]]),
-                                                   no_y_1 = length(ROC[['rocs']][[i]][["controls"]]),
-                                                   stringsAsFactors = FALSE))
+            ROC_bin <- dplyr::bind_rows(
+              ROC_bin,
+              data.frame(binary_ROC = toString(ROC[['rocs']][[i]][["levels"]]),
+                         binary_AUC = as.numeric(pROC::auc(ROC[["rocs"]][[i]][["response"]],
+                                                           ROC[["rocs"]][[i]][["predictor"]])), # direction = "<" ???
+                         thresholds = ROC[['rocs']][[i]][["thresholds"]],
+                         tpr = ROC[['rocs']][[i]][["sensitivities"]],
+                         fpr = 1 - ROC[['rocs']][[i]][["specificities"]],
+                         no = length(ROC[['rocs']][[i]][["response"]]),
+                         no_y_1 = length(ROC[['rocs']][[i]][["controls"]]),
+                         stringsAsFactors = FALSE))
           })
         }
       }; rm(i)
@@ -718,6 +726,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                        sep = ";", dec = ",")
     #
     ##### Partial Dependence Plots ####
+    # message(substr(as.character(Sys.time()), 1, 19))
     #
     if (pdp_plots) {
       temp <- importance_matrix %>%
@@ -725,14 +734,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
         dplyr::mutate(Feature = as.character(Feature))
       #
       if (nrow(temp) >= 1) {
-        # run dpd::partial in parallel
-        if (nrow(datenModell_eval) > 1000 & pdp_parallel) {
-          pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
-          cl <- parallel::makeCluster(pdp_n_core)
-          doParallel::registerDoParallel(cl)
-          # parallel::clusterEvalQ(cl, library(stats)) # ?
-        }
-        #
         for (i in 1:nrow(temp)) {
           try({
             # print progress
@@ -813,7 +814,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               } else {
                 # summarise results
                 if (is.null(pdp_cuts))
-                  pdp_cuts <- min(round(length(xx) / pdp_int_cuts_sample), 50)
+                  pdp_cuts <- min(round(length(xx) / pdp_int_cuts_sample), 40)
                 stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
@@ -830,19 +831,37 @@ SRxgboost_plots <- function(lauf, rank = 1,
               #
               ## partial dependence
               #
-              if (pdp_parallel) {
+              if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
                 # in parallel
-                partial <- pdp::partial(bst_1fold,
-                                        pred.var = temp$Feature[i],
-                                        pred.grid = data.frame(stats$x_orig) %>%
-                                          stats::setNames(xlabel),
-                                        # grid.resolution = 30,
-                                        train = test_eval_mat_,
-                                        plot = FALSE, chull = TRUE, type = "regression",
-                                        # type = ifelse(objective == "multilabel",
-                                        #               "classification", objective))
-                                        parallel = TRUE,
-                                        paropts = list(.packages = "xgboost"))
+                unregister_dopar()
+                # if (exists("n_cores")) {
+                #   pdp_n_core <- n_cores
+                # } else {
+                #   pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
+                # }
+                # cl <- parallel::makeCluster(pdp_n_core)
+                # doParallel::registerDoParallel(cl)
+                # # parallel::clusterEvalQ(cl, library(stats)) # ?
+                #
+                invisible({
+                  partial <- pdp::partial(bst_1fold,
+                                          pred.var = temp$Feature[i],
+                                          pred.grid = data.frame(stats$x_orig) %>%
+                                            stats::setNames(xlabel),
+                                          # grid.resolution = 30,
+                                          train = test_eval_mat_,
+                                          plot = FALSE, chull = TRUE, type = "regression",
+                                          # type = ifelse(objective == "multilabel",
+                                          #               "classification", objective))
+                                          parallel = TRUE, # with foreach package
+                                          paropts = list(.packages = "xgboost"))
+                })
+                unregister_dopar()
+                #
+                # stop cluster
+                # try(parallel::stopCluster(cl), TRUE)
+                # try(parallel::stopCluster(cl), TRUE)
+                # try(rm(cl, pdp_n_core), TRUE); invisible(gc())
               } else {
                 # single core
                 partial <- pdp::partial(bst_1fold,
@@ -1019,13 +1038,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
           })
         }
         #
-        # stop cluster for pdp::partial
-        if (pdp_parallel) {
-          try(parallel::stopCluster(cl), TRUE)
-          try(parallel::stopCluster(cl), TRUE)
-          rm(cl, pdp_n_core); invisible(gc())
-        }
-        #
         # Plot PDP-summary of all important variables
         files <- list.files(path = paste0(path_output, gsub(".csv", "/", lauf),
                                           "/Best Model/"),
@@ -1099,6 +1111,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #### 2way graphics ####
+    # message(substr(as.character(Sys.time()), 1, 19))
     #
     #####  variable importance ####
     #
@@ -1193,37 +1206,82 @@ SRxgboost_plots <- function(lauf, rank = 1,
         temp <- interactions_clean %>%
           dplyr::filter(Gain >= pdp_min_rel_Gain,
                         Parent != Child)
-        # add interactions of 4 most important variables (if not existing)
+        # add interactions of 3 most important variables (if not existing)
         temp <- dplyr::full_join(temp,
                                  importance_matrix %>%
-                                   dplyr::slice(1:4) %>%
+                                   dplyr::slice(1:3) %>%
                                    # dplyr::filter(Gain >= pdp_min_rel_Gain) %>%
                                    dplyr::mutate(Feature = as.character(Feature)) %>%
                                    dplyr::select(Feature) %>%
                                    dplyr::cross_join(., .) %>%
-                                   dplyr::slice(c(2:4, 7:8, 12)) %>%
+                                   dplyr::slice(c(2, 3, 4, 6)) %>%
                                    stats::setNames(c("Parent", "Child")) %>%
                                    dplyr::mutate(Feature = paste0(Parent, " - ", Child)),
-                                 by = c("Parent", "Child", "Feature"))
+                                 by = c("Parent", "Child", "Feature")) %>%
+          # remove duplicated (but swapped) pairs
+          mutate(sorted_values =
+                   purrr::pmap(list(Parent, Child),
+                               function(...) paste(sort(c(...)), collapse="_"))) %>%
+          distinct(sorted_values, .keep_all = TRUE) %>%
+          select(-sorted_values)
         #
         if (nrow(temp) >= 1) {
           for (i in seq_along(temp$Feature)) {   # i <- 1
             # print progress
-            print(paste0("Plot ", i, " of ", nrow(temp), ": ", temp$Feature[i]))
+            print(paste0("Plot interaction ", i, " of ", nrow(temp), ": ", temp$Feature[i]))
             #
             try({
               # calculate stats
-              partial <- pdp::partial(bst_1fold,
-                                      pred.var = c(temp$Parent[i], temp$Child[i]),
-                                      # pred.grid = data.frame(stats$x_orig) %>%
-                                      #   stats::setNames(xlabel),
-                                      # grid.resolution = 30,
-                                      train = test_eval_mat_,
-                                      # train = datenModell_eval_,
-                                      # type = objective,
-                                      type = "regression",
-                                      # type = "classification", prob = TRUE,   # error "classification" !!!
-                                      plot = FALSE)
+              if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
+                # in parallel
+                unregister_dopar()
+                # if (exists("n_cores")) {
+                #   pdp_n_core <- n_cores
+                # } else {
+                #   pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
+                # }
+                # cl <- parallel::makeCluster(pdp_n_core)
+                # doParallel::registerDoParallel(cl)
+                # # parallel::clusterEvalQ(cl, library(stats)) # ?
+                #
+                invisible({
+                  partial <- pdp::partial(bst_1fold,
+                                          pred.var = c(temp$Parent[i], temp$Child[i]),
+                                          # pred.grid = data.frame(stats$x_orig) %>%
+                                          #   stats::setNames(xlabel),
+                                          # grid.resolution = 30,
+                                          train = test_eval_mat_,
+                                          type = "regression", plot = FALSE,
+                                          parallel = TRUE,
+                                          paropts = list(.packages = "xgboost"))
+                })
+                unregister_dopar()
+                #
+                # stop cluster
+                # try(parallel::stopCluster(cl), TRUE)
+                # try(parallel::stopCluster(cl), TRUE)
+                # try(rm(cl, pdp_n_core), TRUE); invisible(gc())
+              } else {
+                # single core
+                partial <- pdp::partial(bst_1fold,
+                                        pred.var = c(temp$Parent[i], temp$Child[i]),
+                                        # pred.grid = data.frame(stats$x_orig) %>%
+                                        #   stats::setNames(xlabel),
+                                        # grid.resolution = 30,
+                                        train = test_eval_mat_,
+                                        type = "regression", plot = FALSE)
+              }
+              # partial <- pdp::partial(bst_1fold,
+              #                         pred.var = c(temp$Parent[i], temp$Child[i]),
+              #                         # pred.grid = data.frame(stats$x_orig) %>%
+              #                         #   stats::setNames(xlabel),
+              #                         # grid.resolution = 30,
+              #                         train = test_eval_mat_,
+              #                         # train = datenModell_eval_,
+              #                         # type = objective,
+              #                         type = "regression",
+              #                         # type = "classification", prob = TRUE,   # error "classification" !!!
+              #                         plot = FALSE)
               #
               # save graphic
               p <- ggplot2::autoplot(partial) +
@@ -1254,6 +1312,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
           }
         }
       }
+      # message(substr(as.character(Sys.time()), 1, 19))
     }   # end of 'pdp_plots'
   }   # end of 'plots'
 }

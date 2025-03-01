@@ -4,12 +4,14 @@
 \alias{SRxgboost_covariate_drift_XGB}
 \title{SRxgboost_covariate_drift_XGB}
 \usage{
-SRxgboost_covariate_drift_XGB(df1 = NULL, df2 = NULL)
+SRxgboost_covariate_drift_XGB(df1 = NULL, df2 = NULL, pdp_parallel = TRUE)
 }
 \arguments{
 \item{df1}{data.frame}
 
 \item{df2}{data.frame}
+
+\item{pdp_parallel}{boolean, default = TRUE}
 }
 \value{
 several files in folder

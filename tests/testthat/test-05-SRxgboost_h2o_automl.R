@@ -3,7 +3,7 @@
 # empty memory and cache
 rm(list = ls()); gc()
 # load libraries
-library(dplyr)
+library(dplyr); library(testthat)
 # set paths
 path_output <- "output_temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
@@ -54,7 +54,7 @@ test_that("regression", {
   #
   # tests
   # no. of files
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 9)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 12)
   #
   # clean up
   rm(lauf)
@@ -80,7 +80,7 @@ test_that("regression train test", {
   #
   # tests
   # no. of files
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 12)
+  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 15)
   #
   # clean up
   rm(lauf)
@@ -164,27 +164,29 @@ assign('train', train, envir = .GlobalEnv)
 
 # Multilabel Classification -----------------------------------------------
 #
-test_that("multilabel classification", {
-  skip('skip')
-  # run models
-  lauf <- "multilabel_classification_automl.csv"
-  assign('lauf', lauf, envir = .GlobalEnv)
-  cat(lauf, "\n")
-  SRxgboost_h2o_automl(y = "type",
-                       data_train = train,
-                       # data_test = NULL,
-                       metric = "logloss",
-                       kfold = 5,
-                       max_runtime_sec = 0.5 *60,
-                       run_shap = TRUE)
-  #
-  # tests
-  # no. of files
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
-  #
-  # clean up
-  rm(lauf)
-})
+# NOT WORKING 2025-02-23
+#
+# test_that("multilabel classification", {
+#   skip('skip')
+#   # run models
+#   lauf <- "multilabel_classification_automl.csv"
+#   assign('lauf', lauf, envir = .GlobalEnv)
+#   cat(lauf, "\n")
+#   SRxgboost_h2o_automl(y = "type",
+#                        data_train = train,
+#                        # data_test = NULL,
+#                        metric = "logloss",
+#                        kfold = 5,
+#                        max_runtime_sec = 0.5 *60,
+#                        run_shap = TRUE)
+#   #
+#   # tests
+#   # no. of files
+#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+#   #
+#   # clean up
+#   rm(lauf)
+# })
 
 
 
