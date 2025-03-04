@@ -834,14 +834,14 @@ SRxgboost_plots <- function(lauf, rank = 1,
               if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
                 # in parallel
                 unregister_dopar()
-                # if (exists("n_cores")) {
-                #   pdp_n_core <- n_cores
-                # } else {
-                #   pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
-                # }
-                # cl <- parallel::makeCluster(pdp_n_core)
-                # doParallel::registerDoParallel(cl)
-                # # parallel::clusterEvalQ(cl, library(stats)) # ?
+                if (exists("n_cores")) {
+                  pdp_n_core <- n_cores
+                } else {
+                  pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
+                }
+                cl <- parallel::makeCluster(pdp_n_core)
+                doParallel::registerDoParallel(cl)
+                # parallel::clusterEvalQ(cl, library(stats)) # ?
                 #
                 invisible({
                   partial <- pdp::partial(bst_1fold,
@@ -859,9 +859,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 unregister_dopar()
                 #
                 # stop cluster
-                # try(parallel::stopCluster(cl), TRUE)
-                # try(parallel::stopCluster(cl), TRUE)
-                # try(rm(cl, pdp_n_core), TRUE); invisible(gc())
+                try(parallel::stopCluster(cl), TRUE)
+                try(parallel::stopCluster(cl), TRUE)
+                try(rm(cl, pdp_n_core), TRUE); invisible(gc())
               } else {
                 # single core
                 partial <- pdp::partial(bst_1fold,
@@ -1235,14 +1235,14 @@ SRxgboost_plots <- function(lauf, rank = 1,
               if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
                 # in parallel
                 unregister_dopar()
-                # if (exists("n_cores")) {
-                #   pdp_n_core <- n_cores
-                # } else {
-                #   pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
-                # }
-                # cl <- parallel::makeCluster(pdp_n_core)
-                # doParallel::registerDoParallel(cl)
-                # # parallel::clusterEvalQ(cl, library(stats)) # ?
+                if (exists("n_cores")) {
+                  pdp_n_core <- n_cores
+                } else {
+                  pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
+                }
+                cl <- parallel::makeCluster(pdp_n_core)
+                doParallel::registerDoParallel(cl)
+                # parallel::clusterEvalQ(cl, library(stats)) # ?
                 #
                 invisible({
                   partial <- pdp::partial(bst_1fold,
@@ -1258,9 +1258,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
                 unregister_dopar()
                 #
                 # stop cluster
-                # try(parallel::stopCluster(cl), TRUE)
-                # try(parallel::stopCluster(cl), TRUE)
-                # try(rm(cl, pdp_n_core), TRUE); invisible(gc())
+                try(parallel::stopCluster(cl), TRUE)
+                try(parallel::stopCluster(cl), TRUE)
+                try(rm(cl, pdp_n_core), TRUE); invisible(gc())
               } else {
                 # single core
                 partial <- pdp::partial(bst_1fold,
