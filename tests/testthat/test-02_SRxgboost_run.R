@@ -51,7 +51,7 @@ SRxgboost_data_prep(yname = "SalePrice", data_train = train,
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               nfold = 5 , nthreads = 1)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.01)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 #
 #
 ## tests
@@ -128,7 +128,7 @@ SRxgboost_data_prep(yname = "SalePrice",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               run_final_model = FALSE)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.01)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 #
 #
 ## tests
@@ -199,7 +199,7 @@ SRxgboost_data_prep(yname = "SalePrice",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               folds = folds)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.01)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 #
 #
 ## tests
@@ -275,7 +275,7 @@ SRxgboost_data_prep(yname = "SalePrice",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               nfold = 5)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.01)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 # clean up
 SRxgboost_cleanup()
 
@@ -301,7 +301,7 @@ SRxgboost_data_prep(yname = "SalePrice",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               nfold = 5)
 # plot results of best model
-SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.01)
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 
 
 ## tests
@@ -361,7 +361,7 @@ rm(sel_vars); SRxgboost_cleanup()
 #
 # ## plot results of best model
 # #
-# SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.01)
+# SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 #
 #
 # ## clean up
