@@ -26,7 +26,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                             pdp_sample = 20000, pdp_cuts = NULL,
                             pdp_int_sample = 1000, pdp_int_cuts_sample = 50,
                             pdp_parallel = TRUE) {
-  ### Initialisation ####
+  # Initialisation ####
   #
   # check lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
@@ -120,7 +120,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
   #
   #
   #
-  ### get OOFforecast and TESTforecast ####
+  # get OOFforecast and TESTforecast ####
   #
   SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf, top_rank = 1, ensemble = FALSE)
   if (length(y) == nrow(OOFforecast)) {
@@ -169,7 +169,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
   #
   #
   #
-  ### generate graphics ####
+  # generate graphics ####
   #
   if (plots) {
     ### downsample train_pr_oof if nrow > sample
@@ -226,9 +226,22 @@ SRxgboost_plots <- function(lauf, rank = 1,
       rm(list = ls(name = env), pos = env)
     }
     #
+    ## setup parallelisation cluster ####
+    if (pdp_parallel) {
+      unregister_dopar()
+      if (exists("n_cores")) {
+        pdp_n_core <- n_cores
+      } else {
+        pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
+      }
+      cl <- parallel::makeCluster(pdp_n_core)
+      doParallel::registerDoParallel(cl)
+      # parallel::clusterEvalQ(cl, library(stats)) # ?
+    }
     #
     #
-    #### Plot y vs. model prediction ####
+    #
+    ## Plot y vs. model prediction ####
     #
     if (objective == "regression") {   # SRfunctions::SR_is_number(y) & length(unique(y)) > 2
       # avoid negative values if min(y) >= 0
@@ -598,7 +611,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #
-    #### Residual drift ####
+    ## Residual drift ####
     #
     if (exists("test_pr")) {
       train_temp <- train_pr_oof %>%
@@ -614,7 +627,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #
-    #### Lift Chart ####
+    ## Lift Chart ####
     #
     if (objective %in% c("regression", "classification")) {
       train_pr_oof$group <- cut(train_pr_oof$pr,
@@ -692,9 +705,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     #
     #
-    #### 1way graphics ####
+    ## 1way graphics ####
     #
-    ##### variable importance ####
+    ### variable importance ####
     importance_matrix <- xgboost::xgb.importance(feature_names = colnames(train_mat),
                                                  model = bst)
     importance_matrix <- importance_matrix %>%
@@ -725,14 +738,13 @@ SRxgboost_plots <- function(lauf, rank = 1,
                        row.names = FALSE, col.names = TRUE, append = FALSE,
                        sep = ";", dec = ",")
     #
-    ##### Partial Dependence Plots ####
+    ### Partial Dependence Plots ####
     # message(substr(as.character(Sys.time()), 1, 19))
     #
     if (pdp_plots) {
       temp <- importance_matrix %>%
         dplyr::filter(Gain >= pdp_min_rel_Gain) %>%
         dplyr::mutate(Feature = as.character(Feature))
-      #
       if (nrow(temp) >= 1) {
         for (i in 1:nrow(temp)) {
           try({
@@ -833,16 +845,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
               #
               if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
                 # in parallel
-                unregister_dopar()
-                if (exists("n_cores")) {
-                  pdp_n_core <- n_cores
-                } else {
-                  pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
-                }
-                cl <- parallel::makeCluster(pdp_n_core)
-                doParallel::registerDoParallel(cl)
-                # parallel::clusterEvalQ(cl, library(stats)) # ?
-                #
                 invisible({
                   partial <- pdp::partial(bst_1fold,
                                           pred.var = temp$Feature[i],
@@ -856,12 +858,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           parallel = TRUE, # with foreach package
                                           paropts = list(.packages = "xgboost"))
                 })
-                unregister_dopar()
-                #
-                # stop cluster
-                try(parallel::stopCluster(cl), TRUE)
-                try(parallel::stopCluster(cl), TRUE)
-                try(rm(cl, pdp_n_core), TRUE); invisible(gc())
               } else {
                 # single core
                 partial <- pdp::partial(bst_1fold,
@@ -1110,10 +1106,10 @@ SRxgboost_plots <- function(lauf, rank = 1,
     }   # end of 'pdp_plots'
     #
     #
-    #### 2way graphics ####
+    ## 2way graphics ####
     # message(substr(as.character(Sys.time()), 1, 19))
     #
-    #####  variable importance ####
+    ###  variable importance ####
     #
     # downsample datenModell (because EIX::interactions is very slow)
     if (nrow(datenModell) > pdp_int_sample) {
@@ -1197,7 +1193,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                            "Best Model/VarImpInt 0.png"),
                     width = 9.92, height = 5.3)  # 4.67
     #
-    ##### Partial Dependence Plots ####
+    ### Partial Dependence Plots ####
     #
     # also plots possible for class predictions in "multilabel"                 # TODO
     # https://journal.r-project.org/archive/2017/RJ-2017-016/RJ-2017-016.pdf
@@ -1234,16 +1230,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
               # calculate stats
               if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
                 # in parallel
-                unregister_dopar()
-                if (exists("n_cores")) {
-                  pdp_n_core <- n_cores
-                } else {
-                  pdp_n_core <- parallel::detectCores() - 1 # min(parallel::detectCores() - 1, 6)
-                }
-                cl <- parallel::makeCluster(pdp_n_core)
-                doParallel::registerDoParallel(cl)
-                # parallel::clusterEvalQ(cl, library(stats)) # ?
-                #
                 invisible({
                   partial <- pdp::partial(bst_1fold,
                                           pred.var = c(temp$Parent[i], temp$Child[i]),
@@ -1255,12 +1241,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           parallel = TRUE,
                                           paropts = list(.packages = "xgboost"))
                 })
-                unregister_dopar()
-                #
-                # stop cluster
-                try(parallel::stopCluster(cl), TRUE)
-                try(parallel::stopCluster(cl), TRUE)
-                try(rm(cl, pdp_n_core), TRUE); invisible(gc())
               } else {
                 # single core
                 partial <- pdp::partial(bst_1fold,
@@ -1314,5 +1294,12 @@ SRxgboost_plots <- function(lauf, rank = 1,
       }
       # message(substr(as.character(Sys.time()), 1, 19))
     }   # end of 'pdp_plots'
+    if (pdp_parallel) {
+      # stop cluster
+      try(parallel::stopCluster(cl), TRUE)
+      try(parallel::stopCluster(cl), TRUE)
+      try(rm(cl, pdp_n_core), TRUE); invisible(gc())
+    }
   }   # end of 'plots'
 }
+
