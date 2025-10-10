@@ -17,6 +17,7 @@ TESTforecast
 Testdata
 XGB
 XGBOOST
+amazonaws
 auc
 automl
 bei
@@ -27,9 +28,9 @@ cv
 dmatrix
 erstellen
 evallist
-evals
 für
 hinzufügen
+http
 https
 inkl
 kalkulieren
@@ -49,8 +50,10 @@ multiclass
 multilabel
 ndcg
 nthread
+nthreads
 num
 params
+pdp
 prAUC
 qwk
 rds

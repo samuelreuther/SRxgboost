@@ -239,6 +239,10 @@ SRxgboost_plots <- function(lauf, rank = 1,
         ggplot2::geom_point() +
         ggplot2::geom_abline(intercept = 0, slope = 1,
                              colour = "red", linetype = "dashed") +
+        ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
+                                    labels = scales::format_format(big.mark = "'")) +
+        ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
+                                    labels = scales::format_format(big.mark = "'")) +
         ggplot2::labs(y = "model prediction", title = "y vs. model prediction",
                       subtitle = paste0("RMSE:    ", round(Metrics::rmse(train_pr_oof$y,
                                                                          train_pr_oof$pr), 3) %>%
@@ -868,7 +872,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
             p <- ggplot2::ggplot(stats, ggplot2::aes(x = x)) +
               # Balken für Count (sekundäre Y-Achse)
               ggplot2::geom_col(ggplot2::aes(y = Count * max_value_scale),
-                                fill = "gray70", alpha = 0.5) +
+                                fill = "gray60", alpha = 0.5) +
               # Linien für Predicted/Actual
               ggplot2::geom_line(ggplot2::aes(y = Predicted, color = "Predicted",
                                               group = 1), linewidth = 1) +
@@ -1176,17 +1180,20 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     # calculate most important interaction pairs Parent/Child
     #
+    pacman::p_load(data.table)
     dt <- data.table::as.data.table(xgboost::xgb.model.dt.tree(model = bst, trees = 0:999))
     if ("Node" %in% names(dt)) data.table::setnames(dt, "Node", "ID")
     if ("Gain" %in% names(dt)) data.table::setnames(dt, "Gain", "Quality")
     # Feature-Namen vereinheitlichen (ohne "f")
-    dt <- dt[, Feature := sub("^f", "", Feature)]
+    data.table::set(dt, j = "Feature", value = sub("^f", "", dt[["Feature"]])) # safe version
+    # dt <- dt[, Feature := sub("^f", "", Feature)]
     top <- sub("^f", "", head(xgboost::xgb.importance(model = bst)$Feature, 30))
     data.table::setkey(dt, Tree, ID)
     # Kanten mit Tree-Bezug
     edges <- rbindlist(list(dt[!is.na(Yes), .(Tree, ChildID = Yes, Parent = Feature)],
                             dt[!is.na(No),  .(Tree, ChildID = No,  Parent = Feature)]))
-    edges <- edges[, ChildID := as.integer(sub(".*-", "", ChildID))]
+    data.table::set(edges, j = "ChildID", value = as.integer(sub(".*-", "", edges[["ChildID"]]))) # safer
+    # edges <- edges[, ChildID := as.integer(sub(".*-", "", ChildID))]
     # Child-Knoten (Feature + Gain)
     childs <- dt[Feature != "Leaf", .(Tree, ID, Child = Feature, Quality)]
     # korrekter Join + Filter + Aggregation
