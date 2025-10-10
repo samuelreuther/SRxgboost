@@ -23,8 +23,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                             plots = TRUE, sample = 100000,
                             silent = FALSE,
                             pdp_plots = TRUE, pdp_min_rel_Gain = 0.01,
-                            pdp_sample = 20000, pdp_cuts = NULL,
-                            pdp_int_sample = 1000, pdp_int_cuts_sample = 50,
+                            pdp_sample = 50000, pdp_cuts = NULL,
+                            pdp_int_sample = 10000, pdp_int_cuts_sample = 50,
                             pdp_parallel = TRUE) {
   # Initialisation ####
   #
@@ -644,7 +644,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
                       width = 9.92, height = 5.3)  # 4.67
       rm(temp)
     } else {
-      browser()   # ToDo !!!
       # "multilabel
       # add baseline of random group
       set.seed(12345)
@@ -877,6 +876,16 @@ SRxgboost_plots <- function(lauf, rank = 1,
               ggplot2::geom_line(ggplot2::aes(y = Actual, color = "Actual", group = 1),
                                  linewidth = 1) +
               ggplot2::geom_point(ggplot2::aes(y = Actual, color = "Actual"), size = 2) +
+              ggplot2::geom_line(
+                ggplot2::aes(y = Partial_Dependence, color = "Partial_Dependence",
+                             group = 1), linewidth = 1) +
+              ggplot2::geom_point(
+                ggplot2::aes(y = Partial_Dependence, color = "Partial_Dependence"), size = 2) +
+              ggplot2::scale_color_manual(
+                values = scales::hue_pal()(3)[c(2, 1, 3)] %>%
+                  setNames(c("Actual", "Predicted", "Partial_Dependence")),
+                breaks = c("Actual", "Predicted", "Partial_Dependence"),
+                labels = c("Actual", "Predicted", "Partial Dependence")) +
               # Sekundäre Y-Achse für Count
               ggplot2::scale_y_continuous(
                 breaks = scales::pretty_breaks(6),
@@ -1139,8 +1148,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
     ###  variable importance ####
     #
     print("Plot VarImp interaction")
-    # downsample datenModell (because EIX::interactions is very slow)
-    if (nrow(datenModell) > pdp_int_sample) {
+    # downsample datenModell (because EIX::interactions is very slow) => EIX abgelöst!
+    if (nrow(datenModell) > pdp_int_sample & FALSE) {
       set.seed(12345)
       datenModell_ <- datenModell %>% dplyr::sample_n(pdp_int_sample)
       train_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_)
@@ -1173,12 +1182,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
     # Feature-Namen vereinheitlichen (ohne "f")
     dt <- dt[, Feature := sub("^f", "", Feature)]
     top <- sub("^f", "", head(xgboost::xgb.importance(model = bst)$Feature, 30))
-    setkey(dt, Tree, ID)
+    data.table::setkey(dt, Tree, ID)
     # Kanten mit Tree-Bezug
-    edges <- rbindlist(list(
-      dt[!is.na(Yes), .(Tree, ChildID = Yes, Parent = Feature)],
-      dt[!is.na(No),  .(Tree, ChildID = No,  Parent = Feature)]
-    ))
+    edges <- rbindlist(list(dt[!is.na(Yes), .(Tree, ChildID = Yes, Parent = Feature)],
+                            dt[!is.na(No),  .(Tree, ChildID = No,  Parent = Feature)]))
+    edges <- edges[, ChildID := as.integer(sub(".*-", "", ChildID))]
     # Child-Knoten (Feature + Gain)
     childs <- dt[Feature != "Leaf", .(Tree, ID, Child = Feature, Quality)]
     # korrekter Join + Filter + Aggregation
@@ -1186,25 +1194,21 @@ SRxgboost_plots <- function(lauf, rank = 1,
       Parent %in% top & Child %in% top,
       .(sumGain = sum(Quality, na.rm = TRUE), frequency = .N),
       by = .(Parent, Child)
-    ]
-    # undirektional zusammenfassen (16/45 == 45/16)
-    interactions <-
-      interactions[, .(sumGain = sum(sumGain), frequency = sum(frequency)),
-                   by = .(A = pmin(Parent, Child), B = pmax(Parent, Child))][order(-sumGain)]
+    ][, .(sumGain = sum(sumGain), frequency = sum(frequency)),
+      by = .(A = pmin(Parent, Child), B = pmax(Parent, Child))][order(-sumGain)]
     rm(dt, top, edges, childs)
-
     # clean up
     interactions_clean <- data.frame(interactions) %>%
-      mutate(Gain = sumGain / sum(sumGain),
-             Frequency = frequency / sum(frequency)) %>%
-      mutate_at(vars(A, B), ~as.numeric(.)) %>%
+      dplyr::mutate(Gain = sumGain / sum(sumGain),
+                    Frequency = frequency / sum(frequency)) %>%
+      dplyr::mutate_at(dplyr::vars(A, B), ~as.numeric(.)) %>%
       dplyr::left_join(data.frame(Parent = colnames(datenModell_eval),
                                   Number = 0:(ncol(datenModell_eval) - 1)),
-                       by = join_by(A == Number)) %>%
+                       by = dplyr::join_by(A == Number)) %>%
       dplyr::left_join(data.frame(Child = colnames(datenModell_eval),
                                   Number = 0:(ncol(datenModell_eval) - 1)),
-                       by = join_by(B == Number)) %>%
-      mutate(Feature = paste0(Parent, " - ", Child))
+                       by = dplyr::join_by(B == Number)) %>%
+      dplyr::mutate(Feature = paste0(Parent, " - ", Child))
     #
     # # ALT:
     # interactions <- EIX::interactions(bst, train_mat_, option = "pairs")
