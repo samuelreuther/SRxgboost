@@ -5,27 +5,24 @@
 #' @param lauf character
 #' @param rank integer, default = 1
 #' @param plots boolean, default = TRUE
-#' @param sample integer, default =
+#' @param sample integer, default = 100000
 #' @param silent boolean, default = FALSE
 #' @param pdp_plots boolean, default = TRUE
 #' @param pdp_min_rel_Gain numeric, default =  0.01
-#' @param pdp_sample integer, default = 20000
+#' @param pdp_sample integer, default = 50000
 #' @param pdp_cuts integer, default = NULL, depending on number of data points
-#'                 (max. 40 but in average at least pdp_int_cuts_sample per cut)
-#' @param pdp_int_sample integer, default = 1000
+#'                 (max. 50 but in average at least pdp_int_cuts_sample per cut)
+#' @param pdp_int_sample integer, default = 30000
 #' @param pdp_int_cuts_sample integer, default = 50
 #' @param pdp_parallel boolean, default = TRUE
 #'
 #' @return several files in folder
 #'
 #' @export
-SRxgboost_plots <- function(lauf, rank = 1,
-                            plots = TRUE, sample = 100000,
-                            silent = FALSE,
-                            pdp_plots = TRUE, pdp_min_rel_Gain = 0.01,
-                            pdp_sample = 100000, pdp_cuts = NULL,
-                            pdp_int_sample = 30000, pdp_int_cuts_sample = 50,
-                            pdp_parallel = TRUE) {
+SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
+                            sample = 100000, pdp_sample = 50000, pdp_int_sample = 30000,
+                            pdp_plots = TRUE, pdp_parallel = TRUE, pdp_min_rel_Gain = 0.01,
+                            pdp_cuts = NULL, pdp_int_cuts_sample = 50) {
   # Initialisation ####
   #
   # turn off scientific notation
@@ -263,7 +260,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       # "\nAUC:       ", round(pROC::auc(train_pr_oof$y,
       #                                  train_pr_oof$pr), 3)))
       ggplot2::ggsave(paste0(path_output_best, "Accuracy y vs. model prediction.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+                      width = 9.92, height = 5.3)
     } else if (objective == "classification") {
       # calculate ROC-curve
       ROC <- pROC::roc(response = train_pr_oof$y,
@@ -370,7 +367,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         # )
         # suppressWarnings(SRfunctions::SR_mosaicplot(df = train_pr_oof, cutoff = cut_off_a))
         ggplot2::ggsave(paste0(path_output_best, "Confusion Matrix.png"),
-                        width = 9.92, height = 5.3)  # 4.67
+                        width = 9.92, height = 5.3)
       }
       #
       # print ROC-curve
@@ -420,7 +417,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           "\nSpecificity/TNR:  ",
                                           round(as.numeric(confusion_matrix$byClass[2]), 3) %>%
                                             format(., nsmall = 3)))
-        ggplot2::ggsave(paste0(path_output_best, "ROC.png"), width = 9.92, height = 5.3)  # 4.67
+        ggplot2::ggsave(paste0(path_output_best, "ROC.png"), width = 9.92, height = 5.3)
       })
       rm(temp)
       #
@@ -497,7 +494,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                  var2 = factor(train_pr_oof$pr,
                                                levels = levels(factor(train_pr_oof$y))))
       ggplot2::ggsave(paste0(path_output_best, "Confusion Matrix.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+                      width = 9.92, height = 5.3)
       #
       # calculate mcc
       # ROCR currently supports only evaluation of binary classification tasks !!!
@@ -582,7 +579,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                                      format(., nsmall = 2)))) +
           ggplot2::theme(legend.text = ggplot2::element_text(size = 6))
         ggplot2::ggsave(paste0(path_output_best, "ROC.png"),
-                        width = 9.92, height = 5.3)  # 4.67
+                        width = 9.92, height = 5.3)
       })
     }
     #
@@ -645,7 +642,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       #   ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
       #   ggplot2::labs(title = "Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
       ggplot2::ggsave(paste0(path_output_best, "Lift Chart.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+                      width = 9.92, height = 5.3)
       rm(temp)
     } else {
       # "multilabel
@@ -693,7 +690,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6), limits = c(0, 1)) +
         ggplot2::labs(title = "Lift Chart", y = "Precision", x = "Class", colour = "")
       ggplot2::ggsave(paste0(path_output_best, "Lift Chart.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+                      width = 9.92, height = 5.3)
       rm(temp)
     }
     #
@@ -723,7 +720,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       ggplot2::facet_grid(~variable, scales = "free") +
       ggplot2::coord_flip()
     ggplot2::ggsave(paste0(path_output_best, "VarImp 0.png"),
-                    width = 9.92, height = 5.3)  # 4.67
+                    width = 9.92, height = 5.3)
     # save table
     assign('importance_matrix', importance_matrix, envir = .GlobalEnv)
     utils::write.table(importance_matrix,
@@ -759,7 +756,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               test_eval_mat_ <- test_eval_mat
               pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
             }
-            scaling_factor = nrow(datenModell_eval) / nrow(datenModell)
+            scaling_factor = nrow(datenModell_eval_) / nrow(datenModell)
             #
             # if (y_multiclass == FALSE) {   # linear, binary
             x <- min(stringdist::stringdist(temp$Feature[i], names(datenModell_eval_)))
@@ -772,8 +769,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
               stats <- data.frame(x = datenModell_eval_[, xlabel] == xlabel2,
                                   Actual = y_$y, Predicted = pr_$pr) %>%
                 dplyr::group_by(x) %>%
-                dplyr::summarise(Count_sample = dplyr::n(),
-                                 Count = round(Count_sample / scaling_factor),
+                dplyr::summarise(Count_eval_sample = dplyr::n(),
+                                 Count = round(Count_eval_sample / scaling_factor),
                                  Predicted = mean(Predicted),
                                  Actual = mean(Actual))
               stats <- stats %>%
@@ -814,8 +811,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                   dplyr::mutate(Group = xx) %>%
                   dplyr::group_by(Group) %>%
                   dplyr::summarise(x = x[1], x_orig = mean(x_orig),
-                                   Count_sample = dplyr::n(),
-                                   Count = round(Count_sample / scaling_factor),
+                                   Count_eval_sample = dplyr::n(),
+                                   Count = round(Count_eval_sample / scaling_factor),
                                    Predicted = mean(Predicted), Actual = mean(Actual))
               } else {
                 # summarise results
@@ -825,24 +822,24 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
                                             include.lowest = TRUE, dig.lab = 10)) %>%
-                  # dplyr::mutate(Group = cut(x_orig, breaks = unique(quantile(x_orig, seq(0, 1.01, 0.02))),
-                  #                    include.lowest = TRUE, dig.lab = 10)) %>%
                   dplyr::group_by(Group) %>%
                   dplyr::summarise(x = mean(x), x_orig = mean(x_orig),
-                                   Count_sample = dplyr::n(),
-                                   Count = round(Count_sample / scaling_factor),
+                                   Count_eval_sample = dplyr::n(),
+                                   Count = round(Count_eval_sample / scaling_factor),
                                    Predicted = mean(Predicted), Actual = mean(Actual))
               }
             }
             #
             ## partial dependence
             #
+            stats_ <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
+            #
             if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
               # in parallel
               invisible({
                 partial <- pdp::partial(bst_1fold,
                                         pred.var = temp$Feature[i],
-                                        pred.grid = data.frame(stats$x_orig) %>%
+                                        pred.grid = data.frame(stats_$x_orig) %>%
                                           stats::setNames(xlabel),
                                         # grid.resolution = 30,
                                         train = test_eval_mat_,
@@ -856,7 +853,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               # single core
               partial <- pdp::partial(bst_1fold,
                                       pred.var = temp$Feature[i],
-                                      pred.grid = data.frame(stats$x_orig) %>%
+                                      pred.grid = data.frame(stats_$x_orig) %>%
                                         stats::setNames(xlabel),
                                       # grid.resolution = 30,
                                       train = test_eval_mat_,
@@ -864,6 +861,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               # type = ifelse(objective == "multilabel",
               #               "classification", objective))
             }
+            rm(stats_)
             #
             stats <- stats %>%
               dplyr::left_join(partial, by = c("x_orig" = xlabel)) %>%
@@ -873,7 +871,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                              gsub("LabelEnc", "", xlabel), ".csv"),
                                row.names = FALSE, sep = ";")
             #
-            stats <- stats %>% dplyr::filter(Count_sample >= pdp_int_cuts_sample)
+            stats <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
             #
             max_value_scale <- max(c(stats$Predicted, stats$Actual)) / max(stats$Count)
             p <- ggplot2::ggplot(stats, ggplot2::aes(x = x)) +
@@ -1080,11 +1078,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
             xlabel <- gsub("[[:punct:]]", "", xlabel)
             try(ggplot2::ggsave(paste0(path_output_best, "VarImp ", i, " ",
                                        gsub("LabelEnc", "", xlabel), ".png"),
-                                plot = p, width = 9.92, height = 5.3))  # 4.67
+                                plot = p, width = 9.92, height = 5.3))
             try(rm(p), TRUE)
             try(ggplot2::ggsave(paste0(path_output_best, "VarImp ", i, " ",
                                        gsub("LabelEnc", "", xlabel), " PDP.png"),
-                                plot = p3, width = 9.92, height = 5.3))  # 4.67
+                                plot = p3, width = 9.92, height = 5.3))
             try(rm(p3), TRUE)
           })
         }
@@ -1117,7 +1115,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
           ggplot2::geom_point(colour = "steelblue") +
           ggplot2::geom_line(colour = "steelblue") +
           ggplot2::facet_wrap(vars(Variable), scales = "free_x") +
-          ggplot2::labs(title = "Partial Dependence Plots")
+          ggplot2::labs(title = "Partial Dependence")
         ggplot2::ggsave(paste0(path_output_best, "VarImp 0 Alle PDP.png"),
                         width = 9.92, height = 5.3)
         #
@@ -1145,7 +1143,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
                                           # labels = scales::percent) +
                                           labels = scales::format_format(big.mark = "'")) +
-              ggplot2::labs(title = "Partial Dependence Plot", x = "x", y = "y")
+              ggplot2::labs(title = "Partial Dependence", x = "x", y = "y")
             ggplot2::ggsave(paste0(path_output_best, "VarImp 0 Alle PDP 2.png"),
                             width = 9.92, height = 5.3)
           })
@@ -1282,7 +1280,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       ggplot2::facet_grid(~variable, scales = "free") +
       ggplot2::coord_flip()
     ggplot2::ggsave(paste0(path_output_best, "VarImpInt 0.png"),
-                    width = 9.92, height = 5.3)  # 4.67
+                    width = 9.92, height = 5.3)
     #
     ### Partial Dependence Plots ####
     #
@@ -1367,20 +1365,49 @@ SRxgboost_plots <- function(lauf, rank = 1,
               #                         plot = FALSE)
               #
               # save graphic
-              # p <- ggplot2::autoplot(partial) +
-              #   ggplot2::labs(title = "Partial Dependence Plot")
-              # ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
-              #                        gsub("_LabelEnc", "", temp$Feature[i]), ".png"), # nicht mehr
-              #                 plot = p, width = 9.92, height = 5.3)  # 4.67
-              # rm(p)
-              #
-              p <- pdp::plotPartial(partial, zlab = "y",
-                                    levelplot = FALSE, drape = TRUE)
+              col_x1 <- names(partial)[1]
+              col_x2 <- names(partial)[2]
+              p <- partial %>%
+                ggplot2::ggplot(ggplot2::aes(x = .data[[col_x1]], y = .data[[col_x2]],
+                                             fill = yhat)) +
+                ggplot2::geom_tile() +
+                ggplot2::scale_fill_gradient2(
+                  low = "blue", mid = "white", high = "red",
+                  midpoint = mean(partial$yhat, na.rm = TRUE),
+                  breaks = scales::pretty_breaks(4),
+                  labels = scales::format_format(big.mark = "'")) +
+                ggplot2::labs(title = "Partial Dependence", fill = "Predicted\nValue")
               ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
-                                     gsub("_LabelEnc", "", temp$Feature[i]), ".png"), # 3" 3D.png"D
+                                     gsub("_LabelEnc", "", temp$Feature[i]), ".png"),
+                              plot = p, width = 9.92, height = 5.3)
+              rm(col_x1, col_x2, p)
+              #
+              mid <- mean(partial$yhat, na.rm = TRUE)
+              rng <- range(partial$yhat, na.rm = TRUE)
+              n_below <- round(100 * (mid - rng[1]) / diff(rng))
+              n_above <- 100 - n_below
+              cols <- c(colorRampPalette(c("blue", "white"))(n_below),
+                        colorRampPalette(c("white", "red"))(n_above))
+              p <- pdp::plotPartial(partial, zlab = "Predicted  \nValue ",
+                                    levelplot = FALSE, drape = TRUE,
+                                    # colorkey = TRUE,
+                                    colorkey = list(labels = list(
+                                      at = pretty(partial$yhat),
+                                      labels = format(pretty(partial$yhat), big.mark = "'",
+                                                      scientific = FALSE))),
+                                    col.regions = cols,
+                                    scales = list(cex = 1, arrows = FALSE,
+                                                  z = list(draw = FALSE)),
+                                    par.settings = list(
+                                      axis.line = list(col = "black", lwd = 1.5),
+                                      fontsize = list(text = 10, points = 10)
+                                    ),
+                                    screen = list(z = 30, x = -60, y = 0))
+              ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
+                                     gsub("_LabelEnc", "", temp$Feature[i]), " 3D.png"),
                               plot = gridExtra::arrangeGrob(p),
-                              width = 9.92, height = 5.3)  # 4.67
-              rm(p)
+                              width = 7, height = 7)
+              print(p); rm(mid, rng, n_below, n_above, cols, p)
               #
               # save summary table
               utils::write.table(partial,
