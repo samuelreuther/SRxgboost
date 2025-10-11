@@ -23,8 +23,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                             plots = TRUE, sample = 100000,
                             silent = FALSE,
                             pdp_plots = TRUE, pdp_min_rel_Gain = 0.01,
-                            pdp_sample = 50000, pdp_cuts = NULL,
-                            pdp_int_sample = 10000, pdp_int_cuts_sample = 50,
+                            pdp_sample = 100000, pdp_cuts = NULL,
+                            pdp_int_sample = 30000, pdp_int_cuts_sample = 50,
                             pdp_parallel = TRUE) {
   # Initialisation ####
   #
@@ -236,7 +236,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       #
       # plot
       ggplot2::ggplot(train_pr_oof, ggplot2::aes(x = y, y = pr)) +
-        ggplot2::geom_point() +
+        ggplot2::geom_point(shape = 4, alpha = 0.5) +
         ggplot2::geom_abline(intercept = 0, slope = 1,
                              colour = "red", linetype = "dashed") +
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
@@ -759,6 +759,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               test_eval_mat_ <- test_eval_mat
               pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
             }
+            scaling_factor = nrow(datenModell_eval) / nrow(datenModell)
             #
             # if (y_multiclass == FALSE) {   # linear, binary
             x <- min(stringdist::stringdist(temp$Feature[i], names(datenModell_eval_)))
@@ -771,7 +772,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
               stats <- data.frame(x = datenModell_eval_[, xlabel] == xlabel2,
                                   Actual = y_$y, Predicted = pr_$pr) %>%
                 dplyr::group_by(x) %>%
-                dplyr::summarise(Count = dplyr::n(),
+                dplyr::summarise(Count_sample = dplyr::n(),
+                                 Count = round(Count_sample / scaling_factor),
                                  Predicted = mean(Predicted),
                                  Actual = mean(Actual))
               stats <- stats %>%
@@ -811,15 +813,14 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = xx) %>%
                   dplyr::group_by(Group) %>%
-                  dplyr::summarise(x = x[1],
-                                   x_orig = mean(x_orig),
-                                   Count = dplyr::n(),
-                                   Predicted = mean(Predicted),
-                                   Actual = mean(Actual))
+                  dplyr::summarise(x = x[1], x_orig = mean(x_orig),
+                                   Count_sample = dplyr::n(),
+                                   Count = round(Count_sample / scaling_factor),
+                                   Predicted = mean(Predicted), Actual = mean(Actual))
               } else {
                 # summarise results
                 if (is.null(pdp_cuts))
-                  pdp_cuts <- min(floor(length(xx) / pdp_int_cuts_sample), 40)
+                  pdp_cuts <- min(floor(length(xx) / pdp_int_cuts_sample), 50)
                 stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
@@ -827,7 +828,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
                   # dplyr::mutate(Group = cut(x_orig, breaks = unique(quantile(x_orig, seq(0, 1.01, 0.02))),
                   #                    include.lowest = TRUE, dig.lab = 10)) %>%
                   dplyr::group_by(Group) %>%
-                  dplyr::summarise(x = mean(x), x_orig = mean(x_orig), Count = dplyr::n(),
+                  dplyr::summarise(x = mean(x), x_orig = mean(x_orig),
+                                   Count_sample = dplyr::n(),
+                                   Count = round(Count_sample / scaling_factor),
                                    Predicted = mean(Predicted), Actual = mean(Actual))
               }
             }
@@ -865,10 +868,14 @@ SRxgboost_plots <- function(lauf, rank = 1,
             stats <- stats %>%
               dplyr::left_join(partial, by = c("x_orig" = xlabel)) %>%
               dplyr::rename("Partial_Dependence" = "yhat")
-            stats <- stats %>% dplyr::filter(Count >= pdp_int_cuts_sample)
+            # save stats
+            utils::write.table(stats, paste0(path_output_best, "VarImp ", i, " ",
+                                             gsub("LabelEnc", "", xlabel), ".csv"),
+                               row.names = FALSE, sep = ";")
             #
-            max_value_scale <-
-              (max(c(stats$Predicted, stats$Actual)) * 1.3) / max(stats$Count)
+            stats <- stats %>% dplyr::filter(Count_sample >= pdp_int_cuts_sample)
+            #
+            max_value_scale <- max(c(stats$Predicted, stats$Actual)) / max(stats$Count)
             p <- ggplot2::ggplot(stats, ggplot2::aes(x = x)) +
               # Balken für Count (sekundäre Y-Achse)
               ggplot2::geom_col(ggplot2::aes(y = Count * max_value_scale),
@@ -894,7 +901,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               ggplot2::scale_y_continuous(
                 breaks = scales::pretty_breaks(6),
                 labels = scales::format_format(big.mark = "'"),
-                sec.axis = ggplot2::sec_axis(~ . / max_value_scale, name = "Count (grey bar)",
+                sec.axis = ggplot2::sec_axis(~ . / max_value_scale, name = "Count (gray bar)",
                                              breaks = scales::pretty_breaks(6),
                                              labels = scales::format_format(big.mark = "'"))) +
               ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
@@ -902,10 +909,17 @@ SRxgboost_plots <- function(lauf, rank = 1,
                              legend.title = ggplot2::element_blank())
             #
             if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-              # if (cuts > 8) {                                               # factor
-              #   p <- p + theme(axis.text.x = element_text(angle = 90,
-              #                                               hjust = 1, vjust = 0.3))
-              # }
+              p <- p +                                            # factor
+                ggplot2::scale_x_discrete(labels = function(x) {
+                  x %>%
+                    gsub("_", " ", .) %>%
+                    gsub("-", "- ", .) %>%
+                    gsub("/", "/ ", .) %>%
+                    stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>% # split CamelCase
+                    stringr::str_wrap(width = 12)                # wrap after ~10 chars
+                })
+                # ggplot2::scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 12))
+              # p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
             } else if (SRfunctions::SR_is_date(stats$x)) {               # date
               spanne = as.numeric(difftime(max(stats$x), min(stats$x), units = "days"))
               if (spanne > 365.25 * 20) {
@@ -1027,7 +1041,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
             # simple PDP-graphic
             p3 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Partial_Dependence)) +
               ggplot2::geom_point(size = 2, colour = "steelblue") +
-              ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
+              ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
               ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6))
             if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
               # if (cuts > 8) {                                               # factor
@@ -1072,10 +1086,6 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                        gsub("LabelEnc", "", xlabel), " PDP.png"),
                                 plot = p3, width = 9.92, height = 5.3))  # 4.67
             try(rm(p3), TRUE)
-            # save summary table
-            utils::write.table(stats, paste0(path_output_best, "VarImp ", i, " ",
-                                             gsub("LabelEnc", "", xlabel), ".csv"),
-                               row.names = FALSE, sep = ";")
           })
         }
         #
@@ -1180,30 +1190,35 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     # calculate most important interaction pairs Parent/Child
     #
-    pacman::p_load(data.table)
-    dt <- data.table::as.data.table(xgboost::xgb.model.dt.tree(model = bst, trees = 0:999))
-    if ("Node" %in% names(dt)) data.table::setnames(dt, "Node", "ID")
-    if ("Gain" %in% names(dt)) data.table::setnames(dt, "Gain", "Quality")
-    # Feature-Namen vereinheitlichen (ohne "f")
-    data.table::set(dt, j = "Feature", value = sub("^f", "", dt[["Feature"]])) # safe version
-    # dt <- dt[, Feature := sub("^f", "", Feature)]
-    top <- sub("^f", "", head(xgboost::xgb.importance(model = bst)$Feature, 30))
-    data.table::setkey(dt, Tree, ID)
-    # Kanten mit Tree-Bezug
-    edges <- rbindlist(list(dt[!is.na(Yes), .(Tree, ChildID = Yes, Parent = Feature)],
-                            dt[!is.na(No),  .(Tree, ChildID = No,  Parent = Feature)]))
-    data.table::set(edges, j = "ChildID", value = as.integer(sub(".*-", "", edges[["ChildID"]]))) # safer
-    # edges <- edges[, ChildID := as.integer(sub(".*-", "", ChildID))]
-    # Child-Knoten (Feature + Gain)
-    childs <- dt[Feature != "Leaf", .(Tree, ID, Child = Feature, Quality)]
-    # korrekter Join + Filter + Aggregation
-    interactions <- childs[edges, on = .(Tree, ID = ChildID)][
-      Parent %in% top & Child %in% top,
-      .(sumGain = sum(Quality, na.rm = TRUE), frequency = .N),
-      by = .(Parent, Child)
-    ][, .(sumGain = sum(sumGain), frequency = sum(frequency)),
-      by = .(A = pmin(Parent, Child), B = pmax(Parent, Child))][order(-sumGain)]
-    rm(dt, top, edges, childs)
+    dt <- as.data.frame(xgboost::xgb.model.dt.tree(model = bst, trees = 0:999))
+    top <- as.data.frame(xgboost::xgb.importance(model = bst)) %>%
+      dplyr::mutate(Feature = sub("^f", "", Feature)) %>%
+      dplyr::slice_head(n = 30) %>%
+      dplyr::pull(Feature)
+    edges <- dplyr::bind_rows(
+      dt %>%
+        dplyr::filter(!is.na(Yes)) %>%
+        dplyr::transmute(Tree, ChildID = Yes, Parent = Feature),
+      dt %>%
+        dplyr::filter(!is.na(No))  %>%
+        dplyr::transmute(Tree, ChildID = No,  Parent = Feature)) %>%
+      dplyr::mutate(ChildID = as.integer(sub(".*-", "", ChildID)))
+    childs <- dt %>%
+      dplyr::filter(Feature != "Leaf") %>%
+      dplyr::transmute(Tree, ID = Node, Child = Feature, Gain = Quality)
+    interactions <- dplyr::left_join(childs, edges, by = c("Tree", "ID" = "ChildID")) %>%
+      dplyr::filter(Parent %in% top, Child %in% top) %>%
+      dplyr::group_by(Parent, Child) %>%
+      dplyr::summarise(sumGain = sum(Gain, na.rm = TRUE),
+                       frequency = dplyr::n(),
+                       .groups = "drop") %>%
+      dplyr::mutate(A = pmin(Parent, Child), B = pmax(Parent, Child)) %>%
+      dplyr::group_by(A, B) %>%
+      dplyr::summarise(sumGain = sum(sumGain),
+                       frequency = sum(frequency),
+                       .groups = "drop") %>%
+      dplyr::arrange(dplyr::desc(sumGain))
+    base::rm(dt, top, edges, childs)
     # clean up
     interactions_clean <- data.frame(interactions) %>%
       dplyr::mutate(Gain = sumGain / sum(sumGain),
@@ -1352,17 +1367,17 @@ SRxgboost_plots <- function(lauf, rank = 1,
               #                         plot = FALSE)
               #
               # save graphic
-              p <- ggplot2::autoplot(partial) +
-                ggplot2::labs(title = "Partial Dependence Plot")
-              ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
-                                     gsub("_LabelEnc", "", temp$Feature[i]), ".png"),
-                              plot = p, width = 9.92, height = 5.3)  # 4.67
-              rm(p)
+              # p <- ggplot2::autoplot(partial) +
+              #   ggplot2::labs(title = "Partial Dependence Plot")
+              # ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
+              #                        gsub("_LabelEnc", "", temp$Feature[i]), ".png"), # nicht mehr
+              #                 plot = p, width = 9.92, height = 5.3)  # 4.67
+              # rm(p)
               #
               p <- pdp::plotPartial(partial, zlab = "y",
                                     levelplot = FALSE, drape = TRUE)
               ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
-                                     gsub("_LabelEnc", "", temp$Feature[i]), " 3D.png"),
+                                     gsub("_LabelEnc", "", temp$Feature[i]), ".png"), # 3" 3D.png"D
                               plot = gridExtra::arrangeGrob(p),
                               width = 9.92, height = 5.3)  # 4.67
               rm(p)

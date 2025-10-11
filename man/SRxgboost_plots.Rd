@@ -12,9 +12,9 @@ SRxgboost_plots(
   silent = FALSE,
   pdp_plots = TRUE,
   pdp_min_rel_Gain = 0.01,
-  pdp_sample = 50000,
+  pdp_sample = 1e+05,
   pdp_cuts = NULL,
-  pdp_int_sample = 10000,
+  pdp_int_sample = 30000,
   pdp_int_cuts_sample = 50,
   pdp_parallel = TRUE
 )
