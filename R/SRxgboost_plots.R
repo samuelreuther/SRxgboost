@@ -868,28 +868,44 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               dplyr::rename("Partial_Dependence" = "yhat")
             # save stats
             utils::write.table(stats, paste0(path_output_best, "VarImp ", i, " ",
-                                             gsub("LabelEnc", "", xlabel), ".csv"),
+                                             gsub("_LabelEnc", "", xlabel), ".csv"),
                                row.names = FALSE, sep = ";")
             #
             stats <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
             #
-            max_value_scale <- max(c(stats$Predicted, stats$Actual)) / max(stats$Count)
+            scale <- max(stats$Count, na.rm = TRUE) /
+              max(c(stats$Predicted, stats$Actual, stats$Partial_Dependence), na.rm = TRUE)
+            scale <- dplyr::if_else(scale < 0.5, scale, round(scale))
+            scale <- dplyr::case_when(round(scale, -nchar(scale)) == 0 &
+                                        round(scale) > 0 ~ round(scale, -nchar(scale) + 1),
+                                      round(scale, -nchar(scale)) > 0 &
+                                        round(scale) > 0 ~ round(scale, -nchar(scale)),
+                                      round(scale * 10) > 0 ~ round(scale, 1),
+                                      round(scale * 100) > 0 ~ round(scale, 2),
+                                      round(scale * 1000) > 0 ~ round(scale, 3),
+                                      round(scale * 10000) > 0 ~ round(scale, 4),
+                                      TRUE ~ scale)
+            scale <- 1 / scale
+            #
             p <- ggplot2::ggplot(stats, ggplot2::aes(x = x)) +
               # Balken für Count (sekundäre Y-Achse)
-              ggplot2::geom_col(ggplot2::aes(y = Count * max_value_scale),
-                                fill = "gray60", alpha = 0.5) +
+              ggplot2::geom_col(ggplot2::aes(y = Count * scale),
+                                fill = "gray60", alpha = 0.5, na.rm = TRUE) +
               # Linien für Predicted/Actual
               ggplot2::geom_line(ggplot2::aes(y = Predicted, color = "Predicted",
-                                              group = 1), linewidth = 1) +
-              ggplot2::geom_point(ggplot2::aes(y = Predicted, color = "Predicted"), size = 2) +
+                                              group = 1), linewidth = 1, na.rm = TRUE) +
+              ggplot2::geom_point(ggplot2::aes(y = Predicted, color = "Predicted"),
+                                  size = 2, na.rm = TRUE) +
               ggplot2::geom_line(ggplot2::aes(y = Actual, color = "Actual", group = 1),
-                                 linewidth = 1) +
-              ggplot2::geom_point(ggplot2::aes(y = Actual, color = "Actual"), size = 2) +
+                                 linewidth = 1, na.rm = TRUE) +
+              ggplot2::geom_point(ggplot2::aes(y = Actual, color = "Actual"),
+                                  size = 2, na.rm = TRUE) +
               ggplot2::geom_line(
                 ggplot2::aes(y = Partial_Dependence, color = "Partial_Dependence",
-                             group = 1), linewidth = 1) +
-              ggplot2::geom_point(
-                ggplot2::aes(y = Partial_Dependence, color = "Partial_Dependence"), size = 2) +
+                             group = 1), linewidth = 1, na.rm = TRUE) +
+              ggplot2::geom_point(ggplot2::aes(y = Partial_Dependence,
+                                               color = "Partial_Dependence"),
+                                  size = 2, na.rm = TRUE) +
               ggplot2::scale_color_manual(
                 values = scales::hue_pal()(3)[c(2, 1, 3)] %>%
                   setNames(c("Actual", "Predicted", "Partial_Dependence")),
@@ -899,7 +915,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               ggplot2::scale_y_continuous(
                 breaks = scales::pretty_breaks(6),
                 labels = scales::format_format(big.mark = "'"),
-                sec.axis = ggplot2::sec_axis(~ . / max_value_scale, name = "Count (gray bar)",
+                sec.axis = ggplot2::sec_axis(~ . / scale, name = "Count (gray bar)",
                                              breaks = scales::pretty_breaks(6),
                                              labels = scales::format_format(big.mark = "'"))) +
               ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
@@ -907,18 +923,17 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
                              legend.title = ggplot2::element_blank())
             #
             if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-              p <- p +                                            # factor
+              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
+              p <- p +                                                          # factor
                 ggplot2::scale_x_discrete(labels = function(x) {
-                  x %>%
-                    gsub("_", " ", .) %>%
+                  gsub("_", " ", x) %>%
                     gsub("-", "- ", .) %>%
                     gsub("/", "/ ", .) %>%
                     stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>% # split CamelCase
                     stringr::str_wrap(width = 12)                # wrap after ~10 chars
                 })
-                # ggplot2::scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 12))
-              # p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
             } else if (SRfunctions::SR_is_date(stats$x)) {               # date
+              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
               spanne = as.numeric(difftime(max(stats$x), min(stats$x), units = "days"))
               if (spanne > 365.25 * 20) {
                 p <- p + ggplot2::scale_x_date(date_breaks = "10 years",
@@ -942,111 +957,30 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
                                                date_minor_breaks = "1 day")
               }
             } else {
-              p <- p +                                                        # numeric
+              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
+              p <- p +                                                          # numeric
                 # ggplot2::geom_line(linewidth = I(1)) +
                 ggplot2::scale_x_continuous(
                   breaks = scales::pretty_breaks(ifelse(nrow(stats) > 10, 8, 6)))
             }; print(p)
             #
-            # SR_plot_avg_and_count_per_group(stats %>%
-            #                                   rename(COUNT = Count, AVG = Actual),
-            #                                 "Actual", "x",
-            #                                 calculate_stats = FALSE,
-            #                                 title = "Test")
-            #
-            #   # ALT !!!
-            #   # evtl. noch skalieren !!!
-            #   #
-            #   stats_long <- reshape2::melt(stats %>% dplyr::select(x, 5:7), id.vars = "x")
-            #   #
-            #   p1 <- ggplot2::ggplot(stats_long,
-            #                         ggplot2::aes(x = x, y = value, colour = variable)) +
-            #     ggplot2::geom_point(size = 2) +
-            #     ggplot2::labs(x = "", y = "Value") +
-            #     # ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
-            #     ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
-            #     ggplot2::theme(legend.position = "top",
-            #                    legend.title = ggplot2::element_blank())
-            #   if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-            #     # if (cuts > 8) {                                               # factor
-            #     #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
-            #     #                                               hjust = 1, vjust = 0.3))
-            #     # }
-            #   } else if (SRfunctions::SR_is_date(stats_long$x)) {               # date
-            #     spanne = as.numeric(difftime(max(stats_long$x), min(stats_long$x),
-            #                                  units = "days"))
-            #     if (spanne > 365.25 * 20) {
-            #       p1 <- p1 + ggplot2::scale_x_date(date_breaks = "10 years",
-            #                                        date_labels = "%Y",
-            #                                        date_minor_breaks = "1 year")
-            #     } else if (spanne > 365.25 * 3) {
-            #       p1 <- p1 + ggplot2::scale_x_date(date_breaks = "year",
-            #                                        date_labels = "%Y",
-            #                                        date_minor_breaks = "3 months")
-            #     } else if (spanne > 365.25) {
-            #       p1 <- p1 + ggplot2::scale_x_date(date_breaks = "3 months",
-            #                                        date_labels = "%Y-%m",
-            #                                        date_minor_breaks = "1 month")
-            #     } else if (spanne > 30) {
-            #       p1 <- p1 + ggplot2::scale_x_date(date_breaks = "1 month",
-            #                                        date_labels = "%Y-%m-%d",
-            #                                        date_minor_breaks = "1 week")
-            #     } else {
-            #       p1 <- p1 + ggplot2::scale_x_date(date_breaks = "1 week",
-            #                                        date_labels = "%Y-%m-%d",
-            #                                        date_minor_breaks = "1 day")
-            #     }
-            #   } else {
-            #     p1 <- p1 + ggplot2::geom_line(linewidth = I(1)) +               # numeric
-            #       ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
-            #   }; p1
-            #   p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
-            #     ggplot2::geom_bar(stat = "identity", position = "dodge", orientation = "x") +
-            #     ggplot2::labs(x = gsub("_LabelEnc", "", xlabel))
-            #   if ((gsub("_LabelEnc", "", temp$Feature[i]) %in% factor_encoding$feature)) {
-            #     # if (cuts > 8) {                                               # factor
-            #     #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
-            #     #                                               hjust = 1, vjust = 0.3))
-            #     # }
-            #   } else if (SRfunctions::SR_is_date(stats_long$x)) {               # date
-            #     if (spanne > 365.25 * 20) {
-            #       p2 <- p2 + ggplot2::scale_x_date(date_breaks = "10 years",
-            #                                        date_labels = "%Y",
-            #                                        date_minor_breaks = "1 year")
-            #     } else if (spanne > 365.25 * 3) {
-            #       p2 <- p2 + ggplot2::scale_x_date(date_breaks = "year",
-            #                                        date_labels = "%Y",
-            #                                        date_minor_breaks = "3 months")
-            #     } else if (spanne > 365.25) {
-            #       p2 <- p2 + ggplot2::scale_x_date(date_breaks = "3 months",
-            #                                        date_labels = "%Y-%m",
-            #                                        date_minor_breaks = "1 month")
-            #     } else if (spanne > 30) {
-            #       p2 <- p2 + ggplot2::scale_x_date(date_breaks = "1 month",
-            #                                        date_labels = "%Y-%m-%d",
-            #                                        date_minor_breaks = "1 week")
-            #     } else {
-            #       p2 <- p2 + ggplot2::scale_x_date(date_breaks = "1 week",
-            #                                        date_labels = "%Y-%m-%d",
-            #                                        date_minor_breaks = "1 day")
-            #     }
-            #   } else {
-            #     p2 <- p2 + ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8)) # numeric
-            #   }; p2
-            #   p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
-            # }
-            #
             # simple PDP-graphic
             p3 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Partial_Dependence)) +
-              ggplot2::geom_point(size = 2, colour = "steelblue") +
+              ggplot2::geom_point(size = 2, colour = "steelblue", na.rm = TRUE) +
               ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
               ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6))
             if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-              # if (cuts > 8) {                                               # factor
-              #   p3 <- p3 + theme(axis.text.x = element_text(angle = 90,
-              #                                               hjust = 1, vjust = 0.3))
-              # }
+              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
+              p <- p +                                                          # factor
+                ggplot2::scale_x_discrete(labels = function(x) {
+                  gsub("_", " ", x) %>%
+                    gsub("-", "- ", .) %>%
+                    gsub("/", "/ ", .) %>%
+                    stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>% # split CamelCase
+                    stringr::str_wrap(width = 12)                # wrap after ~10 chars
+                })
             } else if (SRfunctions::SR_is_date(stats$x)) {               # date
+              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
               spanne = as.numeric(difftime(max(stats$x), min(stats$x), units = "days"))
               if (spanne > 365.25 * 20) {
                 p3 <- p3 + ggplot2::scale_x_date(date_breaks = "10 years",
@@ -1070,18 +1004,21 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
                                                  date_minor_breaks = "1 day")
               }
             } else {
-              p3 <- p3 + ggplot2::geom_line(linewidth = I(1), colour = "steelblue") + # numeric
-                ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
+              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
+              p3 <- p3 +                                                        # numeric
+                ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +
+                ggplot2::scale_x_continuous(
+                  breaks = scales::pretty_breaks(ifelse(nrow(stats) > 10, 8, 6)))
             }
             #
             # save graphic
-            xlabel <- gsub("[[:punct:]]", "", xlabel)
+            # xlabel <- gsub("[[:punct:]]", "", xlabel)
             try(ggplot2::ggsave(paste0(path_output_best, "VarImp ", i, " ",
-                                       gsub("LabelEnc", "", xlabel), ".png"),
+                                       gsub("_LabelEnc", "", xlabel), ".png"),
                                 plot = p, width = 9.92, height = 5.3))
             try(rm(p), TRUE)
             try(ggplot2::ggsave(paste0(path_output_best, "VarImp ", i, " ",
-                                       gsub("LabelEnc", "", xlabel), " PDP.png"),
+                                       gsub("_LabelEnc", "", xlabel), " PDP.png"),
                                 plot = p3, width = 9.92, height = 5.3))
             try(rm(p3), TRUE)
           })
@@ -1093,8 +1030,8 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
           data.frame(filename = .) %>%
           dplyr::filter(!grepl("VarImp 0.csv", filename)) %>%
           dplyr::mutate(Variable =
-                          SRfunctions::SR_trim_text(substr(basename(filename),
-                                                           10, nchar(basename(filename)) - 4)),
+                          SRfunctions::SR_trim_text(
+                            substr(basename(filename), 10, nchar(basename(filename)) - 4)),
                         Variable = paste0(row_number(), " ", Variable))
         #
         df_temp <- data.frame()
@@ -1102,8 +1039,8 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
           df_temp <- dplyr::bind_rows(
             df_temp,
             rio::import(files$filename[i]) %>%
-              dplyr::mutate(Group = factor(Group,
-                                           levels = rio::import(files$filename[i])$Group),
+              dplyr::mutate(Group =
+                              factor(Group, levels = rio::import(files$filename[i])$Group),
                             x = as.character(x),
                             Variable = files$Variable[i],
                             .before = 1))
@@ -1112,42 +1049,33 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
         #
         df_temp %>%
           ggplot2::ggplot(ggplot2::aes(x = Group, y = Partial_Dependence, group = Variable)) +
-          ggplot2::geom_point(colour = "steelblue") +
-          ggplot2::geom_line(colour = "steelblue") +
+          ggplot2::geom_point(colour = "steelblue", na.rm = TRUE) +
+          ggplot2::geom_line(colour = "steelblue", na.rm = TRUE) +
           ggplot2::facet_wrap(vars(Variable), scales = "free_x") +
           ggplot2::labs(title = "Partial Dependence")
         ggplot2::ggsave(paste0(path_output_best, "VarImp 0 Alle PDP.png"),
                         width = 9.92, height = 5.3)
         #
         # plot of selected variables
-        if (TRUE) {
-          # lauf <- "XGB_2023_AnteilAB_v11"
-          # df_temp <- readRDS(paste0(path_output_best, "VarImp 0 Alle PDP.rds"))
-          df_temp %>% dplyr::count(Variable)
-          suppressWarnings({
-            df_temp %>%
-              # select x-variables with a similar range:
-              dplyr::filter(Variable %in% c(unique(df_temp$Variable)[1:5])) %>%
-              # dplyr::mutate(Variable = Variable %>%
-              #                 sub("KD", "Kunden ", .) %>%
-              #                 sub("ANT", " Anteil", .)) %>%
-              dplyr::mutate(x = as.numeric(x)) %>%
-              ggplot2::ggplot(ggplot2::aes(x = x, y = Partial_Dependence,
-                                           group = Variable, colour = Variable)) +
-              ggplot2::geom_point() +
-              ggplot2::geom_line() +
-              ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
-                                          labels = scales::format_format(big.mark = "'"),
-                                          transform = "log1p") +
-              # transform = scales::transform_yj()) +
-              ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
-                                          # labels = scales::percent) +
-                                          labels = scales::format_format(big.mark = "'")) +
-              ggplot2::labs(title = "Partial Dependence", x = "x", y = "y")
-            ggplot2::ggsave(paste0(path_output_best, "VarImp 0 Alle PDP 2.png"),
-                            width = 9.92, height = 5.3)
-          })
-        }
+        df_temp %>% dplyr::count(Variable)
+        suppressWarnings({
+          df_temp %>%
+            # select x-variables with a similar range:
+            dplyr::filter(Variable %in% c(unique(df_temp$Variable)[1:5])) %>%
+            dplyr::mutate(x = as.numeric(x)) %>%
+            ggplot2::ggplot(ggplot2::aes(x = x, y = Partial_Dependence,
+                                         group = Variable, colour = Variable)) +
+            ggplot2::geom_point(na.rm = TRUE) +
+            ggplot2::geom_line(na.rm = TRUE) +
+            ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
+                                        labels = scales::format_format(big.mark = "'"),
+                                        transform = "log1p") +
+            ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
+                                        labels = scales::format_format(big.mark = "'")) +
+            ggplot2::labs(title = "Partial Dependence", x = "x", y = "y")
+          ggplot2::ggsave(paste0(path_output_best, "VarImp 0 Alle PDP 2.png"),
+                          width = 9.92, height = 5.3)
+        })
         #
         rm(df_temp)
       }
