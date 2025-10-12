@@ -1,3 +1,6 @@
+# SRxgboost 0.7.1
+- Added 'SRxgboost_check_uncertainty()'
+
 # SRxgboost 0.7.0
 - Worked on 'SRxgboost_plots()' to speed up Partial Dependence Plots
 

@@ -3,6 +3,7 @@
 export("%>%")
 export(SRxgboost_calculate_distance)
 export(SRxgboost_calculate_drift)
+export(SRxgboost_check_uncertainty)
 export(SRxgboost_cleanup)
 export(SRxgboost_compare_sample_methods)
 export(SRxgboost_covariate_drift_XGB)

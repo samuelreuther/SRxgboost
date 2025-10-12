@@ -48,8 +48,10 @@ SRxgboost_data_prep(yname = "SalePrice", data_train = train,
                     no_folds = 5, nthreads = 1,
                     objective = "regression")
 # run models
-SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
               nfold = 5 , nthreads = 1)
+# check uncertain forecasts
+uncertainty <- SRxgboost_check_uncertainty(lauf = lauf)
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 #
