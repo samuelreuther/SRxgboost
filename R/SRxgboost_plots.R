@@ -874,7 +874,9 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
             stats <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
             #
             scale <- max(stats$Count, na.rm = TRUE) /
-              max(c(stats$Predicted, stats$Actual, stats$Partial_Dependence), na.rm = TRUE)
+              mean(max(stats$Predicted, na.rm = TRUE),
+                   max(stats$Actual, na.rm = TRUE),
+                   max(stats$Partial_Dependence, na.rm = TRUE))
             scale <- dplyr::if_else(scale < 0.5, scale, round(scale))
             scale <- dplyr::case_when(round(scale, -nchar(scale)) == 0 &
                                         round(scale) > 0 ~ round(scale, -nchar(scale) + 1),
@@ -887,7 +889,44 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
                                       TRUE ~ scale)
             scale <- 1 / scale
             #
+            if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) { # factor
+              x_scale <- ggplot2::scale_x_discrete(labels = function(x) {
+                gsub("_", " ", x) %>%
+                  gsub("-", "- ", .) %>%
+                  gsub("/", "/ ", .) %>%
+                  stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>% # split CamelCase
+                  stringr::str_wrap(width = 12)                # wrap after ~12 chars
+              })
+            } else if (SRfunctions::SR_is_date(stats$x)) {                      # date
+              spanne = as.numeric(difftime(max(stats$x), min(stats$x), units = "days"))
+              if (spanne > 365.25 * 20) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "10 years",
+                                                 date_labels = "%Y",
+                                                 date_minor_breaks = "1 year")
+              } else if (spanne > 365.25 * 3) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "year",
+                                                 date_labels = "%Y",
+                                                 date_minor_breaks = "3 months")
+              } else if (spanne > 365.25) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "3 months",
+                                                 date_labels = "%Y-%m",
+                                                 date_minor_breaks = "1 month")
+              } else if (spanne > 30) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "1 month",
+                                                 date_labels = "%Y-%m-%d",
+                                                 date_minor_breaks = "1 week")
+              } else {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "1 week",
+                                                 date_labels = "%Y-%m-%d",
+                                                 date_minor_breaks = "1 day")
+              }
+            } else {                                                            # numeric
+              x_scale <- ggplot2::scale_x_continuous(
+                breaks = scales::pretty_breaks(ifelse(nrow(stats) > 10, 8, 6)))
+            }
+            #
             p <- ggplot2::ggplot(stats, ggplot2::aes(x = x)) +
+              x_scale +
               # Balken für Count (sekundäre Y-Achse)
               ggplot2::geom_col(ggplot2::aes(y = Count * scale),
                                 fill = "gray60", alpha = 0.5, na.rm = TRUE) +
@@ -921,95 +960,16 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
               ggplot2::theme(legend.position = "top",
                              legend.title = ggplot2::element_blank())
-            #
-            if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
-              p <- p +                                                          # factor
-                ggplot2::scale_x_discrete(labels = function(x) {
-                  gsub("_", " ", x) %>%
-                    gsub("-", "- ", .) %>%
-                    gsub("/", "/ ", .) %>%
-                    stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>% # split CamelCase
-                    stringr::str_wrap(width = 12)                # wrap after ~10 chars
-                })
-            } else if (SRfunctions::SR_is_date(stats$x)) {               # date
-              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
-              spanne = as.numeric(difftime(max(stats$x), min(stats$x), units = "days"))
-              if (spanne > 365.25 * 20) {
-                p <- p + ggplot2::scale_x_date(date_breaks = "10 years",
-                                               date_labels = "%Y",
-                                               date_minor_breaks = "1 year")
-              } else if (spanne > 365.25 * 3) {
-                p <- p + ggplot2::scale_x_date(date_breaks = "year",
-                                               date_labels = "%Y",
-                                               date_minor_breaks = "3 months")
-              } else if (spanne > 365.25) {
-                p <- p + ggplot2::scale_x_date(date_breaks = "3 months",
-                                               date_labels = "%Y-%m",
-                                               date_minor_breaks = "1 month")
-              } else if (spanne > 30) {
-                p <- p + ggplot2::scale_x_date(date_breaks = "1 month",
-                                               date_labels = "%Y-%m-%d",
-                                               date_minor_breaks = "1 week")
-              } else {
-                p <- p + ggplot2::scale_x_date(date_breaks = "1 week",
-                                               date_labels = "%Y-%m-%d",
-                                               date_minor_breaks = "1 day")
-              }
-            } else {
-              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
-              p <- p +                                                          # numeric
-                # ggplot2::geom_line(linewidth = I(1)) +
-                ggplot2::scale_x_continuous(
-                  breaks = scales::pretty_breaks(ifelse(nrow(stats) > 10, 8, 6)))
-            }; print(p)
+            print(p)
             #
             # simple PDP-graphic
-            p3 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Partial_Dependence)) +
+            p3 <- ggplot2::ggplot(stats,
+                                  ggplot2::aes(x = x, y = Partial_Dependence, group = 1)) +
+              x_scale +
               ggplot2::geom_point(size = 2, colour = "steelblue", na.rm = TRUE) +
+              ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +
               ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
               ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6))
-            if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
-              p <- p +                                                          # factor
-                ggplot2::scale_x_discrete(labels = function(x) {
-                  gsub("_", " ", x) %>%
-                    gsub("-", "- ", .) %>%
-                    gsub("/", "/ ", .) %>%
-                    stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>% # split CamelCase
-                    stringr::str_wrap(width = 12)                # wrap after ~10 chars
-                })
-            } else if (SRfunctions::SR_is_date(stats$x)) {               # date
-              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
-              spanne = as.numeric(difftime(max(stats$x), min(stats$x), units = "days"))
-              if (spanne > 365.25 * 20) {
-                p3 <- p3 + ggplot2::scale_x_date(date_breaks = "10 years",
-                                                 date_labels = "%Y",
-                                                 date_minor_breaks = "1 year")
-              } else if (spanne > 365.25 * 3) {
-                p3 <- p3 + ggplot2::scale_x_date(date_breaks = "year",
-                                                 date_labels = "%Y",
-                                                 date_minor_breaks = "3 months")
-              } else if (spanne > 365.25) {
-                p3 <- p3 + ggplot2::scale_x_date(date_breaks = "3 months",
-                                                 date_labels = "%Y-%m",
-                                                 date_minor_breaks = "1 month")
-              } else if (spanne > 30) {
-                p3 <- p3 + ggplot2::scale_x_date(date_breaks = "1 month",
-                                                 date_labels = "%Y-%m-%d",
-                                                 date_minor_breaks = "1 week")
-              } else {
-                p3 <- p3 + ggplot2::scale_x_date(date_breaks = "1 week",
-                                                 date_labels = "%Y-%m-%d",
-                                                 date_minor_breaks = "1 day")
-              }
-            } else {
-              try(p$scales$remove("x"), silent = TRUE)  # entfernt alte x-Scale
-              p3 <- p3 +                                                        # numeric
-                ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +
-                ggplot2::scale_x_continuous(
-                  breaks = scales::pretty_breaks(ifelse(nrow(stats) > 10, 8, 6)))
-            }
             #
             # save graphic
             # xlabel <- gsub("[[:punct:]]", "", xlabel)
