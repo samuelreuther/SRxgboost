@@ -4,7 +4,7 @@
 #'
 #' @param lauf character
 #'
-#' @return uncertainty stats and plot
+#' @return uncertainty stats, list with ids and plot
 #'
 #' @export
 SRxgboost_check_uncertainty <- function(lauf) {
@@ -38,80 +38,76 @@ SRxgboost_check_uncertainty <- function(lauf) {
                                      OOFforecast[, 2:(ncol(OOFforecast) - 1)] %>%
                                        stats::setNames(paste0("X", 0:(ncol(.) - 1))))
   }
-  assign('train_pr_oof', train_pr_oof, envir = .GlobalEnv)
   if (file.exists(paste0(path_output_data, "y_test.rds"))) {
     y_test <- readRDS(paste0(path_output_data, "y_test.rds"))
     test_pr <- as.data.frame(cbind(y_test, pr_test = TESTforecast[, 2]))
-    assign('test_pr', test_pr, envir = .GlobalEnv)
   }
   #
   #
-  # Data prep ####
+  # Calculate uncertainty ####
   #
   mat <- as.matrix(OOFforecast[, 2:ncol(OOFforecast)])
   OOFforecast <- OOFforecast %>%
-    dplyr::mutate(mean = rowMeans(mat, na.rm = TRUE),
-                  sd = matrixStats::rowSds(mat, na.rm = TRUE),
-                  sd_perc = sd / mean,
+    dplyr::mutate(MEAN = rowMeans(mat, na.rm = TRUE),
+                  SD = matrixStats::rowSds(mat, na.rm = TRUE),
+                  SD_PERC = SD / MEAN,
                   y = y_OOF$y)
-  # OOFforecast <- OOFforecast %>%
-  #   dplyr::rowwise() %>%
-  #   dplyr::mutate(mean = mean(dplyr::c_across(2:ncol(.)), na.rm = TRUE),
-  #          sd = sd(dplyr::c_across(2:ncol(.)), na.rm = TRUE)) %>%
-  #   dplyr::ungroup() %>%
-  #   dplyr::mutate(sd_perc = sd / mean) %>%
-  #   dplyr::mutate(y = y_OOF$y)
+  #
   mat <- as.matrix(TESTforecast[, 2:ncol(TESTforecast)])
   TESTforecast <- TESTforecast %>%
-    dplyr::mutate(mean = rowMeans(mat, na.rm = TRUE),
-                  sd = matrixStats::rowSds(mat, na.rm = TRUE),
-                  sd_perc = sd / mean) %>%
+    dplyr::mutate(MEAN = rowMeans(mat, na.rm = TRUE),
+                  SD = matrixStats::rowSds(mat, na.rm = TRUE),
+                  SD_PERC = SD / MEAN) %>%
     { if (exists("y_test")) dplyr::mutate(., y = y_test$y) else . }
-  # TESTforecast <- TESTforecast %>%
-  #   dplyr::rowwise() %>%
-  #   dplyr::mutate(mean = mean(dplyr::c_across(2:ncol(.)), na.rm = TRUE),
-  #          sd = sd(dplyr::c_across(2:ncol(.)), na.rm = TRUE)) %>%
-  #   dplyr::ungroup() %>%
-  #   dplyr::mutate(sd_perc = sd / mean) %>%
-  #   { if (exists("y_test")) dplyr::mutate(., y = y_test$y) else . }
   #
-  quantiles <- round(quantile(OOFforecast$sd_perc, probs = seq(0, 1, by = 0.01)), 5)
+  quantiles <- round(quantile(OOFforecast$SD_PERC, probs = seq(0, 1, by = 0.01)), 5)
   #
   calculate_stats <- function(df) {
     if (objective == "regression") {
       as.numeric(round(stats::cor(df$y, df[, 2])^2, 4))
     } else if (objective == "classification") {
-      ROC <- pROC::roc(response = df$y, predictor = df[, 2], algorithm = 2,
-                       levels = c(0, 1), direction = "<")
-      round(as.numeric(ROC$auc), 4)
+      ROC <- try(pROC::roc(response = df$y, predictor = df[, 2],
+                           algorithm = 2, levels = c(0, 1),
+                           direction = "<"), silent = TRUE)
+      if (inherits(ROC, "try-error")) NA_real_ else round(as.numeric(ROC$auc), 4)
     }
   }
   #
-  uncertainty <- data.frame()
+  uncertainty_stats <- data.frame()
   for (i in seq_along(quantiles)) {
-    subset_data <- OOFforecast %>% dplyr::filter(sd_perc <= quantiles[i])
-    uncertainty <- dplyr::bind_rows(
-      uncertainty,
+    subset_data <- OOFforecast %>% dplyr::filter(SD_PERC <= quantiles[i])
+    uncertainty_stats <- dplyr::bind_rows(
+      uncertainty_stats,
       data.frame(UNCERTAINTY = quantiles[i],
                  DATA_COUNT = nrow(subset_data),
                  PERCENT_DATA_REMOVED = round(1 - nrow(subset_data) / nrow(OOFforecast), 4),
                  STAT = calculate_stats(subset_data)))
     rm(subset_data)
   }; rm(i)
-  uncertainty <- uncertainty %>%
+  uncertainty_stats <- uncertainty_stats %>%
     tibble::rownames_to_column(var = "QUANTIL") %>%
     dplyr::mutate(QUANTIL = as.numeric(sub("%", "", QUANTIL)) / 100,
                   STAT_IMPROVEMENT = STAT - dplyr::lead(STAT, 1L),
                   IMPROVEMENT_RATE = round(STAT_IMPROVEMENT / PERCENT_DATA_REMOVED, 4),
                   TOP5 = IMPROVEMENT_RATE >= sort(IMPROVEMENT_RATE, decreasing = TRUE)[5],
-                  TOP5 = replace_na(TOP5, FALSE),
+                  TOP5 = tidyr::replace_na(TOP5, FALSE),
                   label = ifelse(TOP5, paste0(QUANTIL * 100, "%"), NA))
-  saveRDS(uncertainty, paste0(path_output_best, "Uncertainty.rds"))
+  saveRDS(uncertainty_stats, paste0(path_output_best, "Uncertainty_stats.rds"))
+  assign('uncertainty_stats', uncertainty_stats, envir = .GlobalEnv)
+  #
+  #
+  uncertainty <- dplyr::bind_rows(OOFforecast %>%
+                                    dplyr::mutate(DATA = "train") %>%
+                                    dplyr::select(DATA, id, UNCERTAINTY = SD_PERC),
+                                  TESTforecast %>%
+                                    dplyr::mutate(DATA = "test") %>%
+                                    dplyr::select(DATA, id, UNCERTAINTY = SD_PERC))
+  assign('uncertainty', uncertainty, envir = .GlobalEnv)
   #
   #
   # Plot ####
   #
-  p <- ggplot2::ggplot(uncertainty, ggplot2::aes(x = QUANTIL, y = STAT)) +
+  p <- ggplot2::ggplot(uncertainty_stats, ggplot2::aes(x = QUANTIL, y = STAT)) +
     ggplot2::geom_line(na.rm = TRUE) +
     ggplot2::geom_point(ggplot2::aes(color = TOP5), na.rm = TRUE) +
     ggrepel::geom_text_repel(ggplot2::aes(label = label), nudge_y = 0.002, size = 3, na.rm = TRUE) +
@@ -122,11 +118,8 @@ SRxgboost_check_uncertainty <- function(lauf) {
     ggplot2::labs(title = "Modell performance at different uncertainty-thresholds",
                   x = "Uncertainty-threshold (Quantile)",
                   y = ifelse(objective == "regression", "R2", "AUC")) +
-    theme(legend.position = "none"); print(p)
+    ggplot2::theme(legend.position = "none"); print(p)
   ggplot2::ggsave(paste0(path_output_best, "Uncertainty.png"),
                   plot = p, width = 9.92, height = 5.3)
-  #
-  suppressWarnings(rm(SummaryCV, OOFforecast, TESTforecast, SummaryCV_META, y_OOF, y_test))
-  return(uncertainty)
 }
 

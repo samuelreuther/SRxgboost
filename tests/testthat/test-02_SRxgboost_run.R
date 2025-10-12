@@ -48,10 +48,8 @@ SRxgboost_data_prep(yname = "SalePrice", data_train = train,
                     no_folds = 5, nthreads = 1,
                     objective = "regression")
 # run models
-SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 50,
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               nfold = 5 , nthreads = 1)
-# check uncertain forecasts
-uncertainty <- SRxgboost_check_uncertainty(lauf = lauf)
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.03)
 #
@@ -102,6 +100,35 @@ test_that("regression / no_folds: SummaryCV$test[1]", {
   expect_true(SummaryCV$test[1] < 29000)
   # expect_equal(round(SummaryCV$test[1], -3), 28000)
 })
+#
+#
+## clean up
+#
+SRxgboost_cleanup()
+
+
+
+
+# Regression: no_folds, uncertainty ---------------------------------------
+#
+## run models
+#
+lauf <- "regr_no_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat("\n", lauf, "\n")
+# prepare data and test
+SRxgboost_data_prep(yname = "SalePrice", data_train = train,
+                    no_folds = 5, nthreads = 1,
+                    objective = "regression")
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse",
+              runs = 100, nfold = 5 , nthreads = 1)
+# check uncertain forecasts
+SRxgboost_check_uncertainty(lauf = lauf)
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
+                uncertainty_quantil = 0.97)
+# SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
 #
 #
 ## clean up

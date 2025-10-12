@@ -20,6 +20,7 @@
 #'
 #' @export
 SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
+                            uncertainty_quantil = NULL,
                             sample = 100000, pdp_sample = 50000, pdp_int_sample = 30000,
                             pdp_plots = TRUE, pdp_parallel = TRUE, pdp_min_rel_Gain = 0.01,
                             pdp_cuts = NULL, pdp_int_cuts_sample = 50) {
@@ -101,7 +102,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
   #
   #
   #
-  # get OOFforecast and TESTforecast ####
+  # Get OOFforecast and TESTforecast ####
   #
   SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf, top_rank = 1, ensemble = FALSE)
   if (length(y) == nrow(OOFforecast)) {
@@ -149,7 +150,65 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
   #
   #
   #
-  # generate graphics ####
+  # Remove uncertain forecasts ####
+  #
+  datenModell_rows <- nrow(datenModell)
+  #
+  if (!is.null(uncertainty_quantil)) {
+    # always rerun analysis, because folder gets deleted
+    SRxgboost_check_uncertainty(lauf = lauf)
+    #
+    # which predictions to keep
+    uncertainty <- uncertainty %>%
+      dplyr::mutate(KEEP = ifelse(UNCERTAINTY <= uncertainty_stats$UNCERTAINTY[
+        uncertainty_stats$QUANTIL == uncertainty_quantil], TRUE, FALSE))
+    #
+    # clean up all objects
+    #
+    id_unique_train_keep <- uncertainty$KEEP[match(id_unique_train, uncertainty$id)]
+    train_pr_oof <- train_pr_oof[id_unique_train_keep, ]
+    datenModell <- datenModell[id_unique_train_keep, ]
+    if (exists("test_pr")) test_pr <- test_pr[id_unique_train_keep, ]
+    #
+    index_test_eval_keep <- uncertainty$KEEP[match(index_test_eval, uncertainty$id)]
+    datenModell_eval <- datenModell_eval[index_test_eval_keep, ]
+    test_eval_mat <- test_eval_mat[index_test_eval_keep, ]
+    y_test_eval <- y_test_eval[index_test_eval_keep]
+    #
+    OOFforecast <- OOFforecast[id_unique_train_keep, ]
+    if (exists("id_unique_test")) {
+      id_unique_test_keep <- uncertainty$KEEP[match(id_unique_test, uncertainty$id)]
+      TESTforecast <- TESTforecast[id_unique_test_keep, ]
+    } else {
+      TESTforecast <- TESTforecast[id_unique_train_keep, ]
+    }
+    y <- y[id_unique_train_keep]
+    #
+    index_train_eval_keep <- uncertainty$KEEP[match(index_train_eval, uncertainty$id)]
+    y_train_eval <- y_train_eval[index_train_eval_keep]
+    #
+    # save into Data
+    path_temp <- paste0(path_output_data, "Uncertainty",
+                        sub("0.", "", format(uncertainty_quantil, nsmall = 2)), "/")
+    if (!dir.exists(path_temp)) dir.create(path_temp, showWarnings = FALSE)
+    saveRDS(id_unique_train_keep, paste0(path_temp, "id_unique_train_keep.rds"))
+    saveRDS(datenModell, paste0(path_temp, "datenModell.rds"))
+    if (exists("test_pr")) saveRDS(test_pr, paste0(path_temp, "test_pr.rds"))
+    saveRDS(index_test_eval_keep, paste0(path_temp, "index_test_eval_keep.rds"))
+    saveRDS(datenModell_eval, paste0(path_temp, "datenModell_eval.rds"))
+    saveRDS(test_eval_mat, paste0(path_temp, "test_eval_mat.rds"))
+    saveRDS(y_test_eval, paste0(path_temp, "y_test_eval.rds"))
+    if (exists("id_unique_test_keep"))
+      saveRDS(id_unique_test_keep, paste0(path_temp, "id_unique_test_keep.rds"))
+    saveRDS(OOFforecast, paste0(path_temp, "OOFforecast.rds"))
+    saveRDS(TESTforecast, paste0(path_temp, "TESTforecast.rds"))
+    saveRDS(index_train_eval_keep, paste0(path_temp, "index_train_eval_keep.rds"))
+    saveRDS(y_train_eval, paste0(path_temp, "y_train_eval.rds"))
+  }
+  #
+  #
+  #
+  # Generate graphics ####
   #
   if (plots) {
     ### downsample train_pr_oof if nrow > sample
@@ -756,7 +815,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               test_eval_mat_ <- test_eval_mat
               pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
             }
-            scaling_factor = nrow(datenModell_eval_) / nrow(datenModell)
+            scaling_factor = nrow(datenModell_eval_) / datenModell_rows
             #
             # if (y_multiclass == FALSE) {   # linear, binary
             x <- min(stringdist::stringdist(temp$Feature[i], names(datenModell_eval_)))

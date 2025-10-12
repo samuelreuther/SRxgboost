@@ -9,6 +9,7 @@ SRxgboost_plots(
   rank = 1,
   plots = TRUE,
   silent = FALSE,
+  uncertainty_quantil = NULL,
   sample = 1e+05,
   pdp_sample = 50000,
   pdp_int_sample = 30000,

@@ -10,7 +10,7 @@ SRxgboost_check_uncertainty(lauf)
 \item{lauf}{character}
 }
 \value{
-uncertainty stats and plot
+uncertainty stats, list with ids and plot
 }
 \description{
 Plots model results for a selected model.
