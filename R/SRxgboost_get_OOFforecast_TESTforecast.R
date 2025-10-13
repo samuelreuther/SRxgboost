@@ -70,11 +70,6 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
         select <- select %>%
           dplyr::mutate(class = apply(select, MARGIN = 1, which.max) - 1)
       }
-      # select <- data.frame(temp_OOF[, i_OOFforecast + 1])
-      # data.table::setnames(select, paste0("m",
-      #                                     gsub("-", "",
-      #                                          gsub(":", "",
-      #                                               gsub(" ", "x", SummaryCV$date[i])))))
       OOFforecast <- dplyr::bind_cols(OOFforecast, select)
       # save information of model performance
       SummaryCV_META <- rbind(SummaryCV_META, SummaryCV[i, ] %>% dplyr::mutate(Lauf = lauf))
@@ -116,11 +111,6 @@ SRxgboost_get_OOFforecast_TESTforecast <- function(lauf,
       select <- select %>%
         dplyr::mutate(class = apply(select, MARGIN = 1, which.max) - 1)
     }
-    # select <- data.frame(temp_TEST[, i_TESTforecast + 1])
-    # data.table::setnames(select, paste0("m",
-    #                                     gsub("-", "",
-    #                                          gsub(":", "",
-    #                                               gsub(" ", "x", SummaryCV$date[i])))))
     TESTforecast <- dplyr::bind_cols(TESTforecast, select)
     rm(select)
   }

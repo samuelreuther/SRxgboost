@@ -4,10 +4,12 @@
 \alias{SRxgboost_check_uncertainty}
 \title{SRxgboost_check_uncertainty}
 \usage{
-SRxgboost_check_uncertainty(lauf)
+SRxgboost_check_uncertainty(lauf, quantiles = seq(0.8, 1, by = 0.005))
 }
 \arguments{
 \item{lauf}{character}
+
+\item{quantiles}{vector, default: seq(0.8, 1, by = 0.005)}
 }
 \value{
 uncertainty stats, list with ids and plot

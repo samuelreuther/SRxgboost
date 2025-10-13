@@ -3,11 +3,12 @@
 #' Plots model results for a selected model.
 #'
 #' @param lauf character
+#' @param quantiles vector, default: seq(0.8, 1, by = 0.005)
 #'
 #' @return uncertainty stats, list with ids and plot
 #'
 #' @export
-SRxgboost_check_uncertainty <- function(lauf) {
+SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.8, 1, by = 0.005)) {
   # Set paths ####
   #
   # check lauf ends with ".csv"
@@ -60,27 +61,27 @@ SRxgboost_check_uncertainty <- function(lauf) {
                   SD_PERC = SD / MEAN) %>%
     { if (exists("y_test")) dplyr::mutate(., y = y_test$y) else . }
   #
-  quantiles <- round(quantile(OOFforecast$SD_PERC, probs = seq(0, 1, by = 0.01)), 5)
+  quantile_values <- round(quantile(OOFforecast$SD_PERC, probs = quantiles), 6)
   #
   calculate_stats <- function(df) {
     if (objective == "regression") {
-      as.numeric(round(stats::cor(df$y, df[, 2])^2, 4))
+      as.numeric(round(stats::cor(df$y, df[, 2])^2, 5))
     } else if (objective == "classification") {
       ROC <- try(pROC::roc(response = df$y, predictor = df[, 2],
                            algorithm = 2, levels = c(0, 1),
                            direction = "<"), silent = TRUE)
-      if (inherits(ROC, "try-error")) NA_real_ else round(as.numeric(ROC$auc), 4)
+      if (inherits(ROC, "try-error")) NA_real_ else round(as.numeric(ROC$auc), 5)
     }
   }
   #
   uncertainty_stats <- data.frame()
-  for (i in seq_along(quantiles)) {
-    subset_data <- OOFforecast %>% dplyr::filter(SD_PERC <= quantiles[i])
+  for (i in seq_along(quantile_values)) {
+    subset_data <- OOFforecast %>% dplyr::filter(SD_PERC <= quantile_values[i])
     uncertainty_stats <- dplyr::bind_rows(
       uncertainty_stats,
-      data.frame(UNCERTAINTY = quantiles[i],
+      data.frame(UNCERTAINTY = quantile_values[i],
                  DATA_COUNT = nrow(subset_data),
-                 PERCENT_DATA_REMOVED = round(1 - nrow(subset_data) / nrow(OOFforecast), 4),
+                 PERCENT_DATA_REMOVED = round(1 - nrow(subset_data) / nrow(OOFforecast), 5),
                  STAT = calculate_stats(subset_data)))
     rm(subset_data)
   }; rm(i)
@@ -88,8 +89,9 @@ SRxgboost_check_uncertainty <- function(lauf) {
     tibble::rownames_to_column(var = "QUANTIL") %>%
     dplyr::mutate(QUANTIL = as.numeric(sub("%", "", QUANTIL)) / 100,
                   STAT_IMPROVEMENT = STAT - dplyr::lead(STAT, 1L),
-                  IMPROVEMENT_RATE = round(STAT_IMPROVEMENT / PERCENT_DATA_REMOVED, 4),
+                  IMPROVEMENT_RATE = round(STAT_IMPROVEMENT / PERCENT_DATA_REMOVED, 5),
                   TOP5 = IMPROVEMENT_RATE >= sort(IMPROVEMENT_RATE, decreasing = TRUE)[5],
+                  TOP5 = ifelse(IMPROVEMENT_RATE > 0, TOP5, FALSE),
                   TOP5 = tidyr::replace_na(TOP5, FALSE),
                   label = ifelse(TOP5, paste0(QUANTIL * 100, "%"), NA))
   saveRDS(uncertainty_stats, paste0(path_output_best, "Uncertainty_stats.rds"))

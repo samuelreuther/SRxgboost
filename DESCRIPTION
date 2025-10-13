@@ -29,6 +29,7 @@ Imports:
     scales,
     earth,
     reshape2,
+    matrixStats,
     Metrics,
     grDevices,
     plotmo,

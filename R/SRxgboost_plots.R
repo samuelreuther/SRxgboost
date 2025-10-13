@@ -1006,7 +1006,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
                                   size = 2, na.rm = TRUE) +
               ggplot2::scale_color_manual(
                 values = scales::hue_pal()(3)[c(2, 1, 3)] %>%
-                  setNames(c("Actual", "Predicted", "Partial_Dependence")),
+                  stats::setNames(c("Actual", "Predicted", "Partial_Dependence")),
                 breaks = c("Actual", "Predicted", "Partial_Dependence"),
                 labels = c("Actual", "Predicted", "Partial Dependence")) +
               # Sekundäre Y-Achse für Count
@@ -1267,10 +1267,10 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               f1 <- temp$Parent[i]; f2 <- temp$Child[i]
               qv <- function(v, m = 11) as.numeric(quantile(v, seq(0.05, 0.95, length.out = m),
                                                             na.rm = TRUE, names = FALSE))
-              pg <- setNames(expand.grid(qv(datenModell_eval_[[f1]]),
-                                         qv(datenModell_eval_[[f2]]),
-                                         KEEP.OUT.ATTRS = FALSE),
-                             c(f1, f2)) %>%
+              pg <- stats::setNames(expand.grid(qv(datenModell_eval_[[f1]]),
+                                                qv(datenModell_eval_[[f2]]),
+                                                KEEP.OUT.ATTRS = FALSE),
+                                    c(f1, f2)) %>%
                 distinct(.)
               rm(f1, f2, qv)
               #
