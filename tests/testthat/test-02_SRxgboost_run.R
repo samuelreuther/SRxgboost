@@ -28,7 +28,7 @@ assign('this_file', this_file, envir = .GlobalEnv)
 house <- utils::read.csv(paste0(path_to_data,
                                 "Regression/Kaggle - house prices/data/train.csv"))
 assign('house', house, envir = .GlobalEnv)
-id_unique_train <- house$Id
+id_unique_train <- id_unique_test <- house$Id
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- house %>% dplyr::select(-Id)
 assign('train', train, envir = .GlobalEnv)
@@ -128,7 +128,6 @@ SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.8, 1, by = 0.005))
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
                 uncertainty_quantil = 0.97)
-# SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05)
 #
 #
 ## clean up
@@ -412,7 +411,7 @@ rm(house, train, id_unique_train)
 churn <- utils::read.csv(paste0(path_to_data,
                                 "Classification/Telco Customer Churn/Telco-Customer-Churn.csv"))
 assign('churn', churn, envir = .GlobalEnv)
-id_unique_train <- churn$customerID
+id_unique_train <- id_unique_test <- churn$customerID
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- churn %>%
   dplyr::mutate(Churn = dplyr::case_when(Churn == "No"  ~ 0,
@@ -488,6 +487,35 @@ test_that("classification / no_folds: SummaryCV$train[1]", {
 test_that("classification / no_folds: SummaryCV$test[1]", {
   expect_equal(round(SummaryCV$test[1], 2), 0.84)
 })
+#
+#
+## clean up
+#
+SRxgboost_cleanup()
+
+
+
+
+# Classification: no_folds, uncertainty -----------------------------------
+#
+## run models
+#
+lauf <- "class_no_folds.csv"
+assign('lauf', lauf, envir = .GlobalEnv)
+cat("\n", lauf, "\n")
+# prepare data and test
+SRxgboost_data_prep(yname = "Churn",
+                    data_train = train,
+                    no_folds = 5,
+                    objective = "classification")
+# run models
+SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 100,
+              nfold = 5)
+# check uncertain forecasts
+SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.8, 1, by = 0.005))
+# plot results of best model
+SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
+                uncertainty_quantil = 0.98)
 #
 #
 ## clean up
@@ -789,7 +817,7 @@ rm(churn, train, id_unique_train)
 birds <- utils::read.csv(paste0(path_to_data,
                                 "Multilabel Classification/Birds Bones and Living Habits/data.csv"))
 assign('birds', birds, envir = .GlobalEnv)
-id_unique_train <- birds$id
+id_unique_train <- id_unique_test <- birds$id
 assign('id_unique_train', id_unique_train, envir = .GlobalEnv)
 train <- birds %>%
   dplyr::mutate(type = as.numeric(as.factor(type)) - 1) %>%

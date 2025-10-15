@@ -39,7 +39,11 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
   #
   # delete old plots
   if (plots & dir.exists(path_output_best)) {
-    unlink(path_output_best, recursive = TRUE)
+    files_to_keep <- c("Uncertainty_stats.rds", "Uncertainty.png")
+    all_files <- list.files(path_output_best, full.names = TRUE)
+    files_to_delete <- all_files[!basename(all_files) %in% files_to_keep]
+    file.remove(files_to_delete)
+    # unlink(path_output_best, recursive = TRUE)
     # unlink(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/*"),
     #        recursive = TRUE)
   }
@@ -155,8 +159,8 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
   datenModell_rows <- nrow(datenModell)
   #
   if (!is.null(uncertainty_quantil)) {
-    # always rerun analysis, because folder gets deleted
-    SRxgboost_check_uncertainty(lauf = lauf)
+    # always rerun analysis, because folder gets deleted => files do not get deleted anymore
+    # SRxgboost_check_uncertainty(lauf = lauf)
     #
     # which predictions to keep
     uncertainty <- uncertainty %>%
@@ -1335,7 +1339,14 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               n_above <- 100 - n_below
               cols <- c(colorRampPalette(c("blue", "white"))(n_below),
                         colorRampPalette(c("white", "red"))(n_above))
-              p <- pdp::plotPartial(partial, zlab = "Predicted  \nValue ",
+              labs <- names(partial)[1:2] %>%
+                gsub("_", " ", .) %>%
+                gsub("-", "- ", .) %>%
+                gsub("/", "/ ", .) %>%
+                stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
+                stringr::str_wrap(width = 12)
+              p <- pdp::plotPartial(partial, xlab = labs[1], ylab = labs[2],
+                                    zlab = "Predicted  \nValue ",
                                     levelplot = FALSE, drape = TRUE,
                                     # colorkey = TRUE,
                                     colorkey = list(labels = list(
@@ -1344,17 +1355,19 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
                                                       scientific = FALSE))),
                                     col.regions = cols,
                                     scales = list(cex = 1, arrows = FALSE,
+                                                  distance = c(1.2, 1.2, 1),
                                                   z = list(draw = FALSE)),
                                     par.settings = list(
                                       axis.line = list(col = "black", lwd = 1.5),
                                       fontsize = list(text = 10, points = 10)
                                     ),
                                     screen = list(z = 30, x = -60, y = 0))
+              print(p)
               ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
                                      gsub("_LabelEnc", "", temp$Feature[i]), " 3D.png"),
                               plot = gridExtra::arrangeGrob(p),
                               width = 7, height = 7)
-              print(p); rm(mid, rng, n_below, n_above, cols, p)
+              rm(mid, rng, n_below, n_above, cols, p)
               #
               # save summary table
               utils::write.table(partial,
