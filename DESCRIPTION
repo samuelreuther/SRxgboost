@@ -1,12 +1,11 @@
 Package: SRxgboost
 Title: Helper and meta-functions for modelling with XGBOOST
-Version: 0.6.2
+Version: 0.7.1
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Samuel",
+           family = "Reuther",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           email = "samuel.reuther@web.de")
 Description: What the package does (one paragraph).
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -17,7 +16,7 @@ Suggests:
     knitr,
     rmarkdown
 Language: en-US
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports: 
     magrittr,
     ROCR,
@@ -45,6 +44,7 @@ Imports:
     unbalanced,
     forcats,
     stringdist,
+    stringr,
     tidyr,
     lubridate,
     pdp,
@@ -54,6 +54,5 @@ Imports:
     e1071,
     PRROC,
     ggrepel,
-    EIX,
     purrr
 VignetteBuilder: knitr

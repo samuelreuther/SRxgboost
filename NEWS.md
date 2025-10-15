@@ -1,3 +1,9 @@
+# SRxgboost 0.7.1
+- Added 'SRxgboost_check_uncertainty()'
+
+# SRxgboost 0.7.0
+- Worked on 'SRxgboost_plots()' to speed up Partial Dependence Plots
+
 # SRxgboost 0.6.2
 - Set pdp_parallel = 'TRUE' in 'SRxgboost_plots()'
 - Use existing global variable 'n_cores' for nthreads

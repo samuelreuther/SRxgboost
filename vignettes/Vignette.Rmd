@@ -17,8 +17,12 @@ knitr::opts_chunk$set(
 
 ### Installation
 
-```{r setup}
-# devtools::install_github("samuelreuther/SRxgboost")
+```{r setup, eval=FALSE}
+devtools::install_github("samuelreuther/SRxgboost")
+
+install.packages("/home/sandbox/sandbox/Libraries/SRxgboost_0.7.1.tar.gz",
+                 repos = NULL, type = "source", dependencies = TRUE)
+
 library(SRxgboost)
 ```
 
@@ -55,9 +59,6 @@ library(SRxgboost)
   - Factor Encoder OOF hinzufügen:  
     - http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-munging/target-encoding.html  
     - https://towardsdatascience.com/getting-deeper-into-categorical-encodings-for-machine-learning-2312acd347c8  
-- SRxgboost_select_variables:  
-  - generate 3 random variables per category  
-  - take mean of random variable per category as threshold per variable category  
 - Beispiel für "Starter-Code für Machine Learning-Modell mit XGBOOST inkl. Modell Explainability" erstellen  
 - Surrogate Model berechnen
 

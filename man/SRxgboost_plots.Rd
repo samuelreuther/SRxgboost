@@ -8,15 +8,16 @@ SRxgboost_plots(
   lauf,
   rank = 1,
   plots = TRUE,
-  sample = 1e+05,
   silent = FALSE,
+  uncertainty_quantil = NULL,
+  sample = 1e+05,
+  pdp_sample = 50000,
+  pdp_int_sample = 30000,
   pdp_plots = TRUE,
+  pdp_parallel = TRUE,
   pdp_min_rel_Gain = 0.01,
-  pdp_sample = 20000,
   pdp_cuts = NULL,
-  pdp_int_sample = 1000,
-  pdp_int_cuts_sample = 50,
-  pdp_parallel = TRUE
+  pdp_int_cuts_sample = 50
 )
 }
 \arguments{
@@ -26,24 +27,24 @@ SRxgboost_plots(
 
 \item{plots}{boolean, default = TRUE}
 
-\item{sample}{integer, default =}
-
 \item{silent}{boolean, default = FALSE}
+
+\item{sample}{integer, default = 100000}
+
+\item{pdp_sample}{integer, default = 50000}
+
+\item{pdp_int_sample}{integer, default = 30000}
 
 \item{pdp_plots}{boolean, default = TRUE}
 
+\item{pdp_parallel}{boolean, default = TRUE}
+
 \item{pdp_min_rel_Gain}{numeric, default =  0.01}
 
-\item{pdp_sample}{integer, default = 20000}
-
 \item{pdp_cuts}{integer, default = NULL, depending on number of data points
-(max. 40 but in average at least pdp_int_cuts_sample per cut)}
-
-\item{pdp_int_sample}{integer, default = 1000}
+(max. 50 but in average at least pdp_int_cuts_sample per cut)}
 
 \item{pdp_int_cuts_sample}{integer, default = 50}
-
-\item{pdp_parallel}{boolean, default = TRUE}
 }
 \value{
 several files in folder

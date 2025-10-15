@@ -5,41 +5,47 @@
 #' @param lauf character
 #' @param rank integer, default = 1
 #' @param plots boolean, default = TRUE
-#' @param sample integer, default =
+#' @param sample integer, default = 100000
 #' @param silent boolean, default = FALSE
 #' @param pdp_plots boolean, default = TRUE
 #' @param pdp_min_rel_Gain numeric, default =  0.01
-#' @param pdp_sample integer, default = 20000
+#' @param pdp_sample integer, default = 50000
 #' @param pdp_cuts integer, default = NULL, depending on number of data points
-#'                 (max. 40 but in average at least pdp_int_cuts_sample per cut)
-#' @param pdp_int_sample integer, default = 1000
+#'                 (max. 50 but in average at least pdp_int_cuts_sample per cut)
+#' @param pdp_int_sample integer, default = 30000
 #' @param pdp_int_cuts_sample integer, default = 50
 #' @param pdp_parallel boolean, default = TRUE
 #'
 #' @return several files in folder
 #'
 #' @export
-SRxgboost_plots <- function(lauf, rank = 1,
-                            plots = TRUE, sample = 100000,
-                            silent = FALSE,
-                            pdp_plots = TRUE, pdp_min_rel_Gain = 0.01,
-                            pdp_sample = 20000, pdp_cuts = NULL,
-                            pdp_int_sample = 1000, pdp_int_cuts_sample = 50,
-                            pdp_parallel = TRUE) {
+SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
+                            uncertainty_quantil = NULL,
+                            sample = 100000, pdp_sample = 50000, pdp_int_sample = 30000,
+                            pdp_plots = TRUE, pdp_parallel = TRUE, pdp_min_rel_Gain = 0.01,
+                            pdp_cuts = NULL, pdp_int_cuts_sample = 50) {
   # Initialisation ####
+  #
+  # turn off scientific notation
+  options(scipen = 999)
   #
   # check lauf ends with ".csv"
   if (!grepl('.csv$', lauf)) lauf <- paste0(lauf, ".csv")
   #
+  # set paths
+  path_output_best <- paste0(path_output, gsub(".csv", "/", lauf), "Best Model/")
+  path_output_model <- paste0(path_output, gsub(".csv", "/", lauf), "All Models/")
+  path_output_data <- paste0(path_output, gsub(".csv", "/", lauf), "Data/")
+  #
   # delete old plots
-  if (plots & dir.exists(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/"))) {
-    unlink(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/*"),
-           recursive = TRUE)
+  if (plots & dir.exists(path_output_best)) {
+    unlink(path_output_best, recursive = TRUE)
+    # unlink(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/*"),
+    #        recursive = TRUE)
   }
   #
   # create XGB_plots folder
-  dir.create(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/"),
-             showWarnings = FALSE)
+  dir.create(path_output_best, showWarnings = FALSE)
   #
   # Get summary
   SRxgboost_get_summary_CV(lauf)
@@ -48,9 +54,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
   #
   # Load model
   if (!silent) print(paste0("Loading model: ", SummaryCV$date[rank]))
-  modelpath <- paste0(path_output, paste0(gsub(".csv", "/", lauf), "All Models/",
-                                          gsub(":", ".", SummaryCV$date[rank]),
-                                          ".model"))
+  modelpath <- paste0(path_output_model, gsub(":", ".", SummaryCV$date[rank]), ".model")
   if (file.exists(modelpath) |
       file.exists(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))) {
     if (file.exists(modelpath)) {
@@ -63,50 +67,28 @@ SRxgboost_plots <- function(lauf, rank = 1,
     bst_1fold <- xgboost::xgb.load(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))
     assign('bst_1fold', bst_1fold, envir = .GlobalEnv)
     try(file.copy(modelpath,
-                  paste0(path_output, gsub(".csv", "/", lauf),
-                         "Best Model/model"),
-                  overwrite = TRUE), TRUE)
+                  paste0(path_output_best, "model"), overwrite = TRUE), TRUE)
     try(file.copy(gsub(".model", ".model.rds", modelpath),
-                  paste0(path_output, gsub(".csv", "/", lauf),
-                         "Best Model/model.rds"),
-                  overwrite = TRUE), TRUE)
+                  paste0(path_output_best, "model.rds"), overwrite = TRUE), TRUE)
     file.copy(gsub(".model", "_1fold.model", modelpath),
-              paste0(path_output, gsub(".csv", "/", lauf),
-                     "Best Model/1fold.model"),
-              overwrite = TRUE)
+              paste0(path_output_best, "1fold.model"), overwrite = TRUE)
     file.copy(gsub(".model", "_1fold.model.rds", modelpath),
-              paste0(path_output, gsub(".csv", "/", lauf),
-                     "Best Model/1fold.model.rds"),
-              overwrite = TRUE)
+              paste0(path_output_best, "1fold.model.rds"), overwrite = TRUE)
     file.copy(gsub(".model", "_Error_rate.png", modelpath),
-              paste0(path_output, gsub(".csv", "/", lauf),
-                     "Best Model/Error_rate.png"),
-              overwrite = TRUE)
+              paste0(path_output_best, "Error_rate.png"), overwrite = TRUE)
     file.copy(gsub(".model", "_Evaluation_log.rds", modelpath),
-              paste0(path_output, gsub(".csv", "/", lauf),
-                     "Best Model/Evaluation_log.rds"),
-              overwrite = TRUE)
+              paste0(path_output_best, "Evaluation_log.rds"), overwrite = TRUE)
     try({
       file.copy(gsub(".model", "_Shap_train_eval.rds", modelpath),
-                paste0(path_output, gsub(".csv", "/", lauf),
-                       "Best Model/Shap_train_eval.rds"),
-                overwrite = TRUE)
+                paste0(path_output_best, "Shap_train_eval.rds"), overwrite = TRUE)
       file.copy(gsub(".model", "_Shap_prediction.rds", modelpath),
-                paste0(path_output, gsub(".csv", "/", lauf),
-                       "Best Model/Shap_prediction.rds"),
-                overwrite = TRUE)
+                paste0(path_output_best, "Shap_prediction.rds"), overwrite = TRUE)
       file.copy(gsub(".model", "_Shap_datenModell_eval.rds", modelpath),
-                paste0(path_output, gsub(".csv", "/", lauf),
-                       "Best Model/Shap_datenModell_eval.rds"),
-                overwrite = TRUE)
+                paste0(path_output_best, "Shap_datenModell_eval.rds"), overwrite = TRUE)
       file.copy(gsub(".model", "_Shap_index_test_eval.rds", modelpath),
-                paste0(path_output, gsub(".csv", "/", lauf),
-                       "Best Model/Shap_index_test_eval.rds"),
-                overwrite = TRUE)
+                paste0(path_output_best, "Shap_index_test_eval.rds"), overwrite = TRUE)
       file.copy(gsub(".model", "_Shap_plot.png", modelpath),
-                paste0(path_output, gsub(".csv", "/", lauf),
-                       "Best Model/Shap_plot.png"),
-                overwrite = TRUE)
+                paste0(path_output_best, "Shap_plot.png"), overwrite = TRUE)
     }, TRUE)
   } else {
     # re-run best model     TODO !!!
@@ -120,7 +102,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
   #
   #
   #
-  # get OOFforecast and TESTforecast ####
+  # Get OOFforecast and TESTforecast ####
   #
   SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf, top_rank = 1, ensemble = FALSE)
   if (length(y) == nrow(OOFforecast)) {
@@ -136,14 +118,14 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                        stats::setNames(paste0("X", 0:(ncol(.) - 1))))
   }
   assign('train_pr_oof', train_pr_oof, envir = .GlobalEnv)
-  if (file.exists(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))) {
-    y_test <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))
+  if (file.exists(paste0(path_output_data, "y_test.rds"))) {
+    y_test <- readRDS(paste0(path_output_data, "y_test.rds"))
     test_pr <- as.data.frame(cbind(y_test,
                                    pr_test = TESTforecast[, ncol(TESTforecast)]))
     assign('test_pr', test_pr, envir = .GlobalEnv)
   }
   # # get pr_oof
-  # OOFforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
+  # OOFforecast <- readRDS(paste0(path_output_data, "OOFforecast.rds"))
   # i_OOFforecast <- stringdist::stringdistmatrix(
   #   gsub("-",".",gsub(":",".",SummaryCV$date)),
   #   gsub("X","",colnames(OOFforecast)[2:ncol(OOFforecast)]))[rank, ]
@@ -158,10 +140,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
   # assign('train_pr_oof', train_pr_oof, envir = .GlobalEnv)
   # #
   # # get pr_test
-  # if (file.exists(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))) {
-  #   TESTforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
-  #                                  "Data/TESTforecast.rds"))
-  #   y_test <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/y_test.rds"))
+  # if (file.exists(paste0(path_output_data, "y_test.rds"))) {
+  #   TESTforecast <- readRDS(paste0(path_output_data, "TESTforecast.rds"))
+  #   y_test <- readRDS(paste0(path_output_data, "y_test.rds"))
   #   pr_test <- TESTforecast[, i_OOFforecast + 1]
   #   test_pr <- as.data.frame(cbind(y_test, pr_test))
   #   assign('test_pr', test_pr, envir = .GlobalEnv)
@@ -169,7 +150,65 @@ SRxgboost_plots <- function(lauf, rank = 1,
   #
   #
   #
-  # generate graphics ####
+  # Remove uncertain forecasts ####
+  #
+  datenModell_rows <- nrow(datenModell)
+  #
+  if (!is.null(uncertainty_quantil)) {
+    # always rerun analysis, because folder gets deleted
+    SRxgboost_check_uncertainty(lauf = lauf)
+    #
+    # which predictions to keep
+    uncertainty <- uncertainty %>%
+      dplyr::mutate(KEEP = ifelse(UNCERTAINTY <= uncertainty_stats$UNCERTAINTY[
+        uncertainty_stats$QUANTIL == uncertainty_quantil], TRUE, FALSE))
+    #
+    # clean up all objects
+    #
+    id_unique_train_keep <- uncertainty$KEEP[match(id_unique_train, uncertainty$id)]
+    train_pr_oof <- train_pr_oof[id_unique_train_keep, ]
+    datenModell <- datenModell[id_unique_train_keep, ]
+    if (exists("test_pr")) test_pr <- test_pr[id_unique_train_keep, ]
+    #
+    index_test_eval_keep <- uncertainty$KEEP[match(index_test_eval, uncertainty$id)]
+    datenModell_eval <- datenModell_eval[index_test_eval_keep, ]
+    test_eval_mat <- test_eval_mat[index_test_eval_keep, ]
+    y_test_eval <- y_test_eval[index_test_eval_keep]
+    #
+    OOFforecast <- OOFforecast[id_unique_train_keep, ]
+    if (exists("id_unique_test")) {
+      id_unique_test_keep <- uncertainty$KEEP[match(id_unique_test, uncertainty$id)]
+      TESTforecast <- TESTforecast[id_unique_test_keep, ]
+    } else {
+      TESTforecast <- TESTforecast[id_unique_train_keep, ]
+    }
+    y <- y[id_unique_train_keep]
+    #
+    index_train_eval_keep <- uncertainty$KEEP[match(index_train_eval, uncertainty$id)]
+    y_train_eval <- y_train_eval[index_train_eval_keep]
+    #
+    # save into Data
+    path_temp <- paste0(path_output_data, "Uncertainty",
+                        sub("0.", "", format(uncertainty_quantil, nsmall = 2)), "/")
+    if (!dir.exists(path_temp)) dir.create(path_temp, showWarnings = FALSE)
+    saveRDS(id_unique_train_keep, paste0(path_temp, "id_unique_train_keep.rds"))
+    saveRDS(datenModell, paste0(path_temp, "datenModell.rds"))
+    if (exists("test_pr")) saveRDS(test_pr, paste0(path_temp, "test_pr.rds"))
+    saveRDS(index_test_eval_keep, paste0(path_temp, "index_test_eval_keep.rds"))
+    saveRDS(datenModell_eval, paste0(path_temp, "datenModell_eval.rds"))
+    saveRDS(test_eval_mat, paste0(path_temp, "test_eval_mat.rds"))
+    saveRDS(y_test_eval, paste0(path_temp, "y_test_eval.rds"))
+    if (exists("id_unique_test_keep"))
+      saveRDS(id_unique_test_keep, paste0(path_temp, "id_unique_test_keep.rds"))
+    saveRDS(OOFforecast, paste0(path_temp, "OOFforecast.rds"))
+    saveRDS(TESTforecast, paste0(path_temp, "TESTforecast.rds"))
+    saveRDS(index_train_eval_keep, paste0(path_temp, "index_train_eval_keep.rds"))
+    saveRDS(y_train_eval, paste0(path_temp, "y_train_eval.rds"))
+  }
+  #
+  #
+  #
+  # Generate graphics ####
   #
   if (plots) {
     ### downsample train_pr_oof if nrow > sample
@@ -253,9 +292,13 @@ SRxgboost_plots <- function(lauf, rank = 1,
       #
       # plot
       ggplot2::ggplot(train_pr_oof, ggplot2::aes(x = y, y = pr)) +
-        ggplot2::geom_point() +
+        ggplot2::geom_point(shape = 4, alpha = 0.5) +
         ggplot2::geom_abline(intercept = 0, slope = 1,
                              colour = "red", linetype = "dashed") +
+        ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
+                                    labels = scales::format_format(big.mark = "'")) +
+        ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
+                                    labels = scales::format_format(big.mark = "'")) +
         ggplot2::labs(y = "model prediction", title = "y vs. model prediction",
                       subtitle = paste0("RMSE:    ", round(Metrics::rmse(train_pr_oof$y,
                                                                          train_pr_oof$pr), 3) %>%
@@ -275,9 +318,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           format(., nsmall = 3))) # ,
       # "\nAUC:       ", round(pROC::auc(train_pr_oof$y,
       #                                  train_pr_oof$pr), 3)))
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Best Model/Accuracy y vs. model prediction.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+      ggplot2::ggsave(paste0(path_output_best, "Accuracy y vs. model prediction.png"),
+                      width = 9.92, height = 5.3)
     } else if (objective == "classification") {
       # calculate ROC-curve
       ROC <- pROC::roc(response = train_pr_oof$y,
@@ -324,8 +366,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         ggplot2::labs(title = "Accuracy and cut off", x = "Threshold",
                       y = "Accuracy", colour = "") +
         ggplot2::theme(legend.position = "top")
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Best Model/Accuracy and Cut off.png"),
+      ggplot2::ggsave(paste0(path_output_best, "Accuracy and Cut off.png"),
                       width = 9.92, height = 5.3)
       #
       # Cut off and Costs
@@ -360,13 +401,11 @@ SRxgboost_plots <- function(lauf, rank = 1,
         ggplot2::labs(title = "Cut off and costs", x = "Threshold",
                       y = "Costs", colour = "") +
         ggplot2::theme(legend.position = "top")
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Best Model/Cut off and Costs.png"),
+      ggplot2::ggsave(paste0(path_output_best, "Cut off and Costs.png"),
                       width = 9.92, height = 5.3)
       #
       # save ROC data
-      utils::write.table(temp, paste0(path_output, gsub(".csv", "/", lauf),
-                                      "Best Model/Cut off, accuracy and costs.csv"),
+      utils::write.table(temp, paste0(path_output_best, "Cut off, accuracy and costs.csv"),
                          row.names = FALSE, sep = ";")
       #
       # confusion matrix
@@ -376,8 +415,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                        train_pr_oof$y),
                                  positive = "1")
         print(confusion_matrix)
-        sink(paste0(path_output, gsub(".csv", "/", lauf),
-                    "Best Model/Confusion matrix.txt"), append = FALSE)
+        sink(paste0(path_output_best, "Confusion matrix.txt"), append = FALSE)
         print(confusion_matrix)
         sink()
         # plot confusion matrix
@@ -387,9 +425,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                                  levels = c("0", "1")))
         # )
         # suppressWarnings(SRfunctions::SR_mosaicplot(df = train_pr_oof, cutoff = cut_off_a))
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                               "Best Model/Confusion Matrix.png"),
-                        width = 9.92, height = 5.3)  # 4.67
+        ggplot2::ggsave(paste0(path_output_best, "Confusion Matrix.png"),
+                        width = 9.92, height = 5.3)
       }
       #
       # print ROC-curve
@@ -439,8 +476,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           "\nSpecificity/TNR:  ",
                                           round(as.numeric(confusion_matrix$byClass[2]), 3) %>%
                                             format(., nsmall = 3)))
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/ROC.png"),
-                        width = 9.92, height = 5.3)  # 4.67
+        ggplot2::ggsave(paste0(path_output_best, "ROC.png"), width = 9.92, height = 5.3)
       })
       rm(temp)
       #
@@ -471,8 +507,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
       #              label = paste0("cut off a = ", cut_off_a)) +
       #     labs(title = "Class distributions", x = "Probability (y = 1)", y = "Count", fill = "y")
       # }
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Best Model/Class distributions.png"),
+      ggplot2::ggsave(paste0(path_output_best, "Class distributions.png"),
                       width = 9.92, height = 5.3)
     } else {
       # "multilabel"
@@ -509,8 +544,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                                         levels = levels(factor(train_pr_oof$y))),
                                                  factor(train_pr_oof$y))
       print(confusion_matrix)
-      sink(paste0(path_output, gsub(".csv", "/", lauf),
-                  "Best Model/Confusion matrix.txt"), append = FALSE)
+      sink(paste0(path_output_best, "Confusion matrix.txt"), append = FALSE)
       print(confusion_matrix)
       print(confusion_matrix[["byClass"]])
       sink()
@@ -518,9 +552,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
       SRfunctions::SR_mosaicplot(var1 = factor(train_pr_oof$y),
                                  var2 = factor(train_pr_oof$pr,
                                                levels = levels(factor(train_pr_oof$y))))
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Best Model/Confusion Matrix.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+      ggplot2::ggsave(paste0(path_output_best, "Confusion Matrix.png"),
+                      width = 9.92, height = 5.3)
       #
       # calculate mcc
       # ROCR currently supports only evaluation of binary classification tasks !!!
@@ -604,8 +637,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           toString(round(as.numeric(confusion_matrix$byClass[, 2]), 2) %>%
                                                      format(., nsmall = 2)))) +
           ggplot2::theme(legend.text = ggplot2::element_text(size = 6))
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "Best Model/ROC.png"),
-                        width = 9.92, height = 5.3)  # 4.67
+        ggplot2::ggsave(paste0(path_output_best, "ROC.png"),
+                        width = 9.92, height = 5.3)
       })
     }
     #
@@ -620,9 +653,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
         dplyr::mutate(residuals = y_test - pr_test) %>%
         dplyr::rename(y = y_test, pr = pr_test)
       drift_residual <- SRxgboost_calculate_drift(train_temp, test_temp, n_plots = 10,
-                                                  name = paste0(path_output,
-                                                                gsub(".csv", "", lauf),
-                                                                "/Best Model/"))
+                                                  name = path_output_best)
     }
     #
     #
@@ -638,19 +669,39 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                 include.lowest = TRUE, labels = FALSE)
       temp <- train_pr_oof %>%
         dplyr::group_by(group) %>%
-        dplyr::summarise(Actual = mean(y), Predicted = mean(pr))
+        dplyr::summarise(Actual_value = mean(y), Predicted_value = mean(pr),
+                         Actual_sd = stats::sd(y), Predicted_sd = stats::sd(pr),
+                         n = dplyr::n()) %>%
+        dplyr::mutate(Actual_l = Actual_value - 1.96 * Actual_sd / sqrt(n),
+                      Actual_u = Actual_value + 1.96 * Actual_sd / sqrt(n),
+                      Predicted_l = Predicted_value - 1.96 * Predicted_sd / sqrt(n),
+                      Predicted_u = Predicted_value + 1.96 * Predicted_sd / sqrt(n)) %>%
+        dplyr::select(group, Actual_value, Actual_l, Actual_u,
+                      Predicted_value, Predicted_l, Predicted_u) %>%
+        tidyr::pivot_longer(cols = -group, names_to = c("variable", ".value"), names_sep = "_")
       train_pr_oof$group <- NULL
-      temp <- reshape2::melt(temp, id.vars = "group")
       #
-      ggplot2::ggplot(temp, ggplot2::aes(x = group, y = value, colour = variable)) +
-        ggplot2::geom_point() +
-        ggplot2::geom_line() +
+      ggplot2::ggplot(temp, ggplot2::aes(x = group, y = value, colour = variable, group = variable)) +
+        ggplot2::geom_errorbar(ggplot2::aes(ymin = l, ymax = u), width = 0.25, linewidth = 0.8) +
+        ggplot2::geom_point() + ggplot2::geom_line() +
         ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
-        ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+        ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
+                                    labels = scales::format_format(big.mark = "'")) +
         ggplot2::labs(title = "Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Best Model/Lift Chart.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+      # temp <- train_pr_oof %>%
+      #   dplyr::group_by(group) %>%
+      #   dplyr::summarise(Actual = mean(y), Predicted = mean(pr))
+      # train_pr_oof$group <- NULL
+      # temp <- reshape2::melt(temp, id.vars = "group")
+      # #
+      # ggplot2::ggplot(temp, ggplot2::aes(x = group, y = value, colour = variable)) +
+      #   ggplot2::geom_point() +
+      #   ggplot2::geom_line() +
+      #   ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6)) +
+      #   ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+      #   ggplot2::labs(title = "Lift Chart", y = "y", x = "Sorted Predictions", colour = "")
+      ggplot2::ggsave(paste0(path_output_best, "Lift Chart.png"),
+                      width = 9.92, height = 5.3)
       rm(temp)
     } else {
       # "multilabel
@@ -697,9 +748,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
         #                     ggplot2::aes(x = y, y = model, label = round(lift_factor, 1)))
         ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6), limits = c(0, 1)) +
         ggplot2::labs(title = "Lift Chart", y = "Precision", x = "Class", colour = "")
-      ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                             "Best Model/Lift Chart.png"),
-                      width = 9.92, height = 5.3)  # 4.67
+      ggplot2::ggsave(paste0(path_output_best, "Lift Chart.png"),
+                      width = 9.92, height = 5.3)
       rm(temp)
     }
     #
@@ -708,6 +758,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
     ## 1way graphics ####
     #
     ### variable importance ####
+    print("Plot VarImp")
     importance_matrix <- xgboost::xgb.importance(feature_names = colnames(train_mat),
                                                  model = bst)
     importance_matrix <- importance_matrix %>%
@@ -727,14 +778,12 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                   breaks = scales::pretty_breaks(5)) +
       ggplot2::facet_grid(~variable, scales = "free") +
       ggplot2::coord_flip()
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Best Model/VarImp 0.png"),
-                    width = 9.92, height = 5.3)  # 4.67
+    ggplot2::ggsave(paste0(path_output_best, "VarImp 0.png"),
+                    width = 9.92, height = 5.3)
     # save table
     assign('importance_matrix', importance_matrix, envir = .GlobalEnv)
     utils::write.table(importance_matrix,
-                       paste0(path_output, gsub(".csv", "/", lauf),
-                              "Best Model/VarImp 0.csv"),
+                       paste0(path_output_best, "VarImp 0.csv"),
                        row.names = FALSE, col.names = TRUE, append = FALSE,
                        sep = ";", dec = ",")
     #
@@ -766,6 +815,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
               test_eval_mat_ <- test_eval_mat
               pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
             }
+            scaling_factor = nrow(datenModell_eval_) / datenModell_rows
             #
             # if (y_multiclass == FALSE) {   # linear, binary
             x <- min(stringdist::stringdist(temp$Feature[i], names(datenModell_eval_)))
@@ -778,7 +828,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
               stats <- data.frame(x = datenModell_eval_[, xlabel] == xlabel2,
                                   Actual = y_$y, Predicted = pr_$pr) %>%
                 dplyr::group_by(x) %>%
-                dplyr::summarise(Count = dplyr::n(),
+                dplyr::summarise(Count_eval_sample = dplyr::n(),
+                                 Count = round(Count_eval_sample / scaling_factor),
                                  Predicted = mean(Predicted),
                                  Actual = mean(Actual))
               stats <- stats %>%
@@ -818,231 +869,188 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = xx) %>%
                   dplyr::group_by(Group) %>%
-                  dplyr::summarise(x = x[1],
-                                   x_orig = mean(x_orig),
-                                   Count = dplyr::n(),
-                                   Predicted = mean(Predicted),
-                                   Actual = mean(Actual))
+                  dplyr::summarise(x = x[1], x_orig = mean(x_orig),
+                                   Count_eval_sample = dplyr::n(),
+                                   Count = round(Count_eval_sample / scaling_factor),
+                                   Predicted = mean(Predicted), Actual = mean(Actual))
               } else {
                 # summarise results
                 if (is.null(pdp_cuts))
-                  pdp_cuts <- min(round(length(xx) / pdp_int_cuts_sample), 40)
+                  pdp_cuts <- min(floor(length(xx) / pdp_int_cuts_sample), 50)
                 stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
                                             include.lowest = TRUE, dig.lab = 10)) %>%
-                  # dplyr::mutate(Group = cut(x_orig, breaks = unique(quantile(x_orig, seq(0, 1.01, 0.02))),
-                  #                    include.lowest = TRUE, dig.lab = 10)) %>%
                   dplyr::group_by(Group) %>%
-                  dplyr::summarise(x = mean(x),
-                                   x_orig = mean(x_orig),
-                                   Count = dplyr::n(),
-                                   Predicted = mean(Predicted),
-                                   Actual = mean(Actual))
+                  dplyr::summarise(x = mean(x), x_orig = mean(x_orig),
+                                   Count_eval_sample = dplyr::n(),
+                                   Count = round(Count_eval_sample / scaling_factor),
+                                   Predicted = mean(Predicted), Actual = mean(Actual))
               }
-              #
-              ## partial dependence
-              #
-              if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
-                # in parallel
-                invisible({
-                  partial <- pdp::partial(bst_1fold,
-                                          pred.var = temp$Feature[i],
-                                          pred.grid = data.frame(stats$x_orig) %>%
-                                            stats::setNames(xlabel),
-                                          # grid.resolution = 30,
-                                          train = test_eval_mat_,
-                                          plot = FALSE, chull = TRUE, type = "regression",
-                                          # type = ifelse(objective == "multilabel",
-                                          #               "classification", objective))
-                                          parallel = TRUE, # with foreach package
-                                          paropts = list(.packages = "xgboost"))
-                })
-              } else {
-                # single core
+            }
+            #
+            ## partial dependence
+            #
+            stats_ <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
+            #
+            if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
+              # in parallel
+              invisible({
                 partial <- pdp::partial(bst_1fold,
                                         pred.var = temp$Feature[i],
-                                        pred.grid = data.frame(stats$x_orig) %>%
+                                        pred.grid = data.frame(stats_$x_orig) %>%
                                           stats::setNames(xlabel),
                                         # grid.resolution = 30,
                                         train = test_eval_mat_,
-                                        plot = FALSE, chull = TRUE, type = "regression")
-                # type = ifelse(objective == "multilabel",
-                #               "classification", objective))
-              }
-              #
-              stats <- stats %>%
-                dplyr::left_join(partial, by = c("x_orig" = xlabel)) %>%
-                dplyr::rename("Partial_Dependence" = "yhat")
-              #
-              # evtl. noch skalieren !!!
-              #
-              stats_long <- reshape2::melt(stats %>% dplyr::select(x, 5:7), id.vars = "x")
-              #
-              p1 <- ggplot2::ggplot(stats_long,
-                                    ggplot2::aes(x = x, y = value, colour = variable)) +
-                ggplot2::geom_point(size = 2) +
-                ggplot2::labs(x = "", y = "Value") +
-                # ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
-                ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
-                ggplot2::theme(legend.position = "top",
-                               legend.title = ggplot2::element_blank())
-              if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-                # if (cuts > 8) {                                               # factor
-                #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
-                #                                               hjust = 1, vjust = 0.3))
-                # }
-              } else if (SRfunctions::SR_is_date(stats_long$x)) {               # date
-                spanne = as.numeric(difftime(max(stats_long$x), min(stats_long$x),
-                                             units = "days"))
-                if (spanne > 365.25 * 20) {
-                  p1 <- p1 +
-                    ggplot2::scale_x_date(date_breaks = "10 years",
-                                          date_labels = "%Y",
-                                          date_minor_breaks = "1 year")
-                } else if (spanne > 365.25 * 3) {
-                  p1 <- p1 +
-                    ggplot2::scale_x_date(date_breaks = "year",
-                                          date_labels = "%Y",
-                                          date_minor_breaks = "3 months")
-                } else if (spanne > 365.25) {
-                  p1 <- p1 +
-                    ggplot2::scale_x_date(date_breaks = "3 months",
-                                          date_labels = "%Y-%m",
-                                          date_minor_breaks = "1 month")
-                } else if (spanne > 30) {
-                  p1 <- p1 +
-                    ggplot2::scale_x_date(date_breaks = "1 month",
-                                          date_labels = "%Y-%m-%d",
-                                          date_minor_breaks = "1 week")
-                } else {
-                  p1 <- p1 +
-                    ggplot2::scale_x_date(date_breaks = "1 week",
-                                          date_labels = "%Y-%m-%d",
-                                          date_minor_breaks = "1 day")
-                }
-              } else {
-                p1 <- p1 +
-                  ggplot2::geom_line(linewidth = I(1)) +                        # numeric
-                  ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
-              }; p1
-              p2 <- ggplot2::ggplot(stats, ggplot2::aes(x = x, y = Count)) +
-                ggplot2::geom_bar(stat = "identity", position = "dodge", orientation = "x") +
-                ggplot2::labs(x = gsub("_LabelEnc", "", xlabel))
-              if ((gsub("_LabelEnc", "", temp$Feature[i]) %in% factor_encoding$feature)) {
-                # if (cuts > 8) {                                               # factor
-                #   p1 <- p1 + theme(axis.text.x = element_text(angle = 90,
-                #                                               hjust = 1, vjust = 0.3))
-                # }
-              } else if (SRfunctions::SR_is_date(stats_long$x)) {               # date
-                if (spanne > 365.25 * 20) {
-                  p2 <- p2 +
-                    ggplot2::scale_x_date(date_breaks = "10 years",
-                                          date_labels = "%Y",
-                                          date_minor_breaks = "1 year")
-                } else if (spanne > 365.25 * 3) {
-                  p2 <- p2 +
-                    ggplot2::scale_x_date(date_breaks = "year",
-                                          date_labels = "%Y",
-                                          date_minor_breaks = "3 months")
-                } else if (spanne > 365.25) {
-                  p2 <- p2 +
-                    ggplot2::scale_x_date(date_breaks = "3 months",
-                                          date_labels = "%Y-%m",
-                                          date_minor_breaks = "1 month")
-                } else if (spanne > 30) {
-                  p2 <- p2 +
-                    ggplot2::scale_x_date(date_breaks = "1 month",
-                                          date_labels = "%Y-%m-%d",
-                                          date_minor_breaks = "1 week")
-                } else {
-                  p2 <- p2 +
-                    ggplot2::scale_x_date(date_breaks = "1 week",
-                                          date_labels = "%Y-%m-%d",
-                                          date_minor_breaks = "1 day")
-                }
-              } else {
-                p2 <- p2 +
-                  ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8)) # numeric
-              }; p2
-              p <- gridExtra::grid.arrange(p1, p2, ncol = 1, heights = c(0.75, 0.25)); p
+                                        plot = FALSE, chull = TRUE, type = "regression",
+                                        # type = ifelse(objective == "multilabel",
+                                        #               "classification", objective))
+                                        parallel = TRUE, # with foreach package
+                                        paropts = list(.packages = "xgboost"))
+              })
+            } else {
+              # single core
+              partial <- pdp::partial(bst_1fold,
+                                      pred.var = temp$Feature[i],
+                                      pred.grid = data.frame(stats_$x_orig) %>%
+                                        stats::setNames(xlabel),
+                                      # grid.resolution = 30,
+                                      train = test_eval_mat_,
+                                      plot = FALSE, chull = TRUE, type = "regression")
+              # type = ifelse(objective == "multilabel",
+              #               "classification", objective))
             }
+            rm(stats_)
+            #
+            stats <- stats %>%
+              dplyr::left_join(partial, by = c("x_orig" = xlabel)) %>%
+              dplyr::rename("Partial_Dependence" = "yhat")
+            # save stats
+            utils::write.table(stats, paste0(path_output_best, "VarImp ", i, " ",
+                                             gsub("_LabelEnc", "", xlabel), ".csv"),
+                               row.names = FALSE, sep = ";")
+            #
+            stats <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
+            #
+            scale <- max(stats$Count, na.rm = TRUE) /
+              mean(max(stats$Predicted, na.rm = TRUE),
+                   max(stats$Actual, na.rm = TRUE),
+                   max(stats$Partial_Dependence, na.rm = TRUE))
+            scale <- dplyr::if_else(scale < 0.5, scale, round(scale))
+            scale <- dplyr::case_when(round(scale, -nchar(scale)) == 0 &
+                                        round(scale) > 0 ~ round(scale, -nchar(scale) + 1),
+                                      round(scale, -nchar(scale)) > 0 &
+                                        round(scale) > 0 ~ round(scale, -nchar(scale)),
+                                      round(scale * 10) > 0 ~ round(scale, 1),
+                                      round(scale * 100) > 0 ~ round(scale, 2),
+                                      round(scale * 1000) > 0 ~ round(scale, 3),
+                                      round(scale * 10000) > 0 ~ round(scale, 4),
+                                      TRUE ~ scale)
+            scale <- 1 / scale
+            #
+            if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) { # factor
+              x_scale <- ggplot2::scale_x_discrete(labels = function(x) {
+                gsub("_", " ", x) %>%
+                  gsub("-", "- ", .) %>%
+                  gsub("/", "/ ", .) %>%
+                  stringr::str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>% # split CamelCase
+                  stringr::str_wrap(width = 12)                # wrap after ~12 chars
+              })
+            } else if (SRfunctions::SR_is_date(stats$x)) {                      # date
+              spanne = as.numeric(difftime(max(stats$x), min(stats$x), units = "days"))
+              if (spanne > 365.25 * 20) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "10 years",
+                                                 date_labels = "%Y",
+                                                 date_minor_breaks = "1 year")
+              } else if (spanne > 365.25 * 3) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "year",
+                                                 date_labels = "%Y",
+                                                 date_minor_breaks = "3 months")
+              } else if (spanne > 365.25) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "3 months",
+                                                 date_labels = "%Y-%m",
+                                                 date_minor_breaks = "1 month")
+              } else if (spanne > 30) {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "1 month",
+                                                 date_labels = "%Y-%m-%d",
+                                                 date_minor_breaks = "1 week")
+              } else {
+                x_scale <- ggplot2::scale_x_date(date_breaks = "1 week",
+                                                 date_labels = "%Y-%m-%d",
+                                                 date_minor_breaks = "1 day")
+              }
+            } else {                                                            # numeric
+              x_scale <- ggplot2::scale_x_continuous(
+                breaks = scales::pretty_breaks(ifelse(nrow(stats) > 10, 8, 6)))
+            }
+            #
+            p <- ggplot2::ggplot(stats, ggplot2::aes(x = x)) +
+              x_scale +
+              # Balken für Count (sekundäre Y-Achse)
+              ggplot2::geom_col(ggplot2::aes(y = Count * scale),
+                                fill = "gray60", alpha = 0.5, na.rm = TRUE) +
+              # Linien für Predicted/Actual
+              ggplot2::geom_line(ggplot2::aes(y = Predicted, color = "Predicted",
+                                              group = 1), linewidth = 1, na.rm = TRUE) +
+              ggplot2::geom_point(ggplot2::aes(y = Predicted, color = "Predicted"),
+                                  size = 2, na.rm = TRUE) +
+              ggplot2::geom_line(ggplot2::aes(y = Actual, color = "Actual", group = 1),
+                                 linewidth = 1, na.rm = TRUE) +
+              ggplot2::geom_point(ggplot2::aes(y = Actual, color = "Actual"),
+                                  size = 2, na.rm = TRUE) +
+              ggplot2::geom_line(
+                ggplot2::aes(y = Partial_Dependence, color = "Partial_Dependence",
+                             group = 1), linewidth = 1, na.rm = TRUE) +
+              ggplot2::geom_point(ggplot2::aes(y = Partial_Dependence,
+                                               color = "Partial_Dependence"),
+                                  size = 2, na.rm = TRUE) +
+              ggplot2::scale_color_manual(
+                values = scales::hue_pal()(3)[c(2, 1, 3)] %>%
+                  setNames(c("Actual", "Predicted", "Partial_Dependence")),
+                breaks = c("Actual", "Predicted", "Partial_Dependence"),
+                labels = c("Actual", "Predicted", "Partial Dependence")) +
+              # Sekundäre Y-Achse für Count
+              ggplot2::scale_y_continuous(
+                breaks = scales::pretty_breaks(6),
+                labels = scales::format_format(big.mark = "'"),
+                sec.axis = ggplot2::sec_axis(~ . / scale, name = "Count (gray bar)",
+                                             breaks = scales::pretty_breaks(6),
+                                             labels = scales::format_format(big.mark = "'"))) +
+              ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
+              ggplot2::theme(legend.position = "top",
+                             legend.title = ggplot2::element_blank())
+            print(p)
             #
             # simple PDP-graphic
             p3 <- ggplot2::ggplot(stats,
-                                  ggplot2::aes(x = x, y = Partial_Dependence)) +
-              ggplot2::geom_point(size = 2, colour = "steelblue") +
-              ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Value") +
+                                  ggplot2::aes(x = x, y = Partial_Dependence, group = 1)) +
+              x_scale +
+              ggplot2::geom_point(size = 2, colour = "steelblue", na.rm = TRUE) +
+              ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +
+              ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
               ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6))
-            if ((gsub("_LabelEnc", "",  temp$Feature[i]) %in% factor_encoding$feature)) {
-              # if (cuts > 8) {                                               # factor
-              #   p3 <- p3 + theme(axis.text.x = element_text(angle = 90,
-              #                                               hjust = 1, vjust = 0.3))
-              # }
-            } else if (SRfunctions::SR_is_date(stats$x)) {               # date
-              spanne = as.numeric(difftime(max(stats$x), min(stats$x),
-                                           units = "days"))
-              if (spanne > 365.25 * 20) {
-                p3 <- p3 +
-                  ggplot2::scale_x_date(date_breaks = "10 years",
-                                        date_labels = "%Y",
-                                        date_minor_breaks = "1 year")
-              } else if (spanne > 365.25 * 3) {
-                p3 <- p3 +
-                  ggplot2::scale_x_date(date_breaks = "year",
-                                        date_labels = "%Y",
-                                        date_minor_breaks = "3 months")
-              } else if (spanne > 365.25) {
-                p3 <- p3 +
-                  ggplot2::scale_x_date(date_breaks = "3 months",
-                                        date_labels = "%Y-%m",
-                                        date_minor_breaks = "1 month")
-              } else if (spanne > 30) {
-                p3 <- p3 +
-                  ggplot2::scale_x_date(date_breaks = "1 month",
-                                        date_labels = "%Y-%m-%d",
-                                        date_minor_breaks = "1 week")
-              } else {
-                p3 <- p3 +
-                  ggplot2::scale_x_date(date_breaks = "1 week",
-                                        date_labels = "%Y-%m-%d",
-                                        date_minor_breaks = "1 day")
-              }
-            } else {
-              p3 <- p3 +
-                ggplot2::geom_line(linewidth = I(1), colour = "steelblue") +    # numeric
-                ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(8))
-            }
             #
             # save graphic
-            xlabel <- gsub("[[:punct:]]", "", xlabel)
-            try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                       "Best Model/VarImp ", i, " ",
-                                       gsub("LabelEnc", "", xlabel), ".png"),
-                                plot = p, width = 9.92, height = 5.3))  # 4.67
+            # xlabel <- gsub("[[:punct:]]", "", xlabel)
+            try(ggplot2::ggsave(paste0(path_output_best, "VarImp ", i, " ",
+                                       gsub("_LabelEnc", "", xlabel), ".png"),
+                                plot = p, width = 9.92, height = 5.3))
             try(rm(p), TRUE)
-            try(ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                       "Best Model/VarImp ", i, " ",
-                                       gsub("LabelEnc", "", xlabel), " PDP.png"),
-                                plot = p3, width = 9.92, height = 5.3))  # 4.67
+            try(ggplot2::ggsave(paste0(path_output_best, "VarImp ", i, " ",
+                                       gsub("_LabelEnc", "", xlabel), " PDP.png"),
+                                plot = p3, width = 9.92, height = 5.3))
             try(rm(p3), TRUE)
-            # save summary table
-            utils::write.table(stats, paste0(path_output, gsub(".csv", "/", lauf),
-                                             "Best Model/VarImp ", i, " ",
-                                             gsub("LabelEnc", "", xlabel), ".csv"),
-                               row.names = FALSE, sep = ";")
           })
         }
         #
         # Plot PDP-summary of all important variables
-        files <- list.files(path = paste0(path_output, gsub(".csv", "/", lauf),
-                                          "/Best Model/"),
+        files <- list.files(path = path_output_best,
                             pattern = "VarImp .*.csv", full.names = TRUE) %>%
           data.frame(filename = .) %>%
           dplyr::filter(!grepl("VarImp 0.csv", filename)) %>%
           dplyr::mutate(Variable =
-                          SRfunctions::SR_trim_text(substr(basename(filename),
-                                                           10, nchar(basename(filename)) - 4)),
+                          SRfunctions::SR_trim_text(
+                            substr(basename(filename), 10, nchar(basename(filename)) - 4)),
                         Variable = paste0(row_number(), " ", Variable))
         #
         df_temp <- data.frame()
@@ -1050,56 +1058,43 @@ SRxgboost_plots <- function(lauf, rank = 1,
           df_temp <- dplyr::bind_rows(
             df_temp,
             rio::import(files$filename[i]) %>%
-              dplyr::mutate(Group = factor(Group,
-                                           levels = rio::import(files$filename[i])$Group),
+              dplyr::mutate(Group =
+                              factor(Group, levels = rio::import(files$filename[i])$Group),
                             x = as.character(x),
                             Variable = files$Variable[i],
                             .before = 1))
         }; rm(i, files)
-        saveRDS(df_temp, paste0(path_output, gsub(".csv", "/", lauf),
-                                "/Best Model/VarImp 0 Alle PDP.rds"))
+        saveRDS(df_temp, paste0(path_output_best, "VarImp 0 Alle PDP.rds"))
         #
         df_temp %>%
           ggplot2::ggplot(ggplot2::aes(x = Group, y = Partial_Dependence, group = Variable)) +
-          ggplot2::geom_point(colour = "steelblue") +
-          ggplot2::geom_line(colour = "steelblue") +
+          ggplot2::geom_point(colour = "steelblue", na.rm = TRUE) +
+          ggplot2::geom_line(colour = "steelblue", na.rm = TRUE) +
           ggplot2::facet_wrap(vars(Variable), scales = "free_x") +
-          ggplot2::labs(title = "Partial Dependence Plots")
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                               "/Best Model/VarImp 0 Alle PDP.png"),
+          ggplot2::labs(title = "Partial Dependence")
+        ggplot2::ggsave(paste0(path_output_best, "VarImp 0 Alle PDP.png"),
                         width = 9.92, height = 5.3)
         #
         # plot of selected variables
-        if (TRUE) {
-          # lauf <- "XGB_2023_AnteilAB_v11"
-          # df_temp <- readRDS(paste0(path_output, gsub(".csv", "/", lauf),
-          #                           "/Best Model/VarImp 0 Alle PDP.rds"))
-          df_temp %>% dplyr::count(Variable)
-          suppressWarnings({
-            df_temp %>%
-              # select x-variables with a similar range:
-              dplyr::filter(Variable %in% c(unique(df_temp$Variable)[1:5])) %>%
-              # dplyr::mutate(Variable = Variable %>%
-              #                 sub("KD", "Kunden ", .) %>%
-              #                 sub("ANT", " Anteil", .)) %>%
-              dplyr::mutate(x = as.numeric(x)) %>%
-              ggplot2::ggplot(ggplot2::aes(x = x, y = Partial_Dependence,
-                                           group = Variable, colour = Variable)) +
-              ggplot2::geom_point() +
-              ggplot2::geom_line() +
-              ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
-                                          labels = scales::format_format(big.mark = "'"),
-                                          transform = "log1p") +
-              # transform = scales::transform_yj()) +
-              ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
-                                          # labels = scales::percent) +
-                                          labels = scales::format_format(big.mark = "'")) +
-              ggplot2::labs(title = "Partial Dependence Plot", x = "x", y = "y")
-            ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                   "/Best Model/VarImp 0 Alle PDP 2.png"),
-                            width = 9.92, height = 5.3)
-          })
-        }
+        df_temp %>% dplyr::count(Variable)
+        suppressWarnings({
+          df_temp %>%
+            # select x-variables with a similar range:
+            dplyr::filter(Variable %in% c(unique(df_temp$Variable)[1:5])) %>%
+            dplyr::mutate(x = as.numeric(x)) %>%
+            ggplot2::ggplot(ggplot2::aes(x = x, y = Partial_Dependence,
+                                         group = Variable, colour = Variable)) +
+            ggplot2::geom_point(na.rm = TRUE) +
+            ggplot2::geom_line(na.rm = TRUE) +
+            ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(6),
+                                        labels = scales::format_format(big.mark = "'"),
+                                        transform = "log1p") +
+            ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6),
+                                        labels = scales::format_format(big.mark = "'")) +
+            ggplot2::labs(title = "Partial Dependence", x = "x", y = "y")
+          ggplot2::ggsave(paste0(path_output_best, "VarImp 0 Alle PDP 2.png"),
+                          width = 9.92, height = 5.3)
+        })
         #
         rm(df_temp)
       }
@@ -1111,8 +1106,9 @@ SRxgboost_plots <- function(lauf, rank = 1,
     #
     ###  variable importance ####
     #
-    # downsample datenModell (because EIX::interactions is very slow)
-    if (nrow(datenModell) > pdp_int_sample) {
+    print("Plot VarImp interaction")
+    # downsample datenModell (because EIX::interactions is very slow) => EIX abgelöst!
+    if (nrow(datenModell) > pdp_int_sample & FALSE) {
       set.seed(12345)
       datenModell_ <- datenModell %>% dplyr::sample_n(pdp_int_sample)
       train_mat_ <- Matrix::sparse.model.matrix(~. - 1, data = datenModell_)
@@ -1138,36 +1134,77 @@ SRxgboost_plots <- function(lauf, rank = 1,
     }
     #
     # calculate most important interaction pairs Parent/Child
-    interactions <- EIX::interactions(bst, train_mat_, option = "pairs")
-    # interactions <- EIX::interactions(bst, train_mat_, option = "interactions")
-    # plot(interactions)
     #
-    # clean up stats
-    interactions_clean <- data.frame(interactions) %>%
-      dplyr::left_join(importance_matrix %>%
-                         dplyr::mutate(Parent_Rang = 1:nrow(.)) %>%
-                         dplyr::select(Feature, Parent_Rang),
-                       by = c("Parent" = "Feature")) %>%
-      dplyr::left_join(importance_matrix %>%
-                         dplyr::mutate(Child_Rang = 1:nrow(.)) %>%
-                         dplyr::select(Feature, Child_Rang),
-                       by = c("Child" = "Feature")) %>%
-      dplyr::mutate(Parent_clean = ifelse(Parent_Rang < Child_Rang, Parent, Child),
-                    Child_clean = ifelse(Parent_Rang > Child_Rang, Parent, Child),
-                    Parent = Parent_clean,
-                    Child = Child_clean) %>%
-      dplyr::select(-Parent_clean, -Parent_Rang, -Child_clean, -Child_Rang) %>%
+    dt <- as.data.frame(xgboost::xgb.model.dt.tree(model = bst, trees = 0:999))
+    top <- as.data.frame(xgboost::xgb.importance(model = bst)) %>%
+      dplyr::mutate(Feature = sub("^f", "", Feature)) %>%
+      dplyr::slice_head(n = 30) %>%
+      dplyr::pull(Feature)
+    edges <- dplyr::bind_rows(
+      dt %>%
+        dplyr::filter(!is.na(Yes)) %>%
+        dplyr::transmute(Tree, ChildID = Yes, Parent = Feature),
+      dt %>%
+        dplyr::filter(!is.na(No))  %>%
+        dplyr::transmute(Tree, ChildID = No,  Parent = Feature)) %>%
+      dplyr::mutate(ChildID = as.integer(sub(".*-", "", ChildID)))
+    childs <- dt %>%
+      dplyr::filter(Feature != "Leaf") %>%
+      dplyr::transmute(Tree, ID = Node, Child = Feature, Gain = Quality)
+    interactions <- dplyr::left_join(childs, edges, by = c("Tree", "ID" = "ChildID")) %>%
+      dplyr::filter(Parent %in% top, Child %in% top) %>%
       dplyr::group_by(Parent, Child) %>%
+      dplyr::summarise(sumGain = sum(Gain, na.rm = TRUE),
+                       frequency = dplyr::n(),
+                       .groups = "drop") %>%
+      dplyr::mutate(A = pmin(Parent, Child), B = pmax(Parent, Child)) %>%
+      dplyr::group_by(A, B) %>%
       dplyr::summarise(sumGain = sum(sumGain),
                        frequency = sum(frequency),
                        .groups = "drop") %>%
-      dplyr::arrange(-sumGain) %>%
+      dplyr::arrange(dplyr::desc(sumGain))
+    base::rm(dt, top, edges, childs)
+    # clean up
+    interactions_clean <- data.frame(interactions) %>%
       dplyr::mutate(Gain = sumGain / sum(sumGain),
-                    Frequency = frequency / sum(frequency),
-                    Feature = paste0(Parent, " - ", Child))
+                    Frequency = frequency / sum(frequency)) %>%
+      dplyr::mutate_at(dplyr::vars(A, B), ~as.numeric(.)) %>%
+      dplyr::left_join(data.frame(Parent = colnames(datenModell_eval),
+                                  Number = 0:(ncol(datenModell_eval) - 1)),
+                       by = dplyr::join_by(A == Number)) %>%
+      dplyr::left_join(data.frame(Child = colnames(datenModell_eval),
+                                  Number = 0:(ncol(datenModell_eval) - 1)),
+                       by = dplyr::join_by(B == Number)) %>%
+      dplyr::mutate(Feature = paste0(Parent, " - ", Child))
+    #
+    # # ALT:
+    # interactions <- EIX::interactions(bst, train_mat_, option = "pairs")
+    # # interactions_ <- EIX::interactions(bst, train_mat_, option = "interactions")
+    # # plot(interactions)
+    # interactions_clean <- data.frame(interactions) %>%
+    #   dplyr::left_join(importance_matrix %>%
+    #                      dplyr::mutate(Parent_Rang = 1:nrow(.)) %>%
+    #                      dplyr::select(Feature, Parent_Rang),
+    #                    by = c("Parent" = "Feature")) %>%
+    #   dplyr::left_join(importance_matrix %>%
+    #                      dplyr::mutate(Child_Rang = 1:nrow(.)) %>%
+    #                      dplyr::select(Feature, Child_Rang),
+    #                    by = c("Child" = "Feature")) %>%
+    #   dplyr::mutate(Parent_clean = ifelse(Parent_Rang < Child_Rang, Parent, Child),
+    #                 Child_clean = ifelse(Parent_Rang > Child_Rang, Parent, Child),
+    #                 Parent = Parent_clean,
+    #                 Child = Child_clean) %>%
+    #   dplyr::select(-Parent_clean, -Parent_Rang, -Child_clean, -Child_Rang) %>%
+    #   dplyr::group_by(Parent, Child) %>%
+    #   dplyr::summarise(sumGain = sum(sumGain),
+    #                    frequency = sum(frequency),
+    #                    .groups = "drop") %>%
+    #   dplyr::arrange(-sumGain) %>%
+    #   dplyr::mutate(Gain = sumGain / sum(sumGain),
+    #                 Frequency = frequency / sum(frequency),
+    #                 Feature = paste0(Parent, " - ", Child))
     utils::write.table(interactions_clean,
-                       paste0(path_output, gsub(".csv", "/", lauf),
-                              "Best Model/VarImpInt 0.csv"),
+                       paste0(path_output_best, "VarImpInt 0.csv"),
                        row.names = FALSE, col.names = TRUE, append = FALSE,
                        sep = ";", dec = ",")
     #
@@ -1189,9 +1226,8 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                   breaks = scales::pretty_breaks(5)) +
       ggplot2::facet_grid(~variable, scales = "free") +
       ggplot2::coord_flip()
-    ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                           "Best Model/VarImpInt 0.png"),
-                    width = 9.92, height = 5.3)  # 4.67
+    ggplot2::ggsave(paste0(path_output_best, "VarImpInt 0.png"),
+                    width = 9.92, height = 5.3)
     #
     ### Partial Dependence Plots ####
     #
@@ -1228,6 +1264,16 @@ SRxgboost_plots <- function(lauf, rank = 1,
             #
             try({
               # calculate stats
+              f1 <- temp$Parent[i]; f2 <- temp$Child[i]
+              qv <- function(v, m = 11) as.numeric(quantile(v, seq(0.05, 0.95, length.out = m),
+                                                            na.rm = TRUE, names = FALSE))
+              pg <- setNames(expand.grid(qv(datenModell_eval_[[f1]]),
+                                         qv(datenModell_eval_[[f2]]),
+                                         KEEP.OUT.ATTRS = FALSE),
+                             c(f1, f2)) %>%
+                distinct(.)
+              rm(f1, f2, qv)
+              #
               if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
                 # in parallel
                 invisible({
@@ -1236,6 +1282,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                           # pred.grid = data.frame(stats$x_orig) %>%
                                           #   stats::setNames(xlabel),
                                           # grid.resolution = 30,
+                                          pred.grid = pg, # faster
                                           train = test_eval_mat_,
                                           type = "regression", plot = FALSE,
                                           parallel = TRUE,
@@ -1248,6 +1295,7 @@ SRxgboost_plots <- function(lauf, rank = 1,
                                         # pred.grid = data.frame(stats$x_orig) %>%
                                         #   stats::setNames(xlabel),
                                         # grid.resolution = 30,
+                                        pred.grid = pg, # faster
                                         train = test_eval_mat_,
                                         type = "regression", plot = FALSE)
               }
@@ -1264,27 +1312,53 @@ SRxgboost_plots <- function(lauf, rank = 1,
               #                         plot = FALSE)
               #
               # save graphic
-              p <- ggplot2::autoplot(partial) +
-                ggplot2::labs(title = "Partial Dependence Plot")
-              ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                     "Best Model/VarImpInt ", i, " ",
+              col_x1 <- names(partial)[1]
+              col_x2 <- names(partial)[2]
+              p <- partial %>%
+                ggplot2::ggplot(ggplot2::aes(x = .data[[col_x1]], y = .data[[col_x2]],
+                                             fill = yhat)) +
+                ggplot2::geom_tile() +
+                ggplot2::scale_fill_gradient2(
+                  low = "blue", mid = "white", high = "red",
+                  midpoint = mean(partial$yhat, na.rm = TRUE),
+                  breaks = scales::pretty_breaks(4),
+                  labels = scales::format_format(big.mark = "'")) +
+                ggplot2::labs(title = "Partial Dependence", fill = "Predicted\nValue")
+              ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
                                      gsub("_LabelEnc", "", temp$Feature[i]), ".png"),
-                              plot = p, width = 9.92, height = 5.3)  # 4.67
-              rm(p)
+                              plot = p, width = 9.92, height = 5.3)
+              rm(col_x1, col_x2, p)
               #
-              p <- pdp::plotPartial(partial, zlab = "y",
-                                    levelplot = FALSE, drape = TRUE)
-              ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf),
-                                     "Best Model/VarImpInt ", i, " ",
+              mid <- mean(partial$yhat, na.rm = TRUE)
+              rng <- range(partial$yhat, na.rm = TRUE)
+              n_below <- round(100 * (mid - rng[1]) / diff(rng))
+              n_above <- 100 - n_below
+              cols <- c(colorRampPalette(c("blue", "white"))(n_below),
+                        colorRampPalette(c("white", "red"))(n_above))
+              p <- pdp::plotPartial(partial, zlab = "Predicted  \nValue ",
+                                    levelplot = FALSE, drape = TRUE,
+                                    # colorkey = TRUE,
+                                    colorkey = list(labels = list(
+                                      at = pretty(partial$yhat),
+                                      labels = format(pretty(partial$yhat), big.mark = "'",
+                                                      scientific = FALSE))),
+                                    col.regions = cols,
+                                    scales = list(cex = 1, arrows = FALSE,
+                                                  z = list(draw = FALSE)),
+                                    par.settings = list(
+                                      axis.line = list(col = "black", lwd = 1.5),
+                                      fontsize = list(text = 10, points = 10)
+                                    ),
+                                    screen = list(z = 30, x = -60, y = 0))
+              ggplot2::ggsave(paste0(path_output_best, "VarImpInt ", i, " ",
                                      gsub("_LabelEnc", "", temp$Feature[i]), " 3D.png"),
                               plot = gridExtra::arrangeGrob(p),
-                              width = 9.92, height = 5.3)  # 4.67
-              rm(p)
+                              width = 7, height = 7)
+              print(p); rm(mid, rng, n_below, n_above, cols, p)
               #
               # save summary table
               utils::write.table(partial,
-                                 paste0(path_output, gsub(".csv", "/", lauf),
-                                        "Best Model/VarImpInt ", i, " ",
+                                 paste0(path_output_best, "VarImpInt ", i, " ",
                                         gsub("_LabelEnc", "", temp$Feature[i]), ".csv"),
                                  row.names = FALSE, sep = ";")
               rm(partial)
