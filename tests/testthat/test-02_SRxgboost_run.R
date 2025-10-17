@@ -124,7 +124,7 @@ SRxgboost_data_prep(yname = "SalePrice", data_train = train,
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 100,
               nfold = 5 , nthreads = 1)
 # check uncertain forecasts
-SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.8, 1, by = 0.005))
+SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.5, 1, by = 0.005))
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
                 uncertainty_quantil = 0.97)
@@ -512,7 +512,7 @@ SRxgboost_data_prep(yname = "Churn",
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 100,
               nfold = 5)
 # check uncertain forecasts
-SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.8, 1, by = 0.005))
+SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.5, 1, by = 0.005))
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
                 uncertainty_quantil = 0.98)

@@ -4,7 +4,7 @@
 \alias{SRxgboost_check_uncertainty}
 \title{SRxgboost_check_uncertainty}
 \usage{
-SRxgboost_check_uncertainty(lauf, quantiles = seq(0.8, 1, by = 0.005))
+SRxgboost_check_uncertainty(lauf, quantiles = seq(0.5, 1, by = 0.005))
 }
 \arguments{
 \item{lauf}{character}
