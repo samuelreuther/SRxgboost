@@ -163,9 +163,15 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
     # SRxgboost_check_uncertainty(lauf = lauf)
     #
     # which predictions to keep
+    threshold <- uncertainty_stats$UNCERTAINTY[uncertainty_stats$QUANTIL == uncertainty_quantil]
     uncertainty <- uncertainty %>%
-      dplyr::mutate(KEEP = ifelse(UNCERTAINTY <= uncertainty_stats$UNCERTAINTY[
-        uncertainty_stats$QUANTIL == uncertainty_quantil], TRUE, FALSE))
+      dplyr::mutate(KEEP = ifelse(UNCERTAINTY <= threshold |
+                                    (MEAN > uncertainty_stats$MEAN_25[1] &
+                                       MEAN < uncertainty_stats$MEAN_75[1]),
+                                  TRUE, FALSE))
+    # uncertainty <- uncertainty %>%
+    #   dplyr::mutate(KEEP = ifelse(UNCERTAINTY <= threshold, TRUE, FALSE))
+    # uncertainty %>% count(DATA, KEEP)
     #
     # clean up all objects
     #
@@ -193,7 +199,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
     #
     # save into Data
     path_temp <- paste0(path_output_data, "Uncertainty",
-                        sub("0.", "", format(uncertainty_quantil, nsmall = 2)), "/")
+                        format(uncertainty_quantil, nsmall = 2), "/")
     if (!dir.exists(path_temp)) dir.create(path_temp, showWarnings = FALSE)
     saveRDS(id_unique_train_keep, paste0(path_temp, "id_unique_train_keep.rds"))
     saveRDS(datenModell, paste0(path_temp, "datenModell.rds"))

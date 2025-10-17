@@ -45,8 +45,7 @@ assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
 SRxgboost_data_prep(yname = "SalePrice", data_train = train,
-                    no_folds = 5, nthreads = 1,
-                    objective = "regression")
+                    no_folds = 5, nthreads = 1, objective = "regression")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               nfold = 5 , nthreads = 1)
@@ -118,16 +117,16 @@ assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
 SRxgboost_data_prep(yname = "SalePrice", data_train = train,
-                    no_folds = 5, nthreads = 1,
-                    objective = "regression")
+                    no_folds = 5, nthreads = 1, objective = "regression")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 100,
               nfold = 5 , nthreads = 1)
 # check uncertain forecasts
-SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.5, 1, by = 0.005))
+SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.5, 1, by = 0.005),
+                            range = c(0.25, 0.75))
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
-                uncertainty_quantil = 0.97)
+                uncertainty_quantil = 0.755)
 #
 #
 ## clean up
@@ -148,10 +147,8 @@ cat("\n", lauf, "\n")
 eval_index <- which(train$MSSubClass > 90)
 assign('eval_index', eval_index, envir = .GlobalEnv)
 # prepare data and test
-SRxgboost_data_prep(yname = "SalePrice",
-                    data_train = train,
-                    eval_index = eval_index,
-                    objective = "regression")
+SRxgboost_data_prep(yname = "SalePrice", data_train = train,
+                    eval_index = eval_index, objective = "regression")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               run_final_model = FALSE)
@@ -219,10 +216,8 @@ folds <- SRxgboost_create_folds(df = train, foldcolumn = "group", k = 5)
 assign('folds', folds, envir = .GlobalEnv)
 train <- train %>% dplyr::select(-group)
 # prepare data and test
-SRxgboost_data_prep(yname = "SalePrice",
-                    data_train = train,
-                    folds = folds,
-                    objective = "regression")
+SRxgboost_data_prep(yname = "SalePrice", data_train = train,
+                    folds = folds, objective = "regression")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
               folds = folds)
@@ -294,10 +289,8 @@ lauf <- "regr_no_folds_all.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "SalePrice",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "regression",
+SRxgboost_data_prep(yname = "SalePrice", data_train = train,
+                    no_folds = 5, objective = "regression",
                     add_random_variables = TRUE)
 # run model
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse", runs = 2,
@@ -431,10 +424,8 @@ lauf <- "class_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "Churn",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "classification")
+SRxgboost_data_prep(yname = "Churn", data_train = train,
+                    no_folds = 5, objective = "classification")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               nfold = 5)
@@ -504,18 +495,17 @@ lauf <- "class_no_folds.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "Churn",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "classification")
+SRxgboost_data_prep(yname = "Churn", data_train = train,
+                    no_folds = 5, objective = "classification")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 100,
               nfold = 5)
 # check uncertain forecasts
-SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.5, 1, by = 0.005))
+SRxgboost_check_uncertainty(lauf = lauf, quantiles = seq(0.5, 1, by = 0.005),
+                            range = c(0.25, 0.75))
 # plot results of best model
 SRxgboost_plots(lauf = lauf, rank = 1, pdp_min_rel_Gain = 0.05,
-                uncertainty_quantil = 0.98)
+                uncertainty_quantil = 0.75)
 #
 #
 ## clean up
@@ -536,10 +526,8 @@ cat("\n", lauf, "\n")
 eval_index <- which(train$MonthlyCharges > 100)
 assign('eval_index', eval_index, envir = .GlobalEnv)
 # prepare data and test
-SRxgboost_data_prep(yname = "Churn",
-                    data_train = train,
-                    eval_index = eval_index,
-                    objective = "classification")
+SRxgboost_data_prep(yname = "Churn", data_train = train,
+                    eval_index = eval_index, objective = "classification")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               run_final_model = FALSE)
@@ -607,10 +595,8 @@ folds <- SRxgboost_create_folds(df = train, foldcolumn = "group", k = 5)
 assign('folds', folds, envir = .GlobalEnv)
 train <- train %>% dplyr::select(-group)
 # prepare data and test
-SRxgboost_data_prep(yname = "Churn",
-                    data_train = train,
-                    folds = folds,
-                    objective = "classification")
+SRxgboost_data_prep(yname = "Churn", data_train = train,
+                    folds = folds, objective = "classification")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               folds = folds)
@@ -678,10 +664,8 @@ lauf <- "class_scale_pos_weight.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "Churn",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "classification")
+SRxgboost_data_prep(yname = "Churn", data_train = train,
+                    no_folds = 5, objective = "classification")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
               nfold = 5,
@@ -747,10 +731,8 @@ lauf <- "class_no_folds_all.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "Churn",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "classification",
+SRxgboost_data_prep(yname = "Churn", data_train = train,
+                    no_folds = 5, objective = "classification",
                     add_random_variables = TRUE)
 # run model
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc", runs = 2,
@@ -833,10 +815,8 @@ lauf <- "mclass_no_folds_softprob.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "type",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "multilabel")
+SRxgboost_data_prep(yname = "type", data_train = train,
+                    no_folds = 5, objective = "multilabel")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
               nfold = 5)
@@ -910,10 +890,8 @@ weights <-
   (prop.table(table(train$type)) + 0.15) /   # laplace / additive smoothing
   (prop.table(table(train$type[train$huml > 20])) + 0.15)
 assign('weights', weights, envir = .GlobalEnv)
-SRxgboost_data_prep(yname = "type",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "multilabel",
+SRxgboost_data_prep(yname = "type", data_train = train,
+                    no_folds = 5, objective = "multilabel",
                     weights = weights)
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob",
@@ -983,10 +961,8 @@ lauf <- "mclass_no_folds_softmax.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "type",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "multilabel")
+SRxgboost_data_prep(yname = "type", data_train = train,
+                    no_folds = 5, objective = "multilabel")
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softmax", metric = "mAUC", runs = 2,
               nfold = 5)
@@ -1056,10 +1032,8 @@ lauf <- "mclass_no_folds_softprob_selvars.csv"
 assign('lauf', lauf, envir = .GlobalEnv)
 cat("\n", lauf, "\n")
 # prepare data and test
-SRxgboost_data_prep(yname = "type",
-                    data_train = train,
-                    no_folds = 5,
-                    objective = "multilabel",
+SRxgboost_data_prep(yname = "type", data_train = train,
+                    no_folds = 5, objective = "multilabel",
                     add_random_variables = TRUE)
 # run models
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
@@ -1085,8 +1059,7 @@ SRxgboost_data_prep(yname = "type",
                     data_train = train %>%
                       select(type,
                              all_of(sel_vars$Feature[sel_vars$Select])),,
-                    no_folds = 5,
-                    objective = "multilabel")
+                    no_folds = 5, objective = "multilabel")
 # run model
 SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC", runs = 2,
               nfold = 5)

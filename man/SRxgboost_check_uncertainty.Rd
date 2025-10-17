@@ -4,16 +4,23 @@
 \alias{SRxgboost_check_uncertainty}
 \title{SRxgboost_check_uncertainty}
 \usage{
-SRxgboost_check_uncertainty(lauf, quantiles = seq(0.5, 1, by = 0.005))
+SRxgboost_check_uncertainty(
+  lauf,
+  quantiles = seq(0.5, 1, by = 0.005),
+  range = c(0.25, 0.75)
+)
 }
 \arguments{
 \item{lauf}{character}
 
 \item{quantiles}{vector, default: seq(0.8, 1, by = 0.005)}
+
+\item{range}{vector, default: c(0.25, 0.75)}
 }
 \value{
 uncertainty stats, list with ids and plot
 }
 \description{
-Plots model results for a selected model.
+Check model quality (R2, AUC) for different cutoffs of uncertainty.
+But only middle range-forecasts are checked.
 }

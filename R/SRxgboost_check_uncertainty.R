@@ -1,14 +1,17 @@
 #' SRxgboost_check_uncertainty
 #'
-#' Plots model results for a selected model.
+#' Check model quality (R2, AUC) for different cutoffs of uncertainty.
+#' But only middle range-forecasts are checked.
 #'
 #' @param lauf character
 #' @param quantiles vector, default: seq(0.8, 1, by = 0.005)
+#' @param range vector, default: c(0.25, 0.75)
 #'
 #' @return uncertainty stats, list with ids and plot
 #'
 #' @export
-SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005)) {
+SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005),
+                                        range = c(0.25, 0.75)) {
   # Set paths ####
   #
   # check lauf ends with ".csv"
@@ -26,7 +29,7 @@ SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005
   #
   # OOFforecast and TESTforecast ####
   #
-  SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf, top_rank = 10, ensemble = FALSE)
+  SRxgboost_get_OOFforecast_TESTforecast(lauf = lauf, top_rank = 11, ensemble = FALSE)
   objective <- readRDS(paste0(path_output_data, "objective.rds"))
   #
   if (length(y_OOF$y) == nrow(OOFforecast)) {
@@ -48,19 +51,20 @@ SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005
   #
   # Calculate uncertainty ####
   #
-  mat <- as.matrix(OOFforecast[, 2:ncol(OOFforecast)])
+  mat <- as.matrix(OOFforecast[, 3:ncol(OOFforecast)])
   OOFforecast <- OOFforecast %>%
     dplyr::mutate(MEAN = rowMeans(mat, na.rm = TRUE),
                   SD = matrixStats::rowSds(mat, na.rm = TRUE),
                   y = y_OOF$y)
   #
-  mat <- as.matrix(TESTforecast[, 2:ncol(TESTforecast)])
+  mat <- as.matrix(TESTforecast[, 3:ncol(TESTforecast)])
   TESTforecast <- TESTforecast %>%
     dplyr::mutate(MEAN = rowMeans(mat, na.rm = TRUE),
                   SD = matrixStats::rowSds(mat, na.rm = TRUE)) %>%
     { if (exists("y_test")) dplyr::mutate(., y = y_test$y) else . }
   #
-  quantile_values <- round(quantile(OOFforecast$SD, probs = quantiles), 6)
+  quantiles_sd <- round(quantile(OOFforecast$SD, probs = quantiles), 6)
+  quantiles_mean <- round(quantile(OOFforecast$MEAN, probs = range), 6)
   #
   calculate_stats <- function(df) {
     if (objective == "regression") {
@@ -74,12 +78,16 @@ SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005
   }
   #
   uncertainty_stats <- data.frame()
-  for (i in seq_along(quantile_values)) {
-    subset_data <- OOFforecast %>% dplyr::filter(SD <= quantile_values[i])
+  for (i in seq_along(quantiles_sd)) {
+    subset_data <- OOFforecast %>%
+      dplyr::filter((MEAN <= quantiles_mean[1] | MEAN >= quantiles_mean[2]) |
+                      ((MEAN > quantiles_mean[1] & MEAN < quantiles_mean[2]) &
+                         SD <= quantiles_sd[i]))
+    # subset_data <- OOFforecast %>% dplyr::filter(SD <= quantiles_sd[i])
     # set.seed(123456)
     uncertainty_stats <- dplyr::bind_rows(
       uncertainty_stats,
-      data.frame(UNCERTAINTY = quantile_values[i],
+      data.frame(UNCERTAINTY = quantiles_sd[i],
                  DATA_COUNT = nrow(subset_data),
                  PERCENT_DATA_REMOVED = round(1 - nrow(subset_data) / nrow(OOFforecast), 5),
                  # STAT_RND = calculate_stats(OOFforecast %>%
@@ -93,7 +101,9 @@ SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005
                   STAT_IMPROVEMENT = STAT - dplyr::lead(STAT, 1L),
                   COVERAGE_NORM = 1 - (PERCENT_DATA_REMOVED - min(PERCENT_DATA_REMOVED)) /
                     (max(PERCENT_DATA_REMOVED) - min(PERCENT_DATA_REMOVED)),
-                  STAT_NORM = (STAT - min(STAT)) / (max(STAT) - min(STAT)))
+                  STAT_NORM = (STAT - min(STAT)) / (max(STAT) - min(STAT)),
+                  MEAN_25 = quantiles_mean[1],
+                  MEAN_75 = quantiles_mean[2])
   #
   uncertainty_stats <- uncertainty_stats %>%
     mutate(SCORE = STAT_NORM^(1 - 0.10) * COVERAGE_NORM^0.10,   # coverage_weights 10%
@@ -106,7 +116,8 @@ SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005
            TOP5 = ifelse(TOP5, TOP5, SCORE >= sort(SCORE, decreasing = TRUE)[1])) %>%
     mutate(SCORE = STAT_NORM^(1 - 0.90) * COVERAGE_NORM^0.90,   # coverage_weights 90%
            TOP5 = ifelse(TOP5, TOP5, SCORE >= sort(SCORE, decreasing = TRUE)[1])) %>%
-    mutate(label = ifelse(TOP5, paste0(QUANTIL * 100, "%"), NA))
+    mutate(label = ifelse(TOP5, paste0(QUANTIL * 100, "%\n",
+                                       round(PERCENT_DATA_REMOVED,3 ) * 100, "%"), NA))
   #
   saveRDS(uncertainty_stats, paste0(path_output_best, "Uncertainty_stats.rds"))
   assign('uncertainty_stats', uncertainty_stats, envir = .GlobalEnv)
@@ -114,10 +125,12 @@ SRxgboost_check_uncertainty <- function(lauf, quantiles = seq(0.5, 1, by = 0.005
   #
   uncertainty <- dplyr::bind_rows(OOFforecast %>%
                                     dplyr::mutate(DATA = "train") %>%
-                                    dplyr::select(DATA, id, UNCERTAINTY = SD),
+                                    dplyr::select(DATA, id, MEAN = MEAN,
+                                                  UNCERTAINTY = SD),
                                   TESTforecast %>%
                                     dplyr::mutate(DATA = "test") %>%
-                                    dplyr::select(DATA, id, UNCERTAINTY = SD))
+                                    dplyr::select(DATA, id, MEAN = MEAN,
+                                                  UNCERTAINTY = SD))
   assign('uncertainty', uncertainty, envir = .GlobalEnv)
   #
   #
