@@ -17,7 +17,7 @@ You can install the released version of SRxgboost from
 ``` r
 devtools::install_github("samuelreuther/SRxgboost")
 
-install.packages("/home/sandbox/sandbox/Libraries/SRxgboost_0.7.1.tar.gz",
+install.packages("/home/sandbox/sandbox/Libraries/SRxgboost_0.8.0.tar.gz",
                  repos = NULL, type = "source", dependencies = TRUE)
 
 library(SRxgboost)

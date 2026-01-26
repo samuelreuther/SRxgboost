@@ -41,7 +41,7 @@ assign('train', train, envir = .GlobalEnv)
 test_that("regression", {
   skip('skip')
   # run models
-  lauf <- "regression_automl.csv"
+  lauf <- "regression_automl"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   SRxgboost_h2o_automl(y = "SalePrice",
@@ -54,11 +54,12 @@ test_that("regression", {
   #
   # tests
   # no. of files
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 12)
+  expect_equal(length(list.files(paste0(path_output, lauf, "/"))), 10)
   #
   # clean up
   rm(lauf)
 })
+
 
 
 
@@ -67,7 +68,7 @@ test_that("regression", {
 test_that("regression train test", {
   skip('skip')
   # run models
-  lauf <- "regression_train_test_automl.csv"
+  lauf <- "regression_train_test_automl"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   SRxgboost_h2o_automl(y = "SalePrice",
@@ -80,7 +81,7 @@ test_that("regression train test", {
   #
   # tests
   # no. of files
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 15)
+  expect_equal(length(list.files(paste0(path_output, lauf, "/"))), 12)
   #
   # clean up
   rm(lauf)
@@ -118,7 +119,7 @@ assign('train', train, envir = .GlobalEnv)
 test_that("classification", {
   skip('skip')
   # run models
-  lauf <- "classification_automl.csv"
+  lauf <- "classification_automl"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   SRxgboost_h2o_automl(y = "Churn",
@@ -131,7 +132,7 @@ test_that("classification", {
   #
   # tests
   # no. of files
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 9)
+  expect_equal(length(list.files(paste0(path_output, lauf, "/"))), 9)
   #
   # clean up
   rm(lauf)
@@ -169,7 +170,7 @@ assign('train', train, envir = .GlobalEnv)
 # test_that("multilabel classification", {
 #   skip('skip')
 #   # run models
-#   lauf <- "multilabel_classification_automl.csv"
+#   lauf <- "multilabel_classification_automl"
 #   assign('lauf', lauf, envir = .GlobalEnv)
 #   cat(lauf, "\n")
 #   SRxgboost_h2o_automl(y = "type",
@@ -182,7 +183,7 @@ assign('train', train, envir = .GlobalEnv)
 #   #
 #   # tests
 #   # no. of files
-#   expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+#   expect_equal(length(list.files(paste0(path_output, lauf, "/"))), 8)
 #   #
 #   # clean up
 #   rm(lauf)
@@ -200,6 +201,6 @@ rm(birds, train, id_unique_train)
 
 # Clean up ----------------------------------------------------------------
 #
-unlink(path_output, recursive = TRUE)
+# unlink(path_output, recursive = TRUE)
 rm(path_output, path_to_data, this_file)
 

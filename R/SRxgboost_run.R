@@ -316,15 +316,27 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         prec <- stats::weighted.mean(class == labels, w)
         return(list(metric = "w_precision", value = prec))
       }
+      # Nicht plausibel bei mAUC: evaluation log ist nach 0.5, aber ROC-Kurfe bei 0.8 !!!   TODO
       mAUC <- function(pred, d_train) {
         labels <- xgboost::getinfo(d_train, "label")
         if (length(pred) / params$num_class == length(labels)) {
           # convert vector of class probabilites to matrix and determine class
           pred <- matrix(pred, ncol = params$num_class, byrow = TRUE)
-          pred <- apply(pred, MARGIN = 1, FUN = which.max)
+          pred <- pred / rowSums(pred)   # normalize rows to sum to 1
+          # pred <- apply(pred, MARGIN = 1, FUN = which.max)
+          # for(i in 1:nrow(pred)) {
+          #   row_vals <- pred[i, ]
+          #   dup_idx <- which(duplicated(row_vals))
+          #   if(length(dup_idx) > 0) {   # add tiny value to duplicates to avoid error in auc
+          #     for(j in dup_idx) {row_vals[j] <- row_vals[j] + 1e-6 * j}
+          #     # for(j in dup_idx) {row_vals[j] <- row_vals[j] + round(rnorm(1, 0, 0.0001), 7)}
+          #   }
+          #   pred[i, ] <- row_vals
+          # }
+          pred <- data.frame(pred) %>%  stats::setNames(0:(ncol(.) - 1))
         }
-        err = as.numeric(pROC::multiclass.roc(labels, pred, direction = "<")$auc)
-        # err = pROC::multiclass.roc(labels, data.frame(pred) %>% stats::setNames(0:(params$num_class - 1)))
+        # err = as.numeric(pROC::multiclass.roc(labels, pred)$auc)
+        err = as.numeric(pROC::multiclass.roc(labels, pred, direction = ">")$auc)
         # https://www.datascienceblog.net/post/machine-learning/performance-measures-multi-class-problems/
         return(list(metric="mAUC", value = err))
       }
@@ -396,40 +408,40 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
     } else {
       params <- list()
     }
+    #
     if (!metric %in% custom_metrics) {
-      bst <- xgboost::xgb.train(objective = obj, params = params,
-                                eval_metric = metric, maximize = metrics_maximize,
-                                eta = eta_test, max_depth = depth,
-                                min_child_weight = min_child_weight, gamma = gamma,
-                                subsample = subsample, colsample_bytree = colsample_bytree,
-                                num_parallel_tree = trees,
-                                tree_method = tree_method,
-                                early_stopping_rounds = early_stopping_rounds,
-                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
-                                data = d_train_eval, nround = nround_test,
-                                verbose = verbose, nthread = nthreads,
-                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
+      params <- c(params,
+                  list(objective = obj, eval_metric = metric, eta = eta_test,
+                       max_depth = depth, min_child_weight = min_child_weight,
+                       gamma = gamma, subsample = subsample,
+                       colsample_bytree = colsample_bytree, num_parallel_tree = trees,
+                       tree_method = tree_method, nthread = nthreads))
+      bst <- xgboost::xgb.train(params = params, data = d_train_eval, nrounds = nround_test,
                                 watchlist = list(train = d_train_eval, eval = d_test_eval),
-                                callbacks = list(xgboost::cb.evaluation.log()))
+                                print_every_n = ifelse(verbose == 0, nround_test,
+                                                       nround_test / 50),
+                                early_stopping_rounds = early_stopping_rounds,
+                                maximize = metrics_maximize, verbose = verbose,
+                                callbacks = list(xgboost::xgb.cb.evaluation.log()))
     } else {
-      bst <- xgboost::xgb.train(objective = obj, params = params,
-                                feval = get(metric), maximize = metrics_maximize ,
-                                eta = eta_test, max_depth = depth,
-                                min_child_weight = min_child_weight, gamma = gamma,
-                                subsample = subsample, colsample_bytree = colsample_bytree,
-                                num_parallel_tree = trees,
-                                tree_method = tree_method,
-                                early_stopping_rounds = early_stopping_rounds,
-                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
-                                data = d_train_eval, nround = nround_test,
-                                verbose = verbose, nthread = nthreads,
-                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
+      params <- c(params,
+                  list(objective = obj, eta = eta_test,
+                       max_depth = depth, min_child_weight = min_child_weight,
+                       gamma = gamma, subsample = subsample,
+                       colsample_bytree = colsample_bytree, num_parallel_tree = trees,
+                       tree_method = tree_method, nthread = nthreads))
+      bst <- xgboost::xgb.train(params = params, data = d_train_eval, nrounds = nround_test,
+                                custom_metric = get(metric), disable_default_eval_metric = TRUE,
                                 watchlist = list(train = d_train_eval, eval = d_test_eval),
-                                callbacks = list(xgboost::cb.evaluation.log()))
+                                print_every_n = ifelse(verbose == 0, nround_test,
+                                                       nround_test / 50),
+                                early_stopping_rounds = early_stopping_rounds,
+                                maximize = metrics_maximize, verbose = verbose,
+                                callbacks = list(xgboost::xgb.cb.evaluation.log()))
     }
     #
     # get evaluation log
-    evaluation_log <- data.frame(bst$evaluation_log)
+    evaluation_log <- data.frame(attr(bst, "evaluation_log"))
     if (max_overfit > 0) max_overfit <- -max_overfit
     if (metrics_maximize) {
       evaluation_log$overfit <- (1 - evaluation_log[, 2]) / (1 - evaluation_log[, 3]) - 1
@@ -466,7 +478,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         (feat_sel)) {
       # save model
       xgboost::xgb.save(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                                    gsub(":", ".", as.character(start)), "_1fold.model"))
+                                    gsub(":", ".", as.character(start)), "_1fold.model.ubj"))
       saveRDS(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
                           gsub(":", ".", as.character(start)), "_1fold.model.rds"))
       #
@@ -626,7 +638,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
         if (class(shapley)[1] == "matrix") {
           shapley <- data.frame(shapley)
         } else if (class(shapley) == "list") {
-          # for multilabel classification: select class of shap_pred
+          # for multilabel classification: select class of shap_pred   XGBOOST 1.6
           shapley_df <- data.frame()
           for (row in 1:nrow(shapley[[1]])) {
             shapley_df <- dplyr::bind_rows(shapley_df,
@@ -634,44 +646,61 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
           }; rm(row)
           shapley <- shapley_df
           rm(shapley_df)
+        } else if (class(shapley) == "array") {
+          # for multilabel classification: select class of shap_pred   XGBOOST 3.1   TODO !!!
+          #
+          # browser()
+          #
+          # shapley <- stats::predict(bst, d_test_eval, missing = NA, predcontrib = TRUE)
+          #
+          # shapley_df <- as.data.frame.table(shapley, responseName = "shap")
+          # colnames(shapley_df) <- c("row", "class", "feature", "shap")
+          #
+          # letters_vec <- c("A","B","C","D","E","F")
+          # numbers <- match(letters_vec, LETTERS)  # 1 2 3 4 5 6
+          #
+          # shapley <- shapley_df
+          # rm(shapley_df)
         }
         #
         # plot shapley contribution
-        p <- list()
-        for (plot_i in 1:length(selection)) {
-          row <- selection[plot_i]
-          p[[plot_i]] <- shapley[row, ] %>%
-            dplyr::select(-BIAS) %>%
-            data.table::setnames(paste0(colnames(.), ": ",
-                                        temp_data[row, colnames(.)] %>%
-                                          dplyr::mutate_if(lubridate::is.Date,
-                                                           as.character) %>%
-                                          reshape2::melt(id = NULL) %>%
-                                          dplyr::pull(value))) %>%
-            data.table::setnames(gsub("_LabelEnc", "", names(.))) %>%
-            reshape2::melt(id = NULL) %>%
-            dplyr::arrange(-abs(value)) %>%
-            dplyr::slice(1:min(5, nrow(.))) %>%
-            ggplot2::ggplot(ggplot2::aes(x = stats::reorder(variable, abs(value)),
-                                         y = value)) +
-            ggplot2::geom_bar(stat = "identity") +
-            ggplot2::labs(x = "", y = "",
-                          subtitle = paste0("pred = ", round(shap_pred[row], 3),
-                                            ifelse(grepl("multi", obj), " (",
-                                                   paste0(" (mean pred = ",
-                                                          round(mean(shap_pred), 3), ", ")),
-                                            "pred no. ", row, ")")) +
-            ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
-            ggplot2::theme(text = ggplot2::element_text(size = 8)) +
-            ggplot2::coord_flip()
-        }; rm(plot_i, row)
-        p <- do.call(gridExtra::arrangeGrob, c(p, ncol = 2, as.table = FALSE))
-        ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
-                               gsub(":", ".", as.character(start)), "_Shap_plot.png"),
-                        plot = p, width = 9.92, height = 5.3)
-        #
-        # clean up
-        rm(shap_pred, selection, temp_data, shapley, p)
+        if (!grepl("multi", obj)) {                                  # XGBOOST 3.1   TODO !!!
+          p <- list()
+          for (plot_i in 1:length(selection)) {
+            row <- selection[plot_i]
+            p[[plot_i]] <- shapley[row, ] %>%
+              dplyr::select(-dplyr::any_of(c("BIAS", "X.Intercept."))) %>%
+              data.table::setnames(paste0(colnames(.), ": ",
+                                          temp_data[row, colnames(.)] %>%
+                                            dplyr::mutate_if(lubridate::is.Date,
+                                                             as.character) %>%
+                                            reshape2::melt(id = NULL) %>%
+                                            dplyr::pull(value))) %>%
+              data.table::setnames(gsub("_LabelEnc", "", names(.))) %>%
+              reshape2::melt(id = NULL) %>%
+              dplyr::arrange(-abs(value)) %>%
+              dplyr::slice(1:min(5, nrow(.))) %>%
+              ggplot2::ggplot(ggplot2::aes(x = stats::reorder(variable, abs(value)),
+                                           y = value)) +
+              ggplot2::geom_bar(stat = "identity") +
+              ggplot2::labs(x = "", y = "",
+                            subtitle = paste0("pred = ", round(shap_pred[row], 3),
+                                              ifelse(grepl("multi", obj), " (",
+                                                     paste0(" (mean pred = ",
+                                                            round(mean(shap_pred), 3), ", ")),
+                                              "pred no. ", row, ")")) +
+              ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+              ggplot2::theme(text = ggplot2::element_text(size = 8)) +
+              ggplot2::coord_flip()
+          }; rm(plot_i, row)
+          p <- do.call(gridExtra::arrangeGrob, c(p, ncol = 2, as.table = FALSE))
+          ggplot2::ggsave(paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
+                                 gsub(":", ".", as.character(start)), "_Shap_plot.png"),
+                          plot = p, width = 9.92, height = 5.3)
+          #
+          # clean up
+          suppressWarnings(rm(shap_pred, selection, temp_data, shapley, p))
+        }
       }
     } # end "good" model
     #
@@ -688,32 +717,19 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       if (test_param) temp[3] <- eta
       set.seed(12345)
       if (!metric %in% custom_metrics) {
-        bst <- xgboost::xgb.cv(objective = obj, params = params,
-                               eval_metric = metric, maximize = metrics_maximize,
-                               eta = eta, max_depth = depth,
-                               min_child_weight = min_child_weight, gamma = gamma,
-                               subsample = subsample, colsample_bytree = colsample_bytree,
-                               num_parallel_tree = trees, stratified = TRUE,
-                               tree_method = tree_method,
+        bst <- xgboost::xgb.cv(params = params, data = d_train, nrounds = nround,
+                               print_every_n = ifelse(verbose == 0, nround, nround / 50),
                                early_stopping_rounds = early_stopping_rounds,
-                               # scale_pos_weight = scale_pos_weight,           # warning 2021-10-19
-                               data = d_train, nround = nround, nthread = nthreads,
-                               nfold = nfold, folds = folds, verbose = verbose,
-                               print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
+                               nfold = nfold, folds = folds, stratified = TRUE,
+                               maximize = metrics_maximize, verbose = verbose,
                                prediction = TRUE)
       } else {
-        bst <- xgboost::xgb.cv(objective = obj, params = params,
-                               feval = get(metric), maximize = metrics_maximize,
-                               eta = eta, max_depth = depth,
-                               min_child_weight = min_child_weight, gamma = gamma,
-                               subsample = subsample, colsample_bytree = colsample_bytree,
-                               num_parallel_tree = trees, stratified = TRUE,
-                               tree_method = tree_method,
+        bst <- xgboost::xgb.cv(params = params, data = d_train, nrounds = nround,
+                               custom_metric = get(metric), disable_default_eval_metric = TRUE,
+                               print_every_n = ifelse(verbose == 0, nround, nround / 50),
                                early_stopping_rounds = early_stopping_rounds,
-                               # scale_pos_weight = scale_pos_weight,           # warning 2021-10-19
-                               data = d_train, nround = nround, nthread = nthreads,
-                               nfold = nfold, folds = folds, verbose = verbose,
-                               print_every_n = ifelse(verbose == 0, nround, nround_test / 50),
+                               nfold = nfold, folds = folds, stratified = TRUE,
+                               maximize = metrics_maximize, verbose = verbose,
                                prediction = TRUE)
       }
       invisible(gc())
@@ -744,7 +760,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       # Save OOFforecast
       if (!feat_sel) {
         OOFforecast <- readRDS(paste0(path_output, gsub(".csv", "/", lauf), "Data/OOFforecast.rds"))
-        bst_pred <- data.frame(bst$pred)
+        bst_pred <- data.frame(bst$cv_predict$pred)
         # multi:softmax: select only first column (others are duplicates)
         if (obj == "multi:softmax") bst_pred <- bst_pred %>% select(X1)
         if (obj != "multi:softprob") {
@@ -782,26 +798,14 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       #
       set.seed(12345)
       if (!metric %in% custom_metrics) {
-        bst <- xgboost::xgboost(objective = obj, params = params, maximize = metrics_maximize,
-                                eval_metric = metric, eta = eta, max_depth = depth,
-                                min_child_weight = min_child_weight, gamma = gamma,
-                                subsample = subsample, colsample_bytree = colsample_bytree,
-                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
-                                num_parallel_tree = trees,
-                                tree_method = tree_method, nthread = nthreads,
-                                data = d_train, nround = temp[[4]], verbose = verbose,
-                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50))
+        bst <- xgboost::xgb.train(params = params, data = d_train, nrounds = temp[[4]],
+                                  print_every_n = ifelse(verbose == 0, nround, nround / 50),
+                                  maximize = metrics_maximize, verbose = verbose)
       } else {
-        bst <- xgboost::xgboost(objective = obj, params = params,
-                                feval = get(metric), maximize = metrics_maximize,
-                                eta = eta, max_depth = depth,
-                                min_child_weight = min_child_weight, gamma = gamma,
-                                subsample = subsample, colsample_bytree = colsample_bytree,
-                                # scale_pos_weight = scale_pos_weight,          # warning 2021-10-19
-                                num_parallel_tree = trees,
-                                tree_method = tree_method, nthread = nthreads,
-                                data = d_train, nround = temp[[4]], verbose = verbose,
-                                print_every_n = ifelse(verbose == 0, nround, nround_test / 50))
+        bst <- xgboost::xgb.train(params = params, data = d_train, nrounds = temp[[4]],
+                                  custom_metric = get(metric), disable_default_eval_metric = TRUE,
+                                  print_every_n = ifelse(verbose == 0, nround, nround / 50),
+                                  maximize = metrics_maximize, verbose = verbose)
       }
       invisible(gc())
       #
@@ -825,7 +829,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       #
       # Save model
       xgboost::xgb.save(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/", # looses information!
-                                    gsub(":", ".", as.character(start)), ".model"))
+                                    gsub(":", ".", as.character(start)), ".model.ubj"))
       saveRDS(bst, paste0(path_output, gsub(".csv", "/", lauf), "All Models/",
                           gsub(":", ".", as.character(start)), ".model.rds"))
       assign("bst", bst, envir = .GlobalEnv)

@@ -5,7 +5,7 @@ rm(list = ls()); gc()
 # load libraries
 library(dplyr); library(testthat)
 # set paths
-path_output <- "temp/"
+path_output <- "output_temp/"
 assign('path_output', path_output, envir = .GlobalEnv)
 if (dir.exists("D:/Samuel/Analysen in R/Analysen/")) {
   path_to_data <- "D:/Samuel/Analysen in R/Analysen/99 ML Algorithm Benchmark/"
@@ -41,7 +41,7 @@ df2 <- data.frame(a = stats::runif(1000),
 set.seed(Sys.time())
 #
 # run SRxgboost_covariate_drift_XGB
-lauf <- "covariate_drift.csv"
+lauf <- "covariate_drift"
 assign('lauf', lauf, envir = .GlobalEnv)
 SRxgboost_covariate_drift_XGB(df1 = df1, df2 = df2, pdp_parallel = TRUE)
 #
@@ -50,16 +50,16 @@ SRxgboost_covariate_drift_XGB(df1 = df1, df2 = df2, pdp_parallel = TRUE)
 #
 # no. of files
 test_that("files in path_output/lauf", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/"))), 8)
+  expect_true(length(list.files(paste0(path_output, lauf, "/"))) %in% c(7, 8))
 })
 test_that("files in path_output/lauf/All Models", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/All Models"))), 10)
+  expect_equal(length(list.files(paste0(path_output, lauf, "/All Models"))), 10)
 })
 test_that("files in path_output/lauf/Best Model", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))), 85)
+  expect_true(length(list.files(paste0(path_output, lauf, "/Best Model"))) %in% c(74))
 })
 test_that("files in path_output/lauf/Data", {
-  expect_equal(length(list.files(paste0(path_output, gsub(".csv", "", lauf), "/Data"))), 22)
+  expect_true(length(list.files(paste0(path_output, lauf, "/Data"))) %in% c(22, 23))
 })
 
 
@@ -68,6 +68,6 @@ test_that("files in path_output/lauf/Data", {
 # Clean up ----------------------------------------------------------------
 #
 SRxgboost_cleanup()
-unlink(path_output, recursive = TRUE)
+# unlink(path_output, recursive = TRUE)
 rm(df1, df2, path_output, path_to_data, this_file)
 

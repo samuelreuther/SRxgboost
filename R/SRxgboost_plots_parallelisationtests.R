@@ -42,7 +42,7 @@
 #   if (!silent) print(paste0("Loading model: ", SummaryCV$date[rank]))
 #   modelpath <- paste0(path_output, paste0(gsub(".csv", "/", lauf), "All Models/",
 #                                           gsub(":", ".", SummaryCV$date[rank]),
-#                                           ".model"))
+#                                           ".model.ubj"))
 #   if (file.exists(modelpath) |
 #       file.exists(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))) {
 #     if (file.exists(modelpath)) {
@@ -592,8 +592,7 @@
 #         dplyr::mutate(residuals = y_test - pr_test) %>%
 #         dplyr::rename(y = y_test, pr = pr_test)
 #       drift_residual <- SRxgboost_calculate_drift(train_temp, test_temp, n_plots = 10,
-#                                                   name = paste0(path_output,
-#                                                                 gsub(".csv", "", lauf),
+#                                                   name = paste0(path_output, lauf,
 #                                                                 "/Best Model/"))
 #     }
 #     #

@@ -1,3 +1,8 @@
+# SRxgboost 0.8.0
+- Merge private and work repositories
+- Update XGBOOST library from <1.7 to 3.1.3.1
+- Remove ".csv" from lauf
+
 # SRxgboost 0.7.1
 - Added 'SRxgboost_check_uncertainty()'
 

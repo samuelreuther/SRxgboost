@@ -32,11 +32,12 @@ SRxgboost_compare_sample_methods <- function(df_train,
   # loop through all selected sample_methods
   for (m in c("unbalanced", sample_methods)) {   # m <- "ubOver", m <- "unbalanced"
     # check if run exists already and print progress
-    lauf <- paste0(m, ".csv")
+    # lauf <- paste0(m, ".csv")
+    lauf <- m
     assign("lauf", lauf, envir = .GlobalEnv)
     path_output <- paste0(path_output_backup, "compare_sample_methods/")
     assign("path_output", path_output, envir = .GlobalEnv)
-    if (dir.exists(paste0(path_output, gsub(".csv", "", lauf), "/Best Model"))) {
+    if (dir.exists(paste0(path_output, lauf, "/Best Model"))) {
       suppressWarnings(rm(lauf, path_output))
       next()
     } else {

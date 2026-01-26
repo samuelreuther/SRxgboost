@@ -41,7 +41,7 @@ assign('train', train, envir = .GlobalEnv)
 test_that("regression", {
   skip('skip')
   # initialisation
-  lauf <- "regression.csv"
+  lauf <- "ensemble_regression"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   # prepare data and test
@@ -53,13 +53,12 @@ test_that("regression", {
   SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse",
                 runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+  SRxgboost_make_ensemble(name = paste(lauf, "_ensemble"),
                           lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
-  testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 6)
+  testthat::expect_equal(length(list.files(paste0(path_output, lauf, "_ensemble/"))), 6)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -75,7 +74,7 @@ test_that("regression", {
 test_that("regression train test", {
   skip('skip')
   # initialisation
-  lauf <- "regression_train_test.csv"
+  lauf <- "ensemble_regression_train_test"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   id_unique_train <- house$Id[seq(1, 1460, 2)]
@@ -90,13 +89,12 @@ test_that("regression train test", {
   SRxgboost_run(nround = 1000, eta = 0.1, obj = "reg:squarederror", metric = "rmse",
                 runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+  SRxgboost_make_ensemble(name = paste(lauf, "_ensemble"),
                           lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
-  testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 10)
+  testthat::expect_equal(length(list.files(paste0(path_output, lauf, "_ensemble/"))), 10)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -114,7 +112,7 @@ test_that("regression train test", {
   #
   ## lauf 1
   # initialisation
-  lauf <- "regression_train_test_1.csv"
+  lauf <- "ensemble_regression_train_test_1"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   train_ <- train %>% select(1:60, SalePrice)
@@ -134,7 +132,7 @@ test_that("regression train test", {
   #
   ## lauf 2
   # initialisation
-  lauf <- "regression_train_test_2.csv"
+  lauf <- "ensemble_regression_train_test_2"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   train_ <- train %>% select(21:79, SalePrice)
@@ -152,8 +150,8 @@ test_that("regression train test", {
   #
   # make ensemble
   SRxgboost_make_ensemble(name = "regression_train_test_1_2_ensemble",
-                          lauf = c("regression_train_test_1.csv",
-                                   "regression_train_test_2.csv"),
+                          lauf = c("regression_train_test_1",
+                                   "regression_train_test_2"),
                           top_rank = c(3, 4))
   #
   # tests
@@ -199,7 +197,7 @@ assign('train', train, envir = .GlobalEnv)
 test_that("classification", {
   skip('skip')
   # initialisation
-  lauf <- "classification.csv"
+  lauf <- "ensemble_classification"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   # prepare data and test
@@ -211,13 +209,13 @@ test_that("classification", {
   SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc",
                 runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+  SRxgboost_make_ensemble(name = paste(lauf, "_ensemble"),
                           lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 12)
+    paste0(path_output, lauf, "_ensemble/"))), 12)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -233,7 +231,7 @@ test_that("classification", {
 test_that("classification train test", {
   skip('skip')
   # initialisation
-  lauf <- "classification_train_test.csv"
+  lauf <- "ensemble_classification_train_test"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   id_unique_train <- churn$customerID[seq(1, 7043, 2)]
@@ -248,13 +246,13 @@ test_that("classification train test", {
   SRxgboost_run(nround = 1000, eta = 0.1, obj = "binary:logistic", metric = "auc",
                 runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+  SRxgboost_make_ensemble(name = paste(lauf, "_ensemble"),
                           lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 20)
+    paste0(path_output, lauf, "_ensemble/"))), 20)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -294,7 +292,7 @@ assign('train', train, envir = .GlobalEnv)
 test_that("multilabel classification", {
   skip('skip')
   # initialisation
-  lauf <- "mclass_softprob.csv"
+  lauf <- "ensemble_mclass_softprob"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   # prepare data and test
@@ -306,13 +304,13 @@ test_that("multilabel classification", {
   SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC",
                 runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+  SRxgboost_make_ensemble(name = paste(lauf, "_ensemble"),
                           lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 8)
+    paste0(path_output, lauf, "_ensemble/"))), 8)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -328,7 +326,7 @@ test_that("multilabel classification", {
 test_that("multilabel classification train test", {
   skip('skip')
   # initialisation
-  lauf <- "mclass_softprob_train_test.csv"
+  lauf <- "ensemble_mclass_softprob_train_test"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   id_unique_train <- birds$id[seq(1, 420, 2)]
@@ -343,13 +341,13 @@ test_that("multilabel classification train test", {
   SRxgboost_run(nround = 1000, eta = 0.1, obj = "multi:softprob", metric = "mAUC",
                 runs = 50, nfold = 5)
   # make ensemble
-  SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+  SRxgboost_make_ensemble(name = paste(lauf, "_ensemble"),
                           lauf = lauf, top_rank = 3)
   #
   # tests
   # no. of files
   testthat::expect_equal(length(list.files(
-    paste0(path_output, gsub(".csv", "", lauf), "_ensemble/"))), 14)
+    paste0(path_output, lauf, "_ensemble/"))), 14)
   #
   # clean up
   suppressWarnings(rm(OOF_metrics, TEST_metrics, OOFforecast, TESTforecast,
@@ -367,7 +365,7 @@ test_that("multilabel classification train test", {
   #
   ## lauf 1
   # initialisation
-  lauf <- "mclass_softprob_train_test_1.csv"
+  lauf <- "ensemble_mclass_softprob_train_test_1"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   train_ <- train %>% select(1:8, type)
@@ -385,7 +383,7 @@ test_that("multilabel classification train test", {
   #
   ## lauf 2
   # initialisation
-  lauf <- "mclass_softprob_train_test_2.csv"
+  lauf <- "ensemble_mclass_softprob_train_test_2"
   assign('lauf', lauf, envir = .GlobalEnv)
   cat(lauf, "\n")
   train_ <- train %>% select(4:10, type)
@@ -403,8 +401,8 @@ test_that("multilabel classification train test", {
   #
   # make ensemble
   SRxgboost_make_ensemble(name = "mclass_softprob_train_test_1_2_ensemble",
-                          lauf = c("mclass_softprob_train_test_1.csv",
-                                   "mclass_softprob_train_test_2.csv"),
+                          lauf = c("mclass_softprob_train_test_1",
+                                   "mclass_softprob_train_test_2"),
                           top_rank = c(3, 4))
   #
   # tests
@@ -421,7 +419,7 @@ test_that("multilabel classification train test", {
 
 
 
-# Multilabel Classification: clean up ----------------------------------------------------
+# Multilabel Classification: clean up -------------------------------------
 #
 suppressWarnings(rm(birds, train, id_unique_train, id_unique_test))
 
@@ -430,6 +428,6 @@ suppressWarnings(rm(birds, train, id_unique_train, id_unique_test))
 
 # Clean up ----------------------------------------------------------------
 #
-unlink(path_output, recursive = TRUE)
+# unlink(path_output, recursive = TRUE)
 rm(path_output, path_to_data, this_file)
 

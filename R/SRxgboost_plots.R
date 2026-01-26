@@ -58,40 +58,42 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
   #
   # Load model
   if (!silent) print(paste0("Loading model: ", SummaryCV$date[rank]))
-  modelpath <- paste0(path_output_model, gsub(":", ".", SummaryCV$date[rank]), ".model")
+  modelpath <- paste0(path_output_model, gsub(":", ".", SummaryCV$date[rank]), ".model.ubj")
   if (file.exists(modelpath) |
       file.exists(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))) {
     if (file.exists(modelpath)) {
+      # load final model
       bst <- xgboost::xgb.load(modelpath)
-      bst_ <- readRDS(gsub(".model", ".model.rds", modelpath, fixed = TRUE))
       assign('bst', bst, envir = .GlobalEnv)
     } else {
+      # load 1fold instead of final model
       bst <- xgboost::xgb.load(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))
     }
-    bst_1fold <- xgboost::xgb.load(gsub(".model", "_1fold.model", modelpath, fixed = TRUE))
+    # load 1fold model
+    bst_1fold <- xgboost::xgb.load(gsub(".model.ubj", "_1fold.model.ubj", modelpath, fixed = TRUE))
     assign('bst_1fold', bst_1fold, envir = .GlobalEnv)
     try(file.copy(modelpath,
-                  paste0(path_output_best, "model"), overwrite = TRUE), TRUE)
+                  paste0(path_output_best, "model.ubj"), overwrite = TRUE), TRUE)
     try(file.copy(gsub(".model", ".model.rds", modelpath),
                   paste0(path_output_best, "model.rds"), overwrite = TRUE), TRUE)
-    file.copy(gsub(".model", "_1fold.model", modelpath),
-              paste0(path_output_best, "1fold.model"), overwrite = TRUE)
-    file.copy(gsub(".model", "_1fold.model.rds", modelpath),
+    file.copy(sub(".model", "_1fold.model", modelpath),
+              paste0(path_output_best, "1fold.model.ubj"), overwrite = TRUE)
+    file.copy(sub(".model", "_1fold.model.rds", modelpath),
               paste0(path_output_best, "1fold.model.rds"), overwrite = TRUE)
-    file.copy(gsub(".model", "_Error_rate.png", modelpath),
+    file.copy(sub(".model", "_Error_rate.png", modelpath),
               paste0(path_output_best, "Error_rate.png"), overwrite = TRUE)
-    file.copy(gsub(".model", "_Evaluation_log.rds", modelpath),
+    file.copy(sub(".model", "_Evaluation_log.rds", modelpath),
               paste0(path_output_best, "Evaluation_log.rds"), overwrite = TRUE)
     try({
-      file.copy(gsub(".model", "_Shap_train_eval.rds", modelpath),
+      file.copy(sub(".model", "_Shap_train_eval.rds", modelpath),
                 paste0(path_output_best, "Shap_train_eval.rds"), overwrite = TRUE)
-      file.copy(gsub(".model", "_Shap_prediction.rds", modelpath),
+      file.copy(sub(".model", "_Shap_prediction.rds", modelpath),
                 paste0(path_output_best, "Shap_prediction.rds"), overwrite = TRUE)
-      file.copy(gsub(".model", "_Shap_datenModell_eval.rds", modelpath),
+      file.copy(sub(".model", "_Shap_datenModell_eval.rds", modelpath),
                 paste0(path_output_best, "Shap_datenModell_eval.rds"), overwrite = TRUE)
-      file.copy(gsub(".model", "_Shap_index_test_eval.rds", modelpath),
+      file.copy(sub(".model", "_Shap_index_test_eval.rds", modelpath),
                 paste0(path_output_best, "Shap_index_test_eval.rds"), overwrite = TRUE)
-      file.copy(gsub(".model", "_Shap_plot.png", modelpath),
+      file.copy(sub(".model", "_Shap_plot.png", modelpath),
                 paste0(path_output_best, "Shap_plot.png"), overwrite = TRUE)
     }, TRUE)
   } else {
@@ -825,6 +827,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               test_eval_mat_ <- test_eval_mat
               pr_ <- data.frame(pr = stats::predict(bst_1fold, test_eval_mat))
             }
+            if (objective == "multilabel") pr_$pr = apply(pr_, MARGIN = 1, FUN = which.max) - 1
             scaling_factor = nrow(datenModell_eval_) / datenModell_rows
             #
             # if (y_multiclass == FALSE) {   # linear, binary
@@ -886,7 +889,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               } else {
                 # summarise results
                 if (is.null(pdp_cuts))
-                  pdp_cuts <- min(floor(length(xx) / pdp_int_cuts_sample), 50)
+                  pdp_cuts <- max(min(floor(length(xx) / pdp_int_cuts_sample), 50), 2)
                 stats <- data.frame(x = xx, x_orig = datenModell_eval_[, xlabel],
                                     Actual = y_$y, Predicted = pr_$pr) %>%
                   dplyr::mutate(Group = cut(x, breaks = pretty(x, pdp_cuts),
@@ -901,7 +904,11 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
             #
             ## partial dependence
             #
-            stats_ <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
+            if (pdp_cuts > 2) {
+              stats_ <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
+            } else {
+              stats_ <- stats
+            }
             #
             if (nrow(datenModell_eval_) > 1000 & pdp_parallel) {
               # in parallel
@@ -940,7 +947,9 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
                                              gsub("_LabelEnc", "", xlabel), ".csv"),
                                row.names = FALSE, sep = ";")
             #
-            stats <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
+            if (pdp_cuts > 2) {
+              stats <- stats %>% dplyr::filter(Count_eval_sample >= pdp_int_cuts_sample)
+            }
             #
             scale <- max(stats$Count, na.rm = TRUE) /
               mean(max(stats$Predicted, na.rm = TRUE),
@@ -1029,7 +1038,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
               ggplot2::labs(x = gsub("_LabelEnc", "", xlabel), y = "Average value of y") +
               ggplot2::theme(legend.position = "top",
                              legend.title = ggplot2::element_blank())
-            print(p)
+            suppressWarnings(print(p))
             #
             # simple PDP-graphic
             p3 <- ggplot2::ggplot(stats,
@@ -1145,7 +1154,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
     #
     # calculate most important interaction pairs Parent/Child
     #
-    dt <- as.data.frame(xgboost::xgb.model.dt.tree(model = bst, trees = 0:999))
+    dt <- as.data.frame(xgboost::xgb.model.dt.tree(bst))
     top <- as.data.frame(xgboost::xgb.importance(model = bst)) %>%
       dplyr::mutate(Feature = sub("^f", "", Feature)) %>%
       dplyr::slice_head(n = 30) %>%
@@ -1160,7 +1169,7 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
       dplyr::mutate(ChildID = as.integer(sub(".*-", "", ChildID)))
     childs <- dt %>%
       dplyr::filter(Feature != "Leaf") %>%
-      dplyr::transmute(Tree, ID = Node, Child = Feature, Gain = Quality)
+      dplyr::transmute(Tree, ID = Node, Child = Feature, Gain)
     interactions <- dplyr::left_join(childs, edges, by = c("Tree", "ID" = "ChildID")) %>%
       dplyr::filter(Parent %in% top, Child %in% top) %>%
       dplyr::group_by(Parent, Child) %>%
@@ -1176,43 +1185,11 @@ SRxgboost_plots <- function(lauf, rank = 1, plots = TRUE, silent = FALSE,
     base::rm(dt, top, edges, childs)
     # clean up
     interactions_clean <- data.frame(interactions) %>%
+      dplyr::filter(A != B) %>%
+      dplyr::rename(Parent = A, Child = B) %>%
       dplyr::mutate(Gain = sumGain / sum(sumGain),
                     Frequency = frequency / sum(frequency)) %>%
-      dplyr::mutate_at(dplyr::vars(A, B), ~as.numeric(.)) %>%
-      dplyr::left_join(data.frame(Parent = colnames(datenModell_eval),
-                                  Number = 0:(ncol(datenModell_eval) - 1)),
-                       by = dplyr::join_by(A == Number)) %>%
-      dplyr::left_join(data.frame(Child = colnames(datenModell_eval),
-                                  Number = 0:(ncol(datenModell_eval) - 1)),
-                       by = dplyr::join_by(B == Number)) %>%
       dplyr::mutate(Feature = paste0(Parent, " - ", Child))
-    #
-    # # ALT:
-    # interactions <- EIX::interactions(bst, train_mat_, option = "pairs")
-    # # interactions_ <- EIX::interactions(bst, train_mat_, option = "interactions")
-    # # plot(interactions)
-    # interactions_clean <- data.frame(interactions) %>%
-    #   dplyr::left_join(importance_matrix %>%
-    #                      dplyr::mutate(Parent_Rang = 1:nrow(.)) %>%
-    #                      dplyr::select(Feature, Parent_Rang),
-    #                    by = c("Parent" = "Feature")) %>%
-    #   dplyr::left_join(importance_matrix %>%
-    #                      dplyr::mutate(Child_Rang = 1:nrow(.)) %>%
-    #                      dplyr::select(Feature, Child_Rang),
-    #                    by = c("Child" = "Feature")) %>%
-    #   dplyr::mutate(Parent_clean = ifelse(Parent_Rang < Child_Rang, Parent, Child),
-    #                 Child_clean = ifelse(Parent_Rang > Child_Rang, Parent, Child),
-    #                 Parent = Parent_clean,
-    #                 Child = Child_clean) %>%
-    #   dplyr::select(-Parent_clean, -Parent_Rang, -Child_clean, -Child_Rang) %>%
-    #   dplyr::group_by(Parent, Child) %>%
-    #   dplyr::summarise(sumGain = sum(sumGain),
-    #                    frequency = sum(frequency),
-    #                    .groups = "drop") %>%
-    #   dplyr::arrange(-sumGain) %>%
-    #   dplyr::mutate(Gain = sumGain / sum(sumGain),
-    #                 Frequency = frequency / sum(frequency),
-    #                 Feature = paste0(Parent, " - ", Child))
     utils::write.table(interactions_clean,
                        paste0(path_output_best, "VarImpInt 0.csv"),
                        row.names = FALSE, col.names = TRUE, append = FALSE,

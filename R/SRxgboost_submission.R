@@ -25,8 +25,7 @@ SRxgboost_submission <- function(lauf,
   SRxgboost_get_summary_CV(lauf)
   #
   # load TESTforecast
-  TESTforecast <- utils::read.table(file = paste0(path_output, gsub(".csv", "/", lauf),
-                                                  gsub(".csv", "", lauf), "_TESTforecast.csv"),
+  TESTforecast <- utils::read.table(file = paste0(path_output, lauf, lauf, "_TESTforecast.csv"),
                                     header = TRUE, sep = ";", dec = ",")
   #
   # get TESTforecast of single model

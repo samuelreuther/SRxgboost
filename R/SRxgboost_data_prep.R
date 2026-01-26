@@ -45,6 +45,9 @@ SRxgboost_data_prep <- function(yname, data_train, data_test = NULL,
     }
   }
   #
+  # remove existing factor_encoding (error: factor level [3] is duplicated)
+  if (exists("factor_encoding")) rm(factor_encoding, envir = .GlobalEnv)
+  #
   #
   #
   ### convert to data.frame
@@ -54,7 +57,7 @@ SRxgboost_data_prep <- function(yname, data_train, data_test = NULL,
   #
   #
   ### check covariate drift
-  path_output_ <- paste0(path_output, gsub(".csv", "", lauf), "/Data Drift/")
+  path_output_ <- paste0(path_output, lauf, "/Data Drift/")
   if (!is.null(data_test) & !dir.exists(path_output_) & check_covariate_drift) {
     # create output dir
     dir.create(path_output_, showWarnings = FALSE, recursive = TRUE)

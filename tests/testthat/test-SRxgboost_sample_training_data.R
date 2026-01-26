@@ -168,6 +168,6 @@ suppressWarnings(rm(churn, train, factor_encoding, folds5, no_folds))
 
 # Clean up ----------------------------------------------------------------
 #
-unlink(path_output, recursive = TRUE)
+# unlink(path_output, recursive = TRUE)
 rm(path_output, path_to_data, this_file)
 

@@ -98,7 +98,7 @@ dim(train)
 #
 ## compare sample methods
 #
-path_output <- "output_temp/"
+path_output <- "output_temp/csm/"
 assign('path_output', path_output, envir = .GlobalEnv)
 comparison <- SRxgboost_compare_sample_methods(df_train = train,
                                                # y_name = "Churn",              # TODO !!!
@@ -125,7 +125,7 @@ test_that("files in path_output", {
 #
 suppressWarnings(rm(folds5, no_folds, comparison, OOFforecast, SummaryCV_META,
                     TESTforecast, y_OOF, id_unique_train, lauf))
-unlink(path_output, recursive = TRUE)
+# unlink(path_output, recursive = TRUE)
 
 
 
@@ -170,7 +170,7 @@ assign('test', test, envir = .GlobalEnv)
 #
 ## compare sample methods
 #
-path_output <- "output_temp/"
+path_output <- "output_temp/csm_05p/"
 assign('path_output', path_output, envir = .GlobalEnv)
 comparison <- SRxgboost_compare_sample_methods(df_train = train,
                                                # y_name = "Churn",              # TODO !!!
@@ -198,8 +198,7 @@ test_that("files in path_output", {
 suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
                     test_pr, lauf))
-file.rename("output_temp/compare_sample_methods/",
-            "output_temp/compare_sample_methods_05p/")
+# unlink(path_output, recursive = TRUE)
 #
 #
 #
@@ -209,7 +208,7 @@ file.rename("output_temp/compare_sample_methods/",
 # id_unique_test <- 1:nrow(test)
 #
 # # data prep
-# lauf <- "p10_XGB1_scale_pos_weight9.csv"
+# lauf <- "p10_XGB1_scale_pos_weight9"
 # no_folds <- 5
 # SRxgboost_data_prep(yname = "y", data_train = train, data_test = test,
 #                     no_folds = no_folds, objective = "classification",
@@ -227,7 +226,7 @@ file.rename("output_temp/compare_sample_methods/",
 #
 # # make ensemble
 # # debugonce("SRxgboost_make_ensemble")
-# SRxgboost_make_ensemble(name = gsub(".csv", "_ensemble.csv", lauf),
+# SRxgboost_make_ensemble(name = paste(lauf, "_ensemble"),
 #                         lauf = lauf, top_rank = 3)
 #
 # # clean up
@@ -278,7 +277,7 @@ file.rename("output_temp/compare_sample_methods/",
 # #
 # ## compare sample methods
 # #
-# path_output <- "output_temp/"
+# path_output <- "output_temp/csm_02p/"
 # assign('path_output', path_output, envir = .GlobalEnv)
 # comparison <- SRxgboost_compare_sample_methods(df_train = train,
 #                                                # y_name = "Churn",              # TODO !!!
@@ -306,8 +305,7 @@ file.rename("output_temp/compare_sample_methods/",
 # suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
 #                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
 #                     test_pr, lauf))
-# file.rename("output_temp/compare_sample_methods/",
-#             "output_temp/compare_sample_methods_02p/")
+# unlink(path_output, recursive = TRUE)
 
 
 
@@ -352,7 +350,7 @@ file.rename("output_temp/compare_sample_methods/",
 #
 # ## compare sample methods
 # #
-# path_output <- "output_temp/"
+# path_output <- "output_temp/csm_10p/"
 # assign('path_output', path_output, envir = .GlobalEnv)
 # comparison <- SRxgboost_compare_sample_methods(df_train = train,
 #                                                # y_name = "Churn",              # TODO !!!
@@ -380,8 +378,7 @@ file.rename("output_temp/compare_sample_methods/",
 # suppressWarnings(rm(folds5, no_folds, comparison, test, inTrain, OOFforecast,
 #                     SummaryCV_META, TESTforecast, y_OOF, id_unique_train,
 #                     test_pr, lauf))
-# file.rename("output_temp/compare_sample_methods/",
-#             "output_temp/compare_sample_methods_10p/")
+# unlink(path_output, recursive = TRUE)
 
 
 
@@ -463,5 +460,5 @@ suppressWarnings(rm(churn, train, factor_encoding))
 # Clean up ----------------------------------------------------------------
 #
 suppressWarnings(rm(path_output, path_to_data, this_file))
-unlink(path_output, recursive = TRUE)
+# unlink(path_output, recursive = TRUE)
 
