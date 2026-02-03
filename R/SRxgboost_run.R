@@ -783,8 +783,7 @@ SRxgboost_run <- function(nround = 1000, eta = 0.1, obj, metric, runs = 2,
       }
       error_rate <- evaluation_log %>%
         dplyr::select(iter, 2, 4)
-      rm(bst, evaluation_log_)
-      invisible(gc())
+      rm(bst, evaluation_log_); invisible(gc())
     }   # end "Run CV model"
     #
     #
